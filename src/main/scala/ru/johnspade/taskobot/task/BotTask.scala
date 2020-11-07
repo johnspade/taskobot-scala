@@ -10,5 +10,5 @@ case class BotTask(
   receiver: Option[UserId],
   createdAt: CreatedAt,
   doneAt: Option[DoneAt],
-  done: Boolean
+  done: Done
 )

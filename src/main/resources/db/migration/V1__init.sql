@@ -19,9 +19,9 @@ create table tasks
     done_at bigint,
     text varchar(4096) not null,
     receiver_id integer
-        constraint fkod4nsd69oox6xvdej27il8gmn
+        constraint tasks_users_receiver_fk
             references users,
     sender_id integer not null
-        constraint fkkgw5el7l450v0mwaehks6xp1c
+        constraint tasks_users_sender_fk
             references users
 );

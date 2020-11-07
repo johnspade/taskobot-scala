@@ -12,6 +12,8 @@ object Dependencies {
     val kantan = "0.6.0"
     val magnolia = "0.16.0"
     val http4s = "0.21.8"
+    val scalingua = "0.9"
+    val postgresql = "42.2.18"
   }
 
   val distributionDependencies = Seq(
@@ -28,7 +30,9 @@ object Dependencies {
     "com.nrinaudo" %% "kantan.csv-java8" % V.kantan,
     "com.nrinaudo" %% "kantan.csv-enumeratum" % V.kantan,
     "com.propensive" %% "magnolia" % V.magnolia,
-    "org.http4s" %% "http4s-blaze-client" % V.http4s
+    "org.http4s" %% "http4s-blaze-client" % V.http4s,
+    "ru.makkarpov" %% "scalingua" % V.scalingua,
+    "org.postgresql" % "postgresql" % V.postgresql
   )
 
   val testDependencies = Seq(

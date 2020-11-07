@@ -8,11 +8,11 @@ import zio.{Has, RIO, ZIO}
 object FlywayMigration {
   val migrate: RIO[Has[DbConfig] with Blocking, Unit] =
     ZIO.accessM { env =>
-      val config = env.get[DbConfig]
+      val cfg = env.get[DbConfig]
       effectBlocking {
         Flyway
           .configure()
-          .dataSource(config.url, config.user, config.password)
+          .dataSource(s"jdbc:postgresql://${cfg.host}:${cfg.port}/${cfg.database}", cfg.user, cfg.password)
           .load()
           .migrate()
       }

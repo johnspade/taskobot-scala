@@ -15,5 +15,8 @@ package object task {
 
     object DoneAt extends TaggedType[Long]
     type DoneAt = DoneAt.Type
+
+    object Done extends TaggedType[Boolean]
+    type Done = Done.Type
   }
 }

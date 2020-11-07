@@ -1,15 +1,16 @@
 package ru.johnspade.taskobot.user
 
-import cats.syntax.all._
-import ru.johnspade.taskobot.DbSession.DbSession
-import ru.johnspade.taskobot.l10n.Language
+import cats.effect.Resource
+import cats.syntax.functor._
+import ru.johnspade.taskobot.SessionPool.SessionPool
+import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.user.tags.{UserId, _}
 import skunk.codec.all._
 import skunk.implicits._
 import skunk.{Codec, Session, _}
 import zio.interop.catz._
 import zio.macros.accessible
-import zio.{Has, Task, UIO, URLayer, ZIO, ZLayer}
+import zio._
 
 @accessible
 object UserRepository {
@@ -21,23 +22,23 @@ object UserRepository {
     def createOrUpdate(user: User): UIO[Unit]
   }
 
-  val live: URLayer[DbSession, UserRepository] = ZLayer.fromServiceManaged[Session[Task], Any, Nothing, Service] { session =>
-    import UserQueries._
+  val live: URLayer[SessionPool, UserRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
+    sessionPool =>
+      import UserQueries._
 
-    (for {
-      implicit0(r: zio.Runtime[Any]) <- ZIO.runtime[Any].toManaged_
-      selectByIdPrepared <- session.prepare(selectById).toManaged
-      upsertPrepared <- session.prepare(upsert).toManaged
-    } yield {
       new Service {
         override def findById(userId: UserId): UIO[Option[User]] =
-          selectByIdPrepared.option(userId).orDie
+          sessionPool.use {
+            _.prepare(selectById).use(_.option(userId))
+          }
+            .orDie
 
         override def createOrUpdate(user: User): UIO[Unit] =
-          upsertPrepared.execute(user).void.orDie
+          sessionPool.use {
+            _.prepare(upsert).use(_.execute(user)).void
+          }
+            .orDie
       }
-    })
-      .orDie
   }
 
   private object UserQueries {

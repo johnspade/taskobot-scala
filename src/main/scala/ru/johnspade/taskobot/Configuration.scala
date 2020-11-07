@@ -9,7 +9,7 @@ import zio.{Has, ULayer, ZIO}
 object Configuration {
   type Configuration = Has[DbConfig] with Has[BotConfig]
 
-  final case class DbConfig(driver: String, url: String, user: String, password: String)
+  final case class DbConfig(driver: String, host: String, port: Int, database: String, user: String, password: String)
   object DbConfig {
     implicit val dbConfigReader: ConfigReader[DbConfig] = ConfigReader.fromCursor[DbConfig] { config =>
       for {
@@ -20,7 +20,10 @@ object Configuration {
         dbUri = new URI(url)
         userInfo = dbUri.getUserInfo.split(":")
       } yield DbConfig(
-        driver, s"jdbc:postgresql://${dbUri.getHost}:${dbUri.getPort}${dbUri.getPath}",
+        driver,
+        dbUri.getHost,
+        dbUri.getPort,
+        dbUri.getPath.replaceFirst("/", ""),
         user = userInfo(0),
         password = userInfo(1)
       )
