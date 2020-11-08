@@ -47,15 +47,15 @@ object TaskRepository {
 }
 
 private object TaskQueries {
-  val newTaskCodec: Codec[NewTask] = (UserId.lift(int8) ~ TaskText.lift(varchar)).imap {
+  val newTaskCodec: Codec[NewTask] = (UserId.lift(int4) ~ TaskText.lift(varchar)).imap {
     case senderId ~ text => NewTask(senderId, text)
   }(t => t.sender ~ t.text)
 
   val botTaskCodec: Codec[BotTask] = (
     TaskId.lift(int8) ~
-      UserId.lift(int8) ~
+      UserId.lift(int4) ~
       TaskText.lift(varchar) ~
-      UserId.lift(int8).opt ~
+      UserId.lift(int4).opt ~
       CreatedAt.lift(int8) ~
       DoneAt.lift(int8).opt ~
       Done.lift(bool)
@@ -73,8 +73,8 @@ private object TaskQueries {
     sql"""
       select from tasks
       where receiver_id is not null and !done and
-      ((sender_id = ${UserId.lift(int8)} and receiver_id = ${UserId.lift(int8)}) or
-       (sender_id = ${UserId.lift(int8)} and receiver_id = ${UserId.lift(int8)}))
+      ((sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}) or
+       (sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}))
       order by created_at desc
       offset $int4 limit $int4
     """.query(botTaskCodec)

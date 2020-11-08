@@ -14,19 +14,19 @@ object BotService {
     def updateUser(tgUser: telegramium.bots.User, chatId: Option[ChatId] = None): UIO[User]
   }
 
-  val live: URLayer[UserRepository, BotService] = ZLayer.fromService[UserRepository.Service, Service](new LiveBotService(_))
+  val live: URLayer[UserRepository, BotService] = ZLayer.fromService[UserRepository.Service, Service](new LiveService(_))
 
-  final class LiveBotService(private val userRepo: UserRepository.Service) extends Service {
+  final class LiveService(private val userRepo: UserRepository.Service) extends Service {
     override def updateUser(tgUser: bots.User, chatId: Option[ChatId] = None): UIO[User] = {
       val language = tgUser.languageCode.filter(_.startsWith("ru")).fold[Language](Language.English)(_ => Language.Russian)
       val user = User(
-        id = UserId(tgUser.id.toLong),
+        id = UserId(tgUser.id),
         firstName = FirstName(tgUser.firstName),
         lastName = tgUser.lastName.map(LastName(_)),
         chatId = chatId,
         language = language
       )
-      userRepo.createOrUpdate(user).as(user)
+      userRepo.createOrUpdate(user)
     }
   }
 }

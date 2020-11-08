@@ -4,7 +4,7 @@ import supertagged.TaggedType
 
 package object user {
   object tags {
-    object UserId extends TaggedType[Long]
+    object UserId extends TaggedType[Int]
     type UserId = UserId.Type
 
     object FirstName extends TaggedType[String]

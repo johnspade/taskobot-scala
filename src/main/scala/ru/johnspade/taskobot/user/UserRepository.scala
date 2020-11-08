@@ -1,7 +1,6 @@
 package ru.johnspade.taskobot.user
 
 import cats.effect.Resource
-import cats.syntax.functor._
 import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.user.tags.{UserId, _}
@@ -19,7 +18,7 @@ object UserRepository {
   trait Service {
     def findById(userId: UserId): UIO[Option[User]]
 
-    def createOrUpdate(user: User): UIO[Unit]
+    def createOrUpdate(user: User): UIO[User]
   }
 
   val live: URLayer[SessionPool, UserRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -33,9 +32,9 @@ object UserRepository {
           }
             .orDie
 
-        override def createOrUpdate(user: User): UIO[Unit] =
+        override def createOrUpdate(user: User): UIO[User] =
           sessionPool.use {
-            _.prepare(upsert).use(_.execute(user)).void
+            _.prepare(upsert).use(_.unique(user))
           }
             .orDie
       }
@@ -43,11 +42,11 @@ object UserRepository {
 
   private object UserQueries {
     val userCodec: Codec[User] = (
-      UserId.lift(int8) ~
-        FirstName.lift(varchar) ~
-        LastName.lift(varchar).opt ~
+      UserId.lift(int4) ~
+        FirstName.lift(varchar(255)) ~
+        LastName.lift(varchar(255)).opt ~
         ChatId.lift(int8).opt ~
-        varchar
+        varchar(255)
       ).imap {
       case id ~ firstName ~ lastName ~ chatId ~ language =>
         User(id, firstName, lastName, chatId, Language.withName(language))
@@ -57,14 +56,15 @@ object UserRepository {
       sql"""
         select id, first_name, last_name, chat_id, language
         from users
-        where id = ${UserId.lift(int8)}
+        where id = ${UserId.lift(int4)}
       """.query(userCodec)
 
-    val upsert: Command[User] =
+    val upsert: Query[User, User] =
       sql"""
-        insert into users values ($userCodec)
+        insert into users (id, first_name, last_name, chat_id, language) values ($userCodec)
         on conflict(id) do update set
         first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id
-      """.command
+        returning id, first_name, last_name, chat_id, language
+      """.query(userCodec)
   }
 }
