@@ -47,14 +47,15 @@ object TaskRepository {
 }
 
 private object TaskQueries {
-  val newTaskCodec: Codec[NewTask] = (UserId.lift(int4) ~ TaskText.lift(varchar)).imap {
-    case senderId ~ text => NewTask(senderId, text)
-  }(t => t.sender ~ t.text)
+  val newTaskCodec: Codec[NewTask] =
+    (UserId.lift(int4) ~ TaskText.lift(varchar(4096)) ~ CreatedAt.lift(int8) ~ UserId.lift(int4).opt ~ Done.lift(bool)).imap {
+      case senderId ~ text ~ createdAt ~ receiver ~ done => NewTask(senderId, text, createdAt, receiver, done)
+    }(t => t.sender ~ t.text ~ t.createdAt ~ t.receiver ~ t.done)
 
   val botTaskCodec: Codec[BotTask] = (
     TaskId.lift(int8) ~
       UserId.lift(int4) ~
-      TaskText.lift(varchar) ~
+      TaskText.lift(varchar(4096)) ~
       UserId.lift(int4).opt ~
       CreatedAt.lift(int8) ~
       DoneAt.lift(int8).opt ~
@@ -65,7 +66,7 @@ private object TaskQueries {
 
   val insert: Query[NewTask, BotTask] =
     sql"""
-      insert into tasks values ($newTaskCodec)
+      insert into tasks (sender_id, text, created_at, receiver_id, done) values ($newTaskCodec)
       returning id, sender_id, text, receiver_id, created_at, done_at, done
     """.query(botTaskCodec)
 
