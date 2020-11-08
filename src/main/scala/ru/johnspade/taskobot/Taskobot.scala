@@ -2,11 +2,11 @@ package ru.johnspade.taskobot
 
 import cats.effect.ConcurrentEffect
 import cats.syntax.option._
-import org.http4s.client.blaze.BlazeClientBuilder
 import org.http4s.server.Server
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.CommandController.CommandController
 import ru.johnspade.taskobot.Configuration.BotConfig
+import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.ConfirmTask
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.i18n.messages
@@ -22,24 +22,20 @@ import zio._
 import zio.interop.catz._
 import zio.interop.catz.implicits._
 
-import scala.concurrent.ExecutionContext
-
 object Taskobot {
   type Taskobot = Has[TaskManaged[Server[Task]]]
 
-  val live: URLayer[Has[BotConfig] with BotService with TaskRepository with CommandController, Taskobot] =
+  val live: URLayer[TelegramBotApi with Has[BotConfig] with BotService with TaskRepository with CommandController, Taskobot] =
     ZLayer.fromServices[
+      Api[Task],
       BotConfig,
       BotService.Service,
       TaskRepository.Service,
       CommandController.Service,
       TaskManaged[Server[Task]]
-    ] { (botConfig, botService, taskRepo, commandController) =>
+    ] { (api, botConfig, botService, taskRepo, commandController) =>
       Task.concurrentEffect.toManaged_.flatMap { implicit CE: ConcurrentEffect[Task] =>
-        BlazeClientBuilder[Task](ExecutionContext.global).resource.toManaged.flatMap { httpClient =>
-          val api = BotApi[Task](httpClient, s"https://api.telegram.org/bot${botConfig.token}")
-          new LiveTaskobot(botConfig, botService, taskRepo, commandController)(api, CE).start().toManaged
-        }
+        new LiveTaskobot(botConfig, botService, taskRepo, commandController)(api, CE).start().toManaged
       }
     }
 
@@ -85,7 +81,9 @@ object Taskobot {
           .find(entity => entity.`type` == "bot_command" && entity.offset == 0)
           .flatMap(_ => msg.text)
       ) {
+        case t if t.startsWith("/start") => commandController.onStartCommand(msg)
         case t if t.startsWith("/help") => commandController.onHelpCommand(msg)
+        case t if t.startsWith("/settings") => commandController.onSettingsCommand(msg)
         case _ => commandController.onHelpCommand(msg)
       }
         .map(_.flatten)

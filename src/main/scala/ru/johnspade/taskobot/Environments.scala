@@ -15,8 +15,9 @@ object Environments {
   private val repositories = sessionPool >>> (UserRepository.live ++ TaskRepository.live)
   private val botConfig = Configuration.liveBotConfig
   private val botService = repositories >>> BotService.live
-  private val commandController = botService >>> CommandController.live
-  private val taskobot = (botConfig ++ botService ++ repositories ++ commandController) >>> Taskobot.live
+  private val botApi = botConfig >>> TelegramBotApi.live
+  private val commandController = (botApi ++ botService) >>> CommandController.live
+  private val taskobot = (botApi ++ botConfig ++ botService ++ repositories ++ commandController) >>> Taskobot.live
 
   val appEnvironment: URLayer[Blocking, AppEnvironment] =
     botConfig ++ dbConfig ++ Blocking.live ++ taskobot
