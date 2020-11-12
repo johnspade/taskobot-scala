@@ -18,7 +18,7 @@ object Environments {
   private val botService = repositories >>> BotService.live
   private val botApi = botConfig >>> TelegramBotApi.live
   private val commandController =
-    (ZLayer.requires[Clock] ++ botApi ++ botService ++ botConfig ++ repositories) >>> CommandController.live
+    (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> CommandController.live
   private val taskobot =
     (ZLayer.requires[Clock] ++ botApi ++ botConfig ++ botService ++ repositories ++ commandController) >>> Taskobot.live
 

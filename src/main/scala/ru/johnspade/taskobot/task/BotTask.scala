@@ -5,6 +5,7 @@ import ru.johnspade.taskobot.user.tags._
 
 case class BotTask(
   id: TaskId,
+  `type`: TaskType,
   sender: UserId,
   text: TaskText,
   receiver: Option[UserId],

@@ -2,16 +2,15 @@ package ru.johnspade.taskobot
 
 import cats.syntax.option._
 import ru.johnspade.taskobot.BotService.BotService
-import ru.johnspade.taskobot.Configuration.BotConfig
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.ChangeLanguage
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
-import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
+import ru.johnspade.taskobot.task.{NewTask, TaskRepository, TaskType}
 import ru.johnspade.taskobot.user.User
-import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
+import ru.johnspade.taskobot.user.tags.ChatId
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
@@ -37,19 +36,16 @@ object CommandController {
     def onCreateCommand(message: Message): UIO[Option[Method[Message]]]
   }
 
-  val live: URLayer[TelegramBotApi with BotService with TaskRepository with Clock with Has[BotConfig], CommandController] =
-    ZLayer.fromServices[Api[Task], BotService.Service, TaskRepository.Service, Clock.Service, BotConfig, Service] {
-      (api, botService, taskRepo, clock, cfg) => new LiveService(botService, taskRepo, clock, cfg)(api)
+  val live: URLayer[TelegramBotApi with BotService with TaskRepository with Clock, CommandController] =
+    ZLayer.fromServices[Api[Task], BotService.Service, TaskRepository.Service, Clock.Service, Service] {
+      (api, botService, taskRepo, clock) => new LiveService(botService, taskRepo, clock)(api)
     }
 
   final class LiveService(
     botService: BotService.Service,
     taskRepository: TaskRepository.Service,
-    clock: Clock.Service,
-    botConfig: BotConfig
+    clock: Clock.Service
   )(implicit bot: Api[Task]) extends Service {
-    private val botId = UserId(botConfig.token.split(":").head.toInt)
-
     override def onStartCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
@@ -84,7 +80,7 @@ object CommandController {
           else
             for {
               now <- clock.instant
-              _ <- taskRepository.create(NewTask(user.id, TaskText(task), CreatedAt(now.toEpochMilli), botId.some))
+              _ <- taskRepository.create(NewTask(TaskType.Personal, user.id, TaskText(task), CreatedAt(now.toEpochMilli)))
               method = sendMessage(ChatIntId(message.chat.id), Messages.taskCreated(task))
             } yield method
         }

@@ -12,8 +12,8 @@ import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
-import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
-import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
+import ru.johnspade.taskobot.task.{NewTask, TaskRepository, TaskType}
+import ru.johnspade.taskobot.user.tags.ChatId
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
@@ -74,7 +74,7 @@ object Taskobot {
       for {
         user <- botService.updateUser(inlineResult.from)
         now <- clock.instant
-        task <- taskRepo.create(NewTask(user.id, TaskText(inlineResult.query), CreatedAt(now.toEpochMilli), None))
+        task <- taskRepo.create(NewTask(TaskType.Shared, user.id, TaskText(inlineResult.query), CreatedAt(now.toEpochMilli), None))
         method = editMessageReplyMarkup(
           inlineMessageId = inlineResult.inlineMessageId,
           replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(task.id.some))).some
@@ -93,7 +93,7 @@ object Taskobot {
             user <- botService.updateUser(from, ChatId(msg.chat.id).some)
             implicit0(languageId: LanguageId) = LanguageId(user.language.languageTag)
             now <- clock.instant
-            _ <- taskRepo.create(NewTask(user.id, TaskText(text), CreatedAt(now.toEpochMilli), UserId(botId).some))
+            _ <- taskRepo.create(NewTask(TaskType.Personal, user.id, TaskText(text), CreatedAt(now.toEpochMilli)))
             method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text))
           } yield method.some
         }

@@ -14,6 +14,7 @@ create table tasks
     id bigserial not null
         constraint tasks_pkey
             primary key,
+    type varchar(255) not null,
     created_at bigint not null,
     done boolean not null,
     done_at bigint,

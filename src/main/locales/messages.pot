@@ -1,14 +1,14 @@
-#  !Generated: 2020-11-09 00:11:06
+#  !Generated: 2020-11-12 16:38:43
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:80
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:76
 msgid "/create: New personal task"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:109
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:105
 msgid "Current language: %(languageName)"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:110
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:106
 msgid "Switch language"
 msgstr ""
 
