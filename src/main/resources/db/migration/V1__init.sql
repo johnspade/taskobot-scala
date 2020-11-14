@@ -14,7 +14,6 @@ create table tasks
     id bigserial not null
         constraint tasks_pkey
             primary key,
-    type varchar(255) not null,
     created_at bigint not null,
     done boolean not null,
     done_at bigint,
@@ -26,3 +25,7 @@ create table tasks
         constraint tasks_users_sender_fk
             references users
 );
+
+create index tasks_receiver_id_index on tasks (receiver_id);
+
+create index tasks_sender_id_index on tasks (sender_id);

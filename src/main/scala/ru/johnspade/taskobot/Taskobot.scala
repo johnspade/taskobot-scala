@@ -10,9 +10,9 @@ import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.ConfirmTask
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.i18n.messages
+import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
-import ru.johnspade.taskobot.task.{NewTask, TaskRepository, TaskType}
 import ru.johnspade.taskobot.user.tags.ChatId
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
@@ -74,7 +74,7 @@ object Taskobot {
       for {
         user <- botService.updateUser(inlineResult.from)
         now <- clock.instant
-        task <- taskRepo.create(NewTask(TaskType.Shared, user.id, TaskText(inlineResult.query), CreatedAt(now.toEpochMilli), None))
+        task <- taskRepo.create(NewTask(user.id, TaskText(inlineResult.query), CreatedAt(now.toEpochMilli), None))
         method = editMessageReplyMarkup(
           inlineMessageId = inlineResult.inlineMessageId,
           replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(task.id.some))).some
@@ -93,7 +93,7 @@ object Taskobot {
             user <- botService.updateUser(from, ChatId(msg.chat.id).some)
             implicit0(languageId: LanguageId) = LanguageId(user.language.languageTag)
             now <- clock.instant
-            _ <- taskRepo.create(NewTask(TaskType.Personal, user.id, TaskText(text), CreatedAt(now.toEpochMilli)))
+            _ <- taskRepo.create(NewTask(user.id, TaskText(text), CreatedAt(now.toEpochMilli), user.id.some))
             method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text))
           } yield method.some
         }
@@ -108,6 +108,7 @@ object Taskobot {
           case t if t.startsWith("/help") => commandController.onHelpCommand(msg)
           case t if t.startsWith("/settings") => commandController.onSettingsCommand(msg)
           case t if t.startsWith("/create") => commandController.onCreateCommand(msg)
+          case t if t.startsWith("/list") => commandController.onListCommand(msg)
           case _ => commandController.onHelpCommand(msg)
         }
           .map(_.flatten)

@@ -3,13 +3,14 @@ package ru.johnspade.taskobot.user
 import cats.effect.Resource
 import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.i18n.Language
+import ru.johnspade.taskobot.tags.{Offset, PageSize}
 import ru.johnspade.taskobot.user.tags.{UserId, _}
 import skunk.codec.all._
 import skunk.implicits._
 import skunk.{Codec, Session, _}
+import zio._
 import zio.interop.catz._
 import zio.macros.accessible
-import zio._
 
 @accessible
 object UserRepository {
@@ -19,6 +20,8 @@ object UserRepository {
     def findById(userId: UserId): UIO[Option[User]]
 
     def createOrUpdate(user: User): UIO[User]
+
+    def findUsersWithSharedTasks(userId: UserId)(offset: Offset, limit: PageSize): UIO[List[User]]
   }
 
   val live: URLayer[SessionPool, UserRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -35,6 +38,16 @@ object UserRepository {
         override def createOrUpdate(user: User): UIO[User] =
           sessionPool.use {
             _.prepare(upsert).use(_.unique(user))
+          }
+            .orDie
+
+        override def findUsersWithSharedTasks(userId: UserId)(offset: Offset, limit: PageSize): UIO[List[User]] =
+          sessionPool.use {
+            _.prepare(selectBySharedTasks).use {
+              _.stream(userId ~ userId ~ userId ~ offset ~ limit, 512)
+                .compile
+                .toList
+            }
           }
             .orDie
       }
@@ -65,6 +78,26 @@ object UserRepository {
         on conflict(id) do update set
         first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id
         returning id, first_name, last_name, chat_id, language
+      """.query(userCodec)
+
+    val selectBySharedTasks: Query[UserId ~ UserId ~ UserId ~ Offset ~ PageSize, User] =
+      sql"""
+        select u.id, u.first_name, u.last_name, u.chat_id, u.language
+        from users as u
+                 join (select t3.collaborator, t3.created_at
+                       from (
+                                select t2.collaborator,
+                                       t2.created_at,
+                                       max(t2.created_at) over (partition by t2.collaborator) as max_created_at
+                                from (
+                                         select case when sender_id = ${UserId.lift(int4)} then receiver_id else sender_id end as collaborator,
+                                                created_at
+                                         from tasks t1
+                                         where (t1.receiver_id = ${UserId.lift(int4)} or t1.sender_id = ${UserId.lift(int4)})
+                                           and t1.receiver_id is not null
+                                           and t1.done <> true) t2) t3
+                       where max_created_at = t3.created_at
+                       order by t3.created_at desc) c on u.id = c.collaborator offset ${Offset.lift(int8)} limit ${PageSize.lift(int4)};
       """.query(userCodec)
   }
 }

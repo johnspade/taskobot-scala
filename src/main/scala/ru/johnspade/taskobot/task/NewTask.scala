@@ -4,7 +4,6 @@ import ru.johnspade.taskobot.task.tags.{CreatedAt, Done, TaskText}
 import ru.johnspade.taskobot.user.tags.UserId
 
 final case class NewTask(
-  `type`: TaskType,
   sender: UserId,
   text: TaskText,
   createdAt: CreatedAt,

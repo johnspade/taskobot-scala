@@ -1,6 +1,6 @@
 package ru.johnspade.taskobot
 
-import cats.effect.Resource
+import cats.effect.{ConcurrentEffect, Resource}
 import cats.syntax.option._
 import natchez.Trace.Implicits.noop
 import ru.johnspade.taskobot.Configuration.DbConfig
@@ -13,7 +13,7 @@ object SessionPool {
 
   val live: URLayer[Has[DbConfig], SessionPool] =
     ZLayer.fromServiceManaged[DbConfig, Any, Nothing, Resource[Task, Session[Task]]] { cfg =>
-      Task.runtime.toManaged_.flatMap { implicit r: Runtime[Any] =>
+      Task.concurrentEffect.toManaged_.flatMap { implicit CE: ConcurrentEffect[Task] =>
         Session.pooled(cfg.host, cfg.port, cfg.user, cfg.database, cfg.password.some, 10).toManaged
       }
         .orDie

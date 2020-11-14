@@ -7,7 +7,9 @@ import ru.johnspade.taskobot.core.CbData._
 import ru.johnspade.taskobot.csv.MagnoliaRowDecoder._
 import ru.johnspade.taskobot.csv.MagnoliaRowEncoder._
 import ru.johnspade.taskobot.csv.TypeId
+import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
+import ru.johnspade.taskobot.user.tags.UserId
 import supertagged.@@
 import supertagged.lift.LiftF
 
@@ -17,6 +19,12 @@ sealed abstract class CbData extends Product with Serializable {
 
 @TypeId(0)
 final case class ConfirmTask(taskId: Option[TaskId]) extends CbData
+
+@TypeId(1)
+final case class Chats(page: PageNumber) extends CbData
+
+@TypeId(2)
+final case class Tasks(userId: UserId, pageNumber: PageNumber) extends CbData
 
 @TypeId(4)
 case object ChangeLanguage extends CbData
@@ -33,6 +41,8 @@ object CbData {
   private def caseObjectRowCodec[T <: CbData](data: T): RowCodec[T] = RowCodec.from(_ => Right(data))(_ => Seq.empty)
 
   implicit val confirmTaskRowCodec: RowCodec[ConfirmTask] = RowCodec.caseOrdered(ConfirmTask.apply _)(ConfirmTask.unapply)
+  implicit val chatsRowCodec: RowCodec[Chats] = RowCodec.caseOrdered(Chats.apply _)(Chats.unapply)
+  implicit val tasksRowCodec: RowCodec[Tasks] = RowCodec.caseOrdered(Tasks.apply _)(Tasks.unapply)
   implicit val changeLanguageRowCodec: RowCodec[ChangeLanguage.type] = caseObjectRowCodec(ChangeLanguage)
 
   def decode(csv: String): ReadResult[CbData] =
