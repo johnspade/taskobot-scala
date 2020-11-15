@@ -4,6 +4,7 @@ object Dependencies {
   object V {
     val zio = "1.0.1"
     val zioCats = "2.1.4.0"
+    val cats = "2.2.0"
     val pureconfig = "0.12.3"
     val skunk = "0.0.21"
     val flyway = "6.4.1"
@@ -20,6 +21,7 @@ object Dependencies {
     "dev.zio" %% "zio" % V.zio,
     "dev.zio" %% "zio-macros" % V.zio,
     "dev.zio" %% "zio-interop-cats" % V.zioCats,
+    "org.typelevel" %% "cats-core" % V.cats,
     "com.github.pureconfig" %% "pureconfig" % V.pureconfig,
     "com.github.pureconfig" %% "pureconfig-magnolia" % V.pureconfig,
     "org.tpolecat" %% "skunk-core" % V.skunk,

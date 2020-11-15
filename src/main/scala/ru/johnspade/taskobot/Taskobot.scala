@@ -1,24 +1,28 @@
 package ru.johnspade.taskobot
 
 import cats.effect.ConcurrentEffect
-import cats.syntax.option._
+import cats.implicits._
 import org.http4s.server.Server
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.CommandController.CommandController
 import ru.johnspade.taskobot.Configuration.BotConfig
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.{CbData, ConfirmTask}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import UserMiddleware.UserMiddleware
+import ru.johnspade.taskobot.core.callbackqueries.{CallbackDataDecoder, CallbackQueryContextMiddleware, CallbackQueryHandler, DecodeError, ParseError}
 import ru.johnspade.taskobot.i18n.messages
-import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
+import ru.johnspade.taskobot.task.TaskController.TaskController
+import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
+import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.tags.ChatId
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
 import telegramium.bots.high.{Api, WebhookBot, _}
-import telegramium.bots.{ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
+import telegramium.bots.{CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
 import zio._
 import zio.clock.Clock
 import zio.interop.catz._
@@ -27,7 +31,17 @@ import zio.interop.catz.implicits._
 object Taskobot {
   type Taskobot = Has[TaskManaged[Server[Task]]]
 
-  val live: URLayer[Clock with TelegramBotApi with Has[BotConfig] with BotService with TaskRepository with CommandController, Taskobot] =
+  val live: URLayer[
+    Clock
+      with TelegramBotApi
+      with Has[BotConfig]
+      with BotService
+      with TaskRepository
+      with CommandController
+      with TaskController
+      with UserMiddleware,
+    Taskobot
+  ] =
     ZLayer.fromServices[
       Clock.Service,
       Api[Task],
@@ -35,10 +49,14 @@ object Taskobot {
       BotService.Service,
       TaskRepository.Service,
       CommandController.Service,
+      TaskController.Service,
+      CallbackQueryContextMiddleware[CbData, User, Task],
       TaskManaged[Server[Task]]
-    ] { (clock, api, botConfig, botService, taskRepo, commandController) =>
+    ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, userMiddleware) =>
       Task.concurrentEffect.toManaged_.flatMap { implicit CE: ConcurrentEffect[Task] =>
-        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController)(api, CE).start().toManaged
+        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, userMiddleware)(
+          api, CE
+        ).start().toManaged
       }
     }
 
@@ -47,7 +65,9 @@ object Taskobot {
     botConfig: BotConfig,
     botService: BotService.Service,
     taskRepo: TaskRepository.Service,
-    commandController: CommandController.Service
+    commandController: CommandController.Service,
+    taskController: TaskController.Service,
+    userMiddleware: CallbackQueryContextMiddleware[CbData, User, Task]
   )(
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
@@ -114,6 +134,23 @@ object Taskobot {
           .map(_.flatten)
 
       handleReply().getOrElse(handleCommand())
+    }
+
+    private val cbRoutes = userMiddleware(taskController.routes)
+    private val cbDataDecoder: CallbackDataDecoder[Task, CbData] =
+      CbData.decode(_).left.map {
+        case error: kantan.csv.ParseError => ParseError(error.getMessage)
+        case error: kantan.csv.DecodeError => DecodeError(error.getMessage)
+      }
+        .toEitherT[Task]
+
+    override def onCallbackQueryReply(query: CallbackQuery): Task[Option[Method[_]]] = {
+      CallbackQueryHandler.handle[Task, CbData](
+        query,
+        cbRoutes,
+        cbDataDecoder,
+        _ => ZIO.succeed(Option.empty[Method[_]])
+      )
     }
   }
 }

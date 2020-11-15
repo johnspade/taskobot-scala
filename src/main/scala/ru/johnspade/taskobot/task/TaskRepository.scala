@@ -73,7 +73,8 @@ private object TaskQueries {
 
   val selectByUserId: Query[UserId ~ UserId ~ UserId ~ UserId ~ Offset ~ PageSize, BotTask] =
     sql"""
-      select from tasks
+      select id, sender_id, text, receiver_id, created_at, done_at, done
+      from tasks
       where receiver_id is not null and done <> true and
       ((sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}) or
        (sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}))

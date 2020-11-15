@@ -2,9 +2,13 @@ package ru.johnspade.taskobot.task
 
 import cats.effect.ConcurrentEffect
 import cats.implicits._
+import ru.johnspade.taskobot.BotService.BotService
+import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.callbackqueries.CallbackQueryContextRoutes
 import ru.johnspade.taskobot.core.callbackqueries.CallbackQueryDsl._
 import ru.johnspade.taskobot.core.{CbData, Chats, Page, Tasks}
+import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
+import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.johnspade.taskobot.{BotService, CbDataUserRoutes, DefaultPageSize, Keyboards, Messages}
 import ru.makkarpov.scalingua.LanguageId
@@ -21,6 +25,22 @@ object TaskController {
   trait Service {
     def routes: CbDataUserRoutes[Task]
   }
+
+  val live: URLayer[UserRepository with TaskRepository with BotService with TelegramBotApi, TaskController] =
+    ZLayer.fromServicesM[
+      UserRepository.Service,
+      TaskRepository.Service,
+      BotService.Service,
+      Api[Task],
+      Any,
+      Nothing,
+      TaskController.Service
+    ] {
+      (userRepo, taskRepo, botService, api) =>
+        ZIO.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
+          new LiveTaskController(userRepo, taskRepo, botService)(api, CE)
+        }
+    }
 
   final class LiveTaskController(
     userRepo: UserRepository.Service,
