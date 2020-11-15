@@ -17,11 +17,11 @@ object UserRepository {
   type UserRepository = Has[Service]
 
   trait Service {
-    def findById(userId: UserId): UIO[Option[User]]
+    def findById(id: UserId): UIO[Option[User]]
 
     def createOrUpdate(user: User): UIO[User]
 
-    def findUsersWithSharedTasks(userId: UserId)(offset: Offset, limit: PageSize): UIO[List[User]]
+    def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): UIO[List[User]]
   }
 
   val live: URLayer[SessionPool, UserRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -29,9 +29,9 @@ object UserRepository {
       import UserQueries._
 
       new Service {
-        override def findById(userId: UserId): UIO[Option[User]] =
+        override def findById(id: UserId): UIO[Option[User]] =
           sessionPool.use {
-            _.prepare(selectById).use(_.option(userId))
+            _.prepare(selectById).use(_.option(id))
           }
             .orDie
 
@@ -41,10 +41,10 @@ object UserRepository {
           }
             .orDie
 
-        override def findUsersWithSharedTasks(userId: UserId)(offset: Offset, limit: PageSize): UIO[List[User]] =
+        override def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): UIO[List[User]] =
           sessionPool.use {
             _.prepare(selectBySharedTasks).use {
-              _.stream(userId ~ userId ~ userId ~ offset ~ limit, 512)
+              _.stream(id ~ id ~ id ~ offset ~ limit, 512)
                 .compile
                 .toList
             }

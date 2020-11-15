@@ -21,7 +21,7 @@ object Environments {
   private val botService = repositories ++ botApi >>> BotService.live
   private val commandController =
     (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> CommandController.live
-  private val taskController = (repositories ++ botService ++ botApi) >>> TaskController.live
+  private val taskController = (repositories ++ botService ++ botApi ++ ZLayer.requires[Clock]) >>> TaskController.live
   private val userMiddleware = botService >>> UserMiddleware.live
   private val taskobot = (
     ZLayer.requires[Clock] ++

@@ -54,7 +54,7 @@ object BotService {
     override def listTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
       implicit languageId: LanguageId
     ): UIO[Unit] = {
-      Page.request[BotTask, UIO](pageNumber, DefaultPageSize, taskRepo.getSharedTasks(`for`.id, collaborator.id))
+      Page.request[BotTask, UIO](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
         .flatMap { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
           val header = List(Plain(t"Chat: "), Bold(chatName), Plain("\n"))

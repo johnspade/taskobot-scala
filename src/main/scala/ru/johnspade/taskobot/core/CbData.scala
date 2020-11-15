@@ -18,7 +18,7 @@ sealed abstract class CbData extends Product with Serializable {
 }
 
 @TypeId(0)
-final case class ConfirmTask(taskId: Option[TaskId]) extends CbData
+final case class ConfirmTask(id: Option[TaskId]) extends CbData
 
 @TypeId(1)
 final case class Chats(page: PageNumber) extends CbData
@@ -27,7 +27,7 @@ final case class Chats(page: PageNumber) extends CbData
 final case class Tasks(collaboratorId: UserId, pageNumber: PageNumber) extends CbData
 
 @TypeId(3)
-final case class CheckTask(taskId: TaskId, page: PageNumber, collaboratorId: UserId) extends CbData
+final case class CheckTask(id: TaskId, pageNumber: PageNumber, collaboratorId: UserId) extends CbData
 
 @TypeId(4)
 case object ChangeLanguage extends CbData

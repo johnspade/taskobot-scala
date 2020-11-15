@@ -82,7 +82,7 @@ object Taskobot {
         id = "1",
         title = t"Create task",
         inputMessageContent = InputTextMessageContent(s"*$text*", Markdown2.some),
-        replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(taskId = None))).some,
+        replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(id = None))).some,
         description = text.some
       )
       Task.succeed {

@@ -11,15 +11,20 @@ import skunk.{Codec, _}
 import zio._
 import zio.interop.catz._
 import zio.macros.accessible
+import cats.implicits._
 
 @accessible
 object TaskRepository {
   type TaskRepository = Has[Service]
 
   trait Service {
+    def findById(id: TaskId): UIO[Option[BotTask]]
+
     def create(task: NewTask): UIO[BotTask]
 
-    def getSharedTasks(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]]
+    def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]]
+
+    def check(id: TaskId, doneAt: DoneAt, userId: UserId): UIO[Unit]
   }
 
   val live: URLayer[SessionPool, TaskRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -27,13 +32,19 @@ object TaskRepository {
       import TaskQueries._
 
       new Service {
+        override def findById(id: TaskId): UIO[Option[BotTask]] =
+          sessionPool.use {
+            _.prepare(selectById).use(_.option(id))
+          }
+            .orDie
+
         override def create(task: NewTask): UIO[BotTask] =
           sessionPool.use {
             _.prepare(insert).use(_.unique(task))
           }
             .orDie
 
-        override def getSharedTasks(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]] = {
+        override def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]] =
           sessionPool.use {
             _.prepare(selectByUserId).use {
               _.stream(id1 ~ id2 ~ id2 ~ id1 ~ offset ~ limit, limit)
@@ -42,7 +53,15 @@ object TaskRepository {
             }
           }
             .orDie
-        }
+
+        override def check(id: TaskId, doneAt: DoneAt, userId: UserId): UIO[Unit] =
+          sessionPool.use {
+            _.prepare(setDone).use {
+              _.execute(doneAt ~ id ~ userId ~ userId)
+            }
+          }
+            .void
+            .orDie
       }
   }
 }
@@ -65,6 +84,13 @@ private object TaskQueries {
     BotTask(id, senderId, text, receiverId, createdAt, doneAt, done)
   }(t => t.id ~ t.sender ~ t.text ~ t.receiver ~ t.createdAt ~ t.doneAt ~ t.done)
 
+  val selectById: Query[TaskId, BotTask] =
+    sql"""
+      select id, sender_id, text, receiver_id, created_at, done_at, done
+      from tasks
+      where id = ${TaskId.lift(int8)}
+    """.query(botTaskCodec)
+
   val insert: Query[NewTask, BotTask] =
     sql"""
       insert into tasks (sender_id, text, created_at, receiver_id, done) values ($newTaskCodec)
@@ -81,4 +107,12 @@ private object TaskQueries {
       order by created_at desc
       offset ${Offset.lift(int8)} limit ${PageSize.lift(int4)}
     """.query(botTaskCodec)
+
+  val setDone: Command[DoneAt ~ TaskId ~ UserId ~ UserId] =
+    sql"""
+      update tasks
+      set done = true, done_at = ${DoneAt.lift(int8)}
+      where id = ${TaskId.lift(int8)} and done = false and
+        (sender_id = ${UserId.lift(int4)} or receiver_id = ${UserId.lift(int4)})
+    """.command
 }
