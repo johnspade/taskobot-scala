@@ -1,4 +1,8 @@
-#  !Generated: 2020-11-15 02:42:46
+#  !Generated: 2020-11-15 19:30:02
+
+#: src/main/scala/ru/johnspade/taskobot/BotService.scala:60
+msgid "Chat: "
+msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:82
 msgid "/create: New personal task"
@@ -30,6 +34,14 @@ msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
 msgid "Personal tasks"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
+msgid "Previous page"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
+msgid "Next page"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:63

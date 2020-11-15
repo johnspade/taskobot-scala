@@ -6,7 +6,7 @@ import ru.johnspade.taskobot.tags.{Offset, PageNumber, PageSize}
 
 // todo test
 sealed abstract class Page[T] extends Product with Serializable {
-  def items: Seq[T]
+  def items: List[T]
 
   def number: PageNumber
 
@@ -17,7 +17,7 @@ sealed abstract class Page[T] extends Product with Serializable {
 
 object Page {
   // todo guards
-  def paginate[T, F[_]: Functor](number: PageNumber, size: PageSize, f: (Offset, PageSize) => F[Seq[T]]): F[Page[T]] = {
+  def request[T, F[_]: Functor](number: PageNumber, size: PageSize, f: (Offset, PageSize) => F[List[T]]): F[Page[T]] = {
     val offset = (size * number).toLong
     val adjustedOffset = Offset(if (number == 0) offset else offset - 1)
     val limit = PageSize(if (number == 0) size + 1 else size + 2)
@@ -33,29 +33,29 @@ object Page {
     }
   }
 
-  final case class FirstPage[T](content: Seq[T]) extends Page[T] {
-    val items: Seq[T] = content
-    val number: PageNumber = PageNumber(1)
+  final case class FirstPage[T](content: List[T]) extends Page[T] {
+    val items: List[T] = content
+    val number: PageNumber = PageNumber(0)
     val hasPrevious: Boolean = false
     val hasNext: Boolean = true
   }
 
-  final case class LastPage[T](content: Seq[T], pageNumber: PageNumber) extends Page[T] {
-    val items: Seq[T] = content
+  final case class LastPage[T](content: List[T], pageNumber: PageNumber) extends Page[T] {
+    val items: List[T] = content
     val number: PageNumber = pageNumber
     val hasPrevious: Boolean = true
     val hasNext = false
   }
 
-  final case class SinglePage[T](content: Seq[T]) extends Page[T] {
-    val items: Seq[T] = content
-    val number: PageNumber = PageNumber(1)
+  final case class SinglePage[T](content: List[T]) extends Page[T] {
+    val items: List[T] = content
+    val number: PageNumber = PageNumber(0)
     val hasPrevious: Boolean = false
     val hasNext: Boolean = false
   }
 
-  final case class PageN[T](content: Seq[T], pageNumber: PageNumber) extends Page[T] {
-    val items: Seq[T] = content
+  final case class PageN[T](content: List[T], pageNumber: PageNumber) extends Page[T] {
+    val items: List[T] = content
     val number: PageNumber = pageNumber
     val hasPrevious: Boolean = true
     val hasNext: Boolean = true

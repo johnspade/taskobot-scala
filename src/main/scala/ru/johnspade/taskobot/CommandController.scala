@@ -95,7 +95,7 @@ object CommandController {
     override def onListCommand(message: Message): UIO[Option[Method[Message]]] = {
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
-        Page.paginate[User, UIO](PageNumber(0), DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id)).map { page =>
+        Page.request[User, UIO](PageNumber(0), DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id)).map { page =>
           sendMessage(
             ChatIntId(message.chat.id),
             Messages.chatsWithTasks(),

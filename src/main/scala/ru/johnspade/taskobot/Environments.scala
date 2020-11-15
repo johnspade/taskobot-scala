@@ -15,8 +15,8 @@ object Environments {
   private val sessionPool = dbConfig >>> SessionPool.live
   private val repositories = sessionPool >>> (UserRepository.live ++ TaskRepository.live)
   private val botConfig = Configuration.liveBotConfig
-  private val botService = repositories >>> BotService.live
   private val botApi = botConfig >>> TelegramBotApi.live
+  private val botService = repositories ++ botApi >>> BotService.live
   private val commandController =
     (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> CommandController.live
   private val taskobot =

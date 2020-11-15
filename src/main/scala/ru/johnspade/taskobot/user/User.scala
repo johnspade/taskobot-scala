@@ -9,4 +9,6 @@ final case class User(
   lastName: Option[LastName],
   chatId: Option[ChatId],
   language: Language
-)
+) {
+  def fullName: String = firstName + lastName.fold("")(n => s" $n")
+}

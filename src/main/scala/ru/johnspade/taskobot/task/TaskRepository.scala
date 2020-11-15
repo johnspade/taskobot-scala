@@ -19,7 +19,7 @@ object TaskRepository {
   trait Service {
     def create(task: NewTask): UIO[BotTask]
 
-    def getUserTasks(id1: UserId, id2: UserId, offset: Offset, limit: PageSize): UIO[List[BotTask]]
+    def getSharedTasks(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]]
   }
 
   val live: URLayer[SessionPool, TaskRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -33,7 +33,7 @@ object TaskRepository {
           }
             .orDie
 
-        override def getUserTasks(id1: UserId, id2: UserId, offset: Offset, limit: PageSize): UIO[List[BotTask]] = {
+        override def getSharedTasks(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]] = {
           sessionPool.use {
             _.prepare(selectByUserId).use {
               _.stream(id1 ~ id2 ~ id2 ~ id1 ~ offset ~ limit, limit)

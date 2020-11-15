@@ -17,4 +17,8 @@ object Messages {
   def chatsWithTasks()(implicit languageId: LanguageId): String = t"Chats with tasks"
 
   def personalTasks()(implicit languageId: LanguageId): String = t"Personal tasks"
+
+  def previousPage()(implicit languageId: LanguageId): String = t"Previous page"
+
+  def nextPage()(implicit languageId: LanguageId): String = t"Next page"
 }
