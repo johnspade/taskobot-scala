@@ -136,7 +136,7 @@ object Taskobot {
       handleReply().getOrElse(handleCommand())
     }
 
-    private val cbRoutes = userMiddleware(taskController.routes)
+    private val cbRoutes = userMiddleware(taskController.userRoutes)
     private val cbDataDecoder: CallbackDataDecoder[Task, CbData] =
       CbData.decode(_).left.map {
         case error: kantan.csv.ParseError => ParseError(error.getMessage)

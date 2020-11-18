@@ -22,6 +22,8 @@ object TaskRepository {
 
     def create(task: NewTask): UIO[BotTask]
 
+    def setReceiver(id: TaskId, receiver: UserId): UIO[Unit]
+
     def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]]
 
     def check(id: TaskId, doneAt: DoneAt, userId: UserId): UIO[Unit]
@@ -42,6 +44,13 @@ object TaskRepository {
           sessionPool.use {
             _.prepare(insert).use(_.unique(task))
           }
+            .orDie
+
+        override def setReceiver(id: TaskId, receiverId: UserId): UIO[Unit] =
+          sessionPool.use {
+            _.prepare(updateReceiverId).use(_.execute(receiverId ~ id))
+          }
+            .void
             .orDie
 
         override def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]] =
@@ -89,13 +98,23 @@ private object TaskQueries {
       select id, sender_id, text, receiver_id, created_at, done_at, done
       from tasks
       where id = ${TaskId.lift(int8)}
-    """.query(botTaskCodec)
+    """
+      .query(botTaskCodec)
 
   val insert: Query[NewTask, BotTask] =
     sql"""
       insert into tasks (sender_id, text, created_at, receiver_id, done) values ($newTaskCodec)
       returning id, sender_id, text, receiver_id, created_at, done_at, done
-    """.query(botTaskCodec)
+    """
+      .query(botTaskCodec)
+
+  val updateReceiverId: Command[UserId ~ TaskId] =
+    sql"""
+      update tasks
+      set receiver_id = ${UserId.lift(int4)}
+      where id = ${TaskId.lift(int8)} and receiver_id is null
+    """
+      .command
 
   val selectByUserId: Query[UserId ~ UserId ~ UserId ~ UserId ~ Offset ~ PageSize, BotTask] =
     sql"""
@@ -106,7 +125,8 @@ private object TaskQueries {
        (sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}))
       order by created_at desc
       offset ${Offset.lift(int8)} limit ${PageSize.lift(int4)}
-    """.query(botTaskCodec)
+    """
+      .query(botTaskCodec)
 
   val setDone: Command[DoneAt ~ TaskId ~ UserId ~ UserId] =
     sql"""
@@ -114,5 +134,6 @@ private object TaskQueries {
       set done = true, done_at = ${DoneAt.lift(int8)}
       where id = ${TaskId.lift(int8)} and done = false and
         (sender_id = ${UserId.lift(int4)} or receiver_id = ${UserId.lift(int4)})
-    """.command
+    """
+      .command
 }

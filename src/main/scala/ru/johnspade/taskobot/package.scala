@@ -1,7 +1,7 @@
 package ru.johnspade
 
 import ru.johnspade.taskobot.core.CbData
-import ru.johnspade.taskobot.core.callbackqueries.CallbackQueryContextRoutes
+import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
 import ru.johnspade.taskobot.tags.PageSize
 import ru.johnspade.taskobot.user.User
 import supertagged.TaggedType
@@ -19,6 +19,8 @@ package object taskobot {
   }
 
   val DefaultPageSize: PageSize = PageSize(5)
+
+  type CbDataRoutes[F[_]] = CallbackQueryRoutes[CbData, F]
 
   type CbDataUserRoutes[F[_]] = CallbackQueryContextRoutes[CbData, User, F]
 }
