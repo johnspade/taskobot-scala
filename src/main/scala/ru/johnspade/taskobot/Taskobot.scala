@@ -12,6 +12,8 @@ import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import UserMiddleware.UserMiddleware
 import ru.johnspade.taskobot.core.callbackqueries.{CallbackDataDecoder, CallbackQueryContextMiddleware, CallbackQueryHandler, DecodeError, ParseError}
 import ru.johnspade.taskobot.i18n.messages
+import ru.johnspade.taskobot.settings.SettingsController
+import ru.johnspade.taskobot.settings.SettingsController.SettingsController
 import ru.johnspade.taskobot.task.TaskController.TaskController
 import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
@@ -39,6 +41,7 @@ object Taskobot {
       with TaskRepository
       with CommandController
       with TaskController
+      with SettingsController
       with UserMiddleware,
     Taskobot
   ] =
@@ -50,11 +53,12 @@ object Taskobot {
       TaskRepository.Service,
       CommandController.Service,
       TaskController.Service,
+      SettingsController.Service,
       CallbackQueryContextMiddleware[CbData, User, Task],
       TaskManaged[Server[Task]]
-    ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, userMiddleware) =>
+    ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware) =>
       Task.concurrentEffect.toManaged_.flatMap { implicit CE: ConcurrentEffect[Task] =>
-        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, userMiddleware)(
+        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware)(
           api, CE
         ).start().toManaged
       }
@@ -67,6 +71,7 @@ object Taskobot {
     taskRepo: TaskRepository.Service,
     commandController: CommandController.Service,
     taskController: TaskController.Service,
+    settingsController: SettingsController.Service,
     userMiddleware: CallbackQueryContextMiddleware[CbData, User, Task]
   )(
     implicit api: Api[Task],
@@ -136,7 +141,8 @@ object Taskobot {
       handleReply().getOrElse(handleCommand())
     }
 
-    private val cbRoutes = userMiddleware(taskController.userRoutes)
+    private val cbRoutes = taskController.routes <+> settingsController.routes <+>
+      userMiddleware(taskController.userRoutes <+> settingsController.userRoutes)
     private val cbDataDecoder: CallbackDataDecoder[Task, CbData] =
       CbData.decode(_).left.map {
         case error: kantan.csv.ParseError => ParseError(error.getMessage)

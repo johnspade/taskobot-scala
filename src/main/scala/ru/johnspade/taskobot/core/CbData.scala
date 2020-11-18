@@ -1,12 +1,14 @@
 package ru.johnspade.taskobot.core
 
 import kantan.csv.DecodeError.TypeError
+import kantan.csv.enumeratum._
 import kantan.csv.ops._
 import kantan.csv.{ReadResult, _}
 import ru.johnspade.taskobot.core.CbData._
 import ru.johnspade.taskobot.csv.MagnoliaRowDecoder._
 import ru.johnspade.taskobot.csv.MagnoliaRowEncoder._
 import ru.johnspade.taskobot.csv.TypeId
+import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
 import ru.johnspade.taskobot.user.tags.UserId
@@ -32,6 +34,9 @@ final case class CheckTask(id: TaskId, pageNumber: PageNumber, collaboratorId: U
 @TypeId(4)
 case object ChangeLanguage extends CbData
 
+@TypeId(5)
+final case class SetLanguage(language: Language) extends CbData
+
 object CbData {
   val Separator: Char = '%'
 
@@ -48,6 +53,7 @@ object CbData {
   implicit val tasksRowCodec: RowCodec[Tasks] = RowCodec.caseOrdered(Tasks.apply _)(Tasks.unapply)
   implicit val checkTaskRowCodec: RowCodec[CheckTask] = RowCodec.caseOrdered(CheckTask.apply _)(CheckTask.unapply)
   implicit val changeLanguageRowCodec: RowCodec[ChangeLanguage.type] = caseObjectRowCodec(ChangeLanguage)
+  implicit val setLanguageRowCodec: RowCodec[SetLanguage] = RowCodec.caseOrdered(SetLanguage.apply _)(SetLanguage.unapply)
 
   def decode(csv: String): ReadResult[CbData] =
     csv.readCsv[List, CbData](csvConfig)

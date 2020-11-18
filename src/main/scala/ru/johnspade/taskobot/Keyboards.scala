@@ -1,7 +1,8 @@
 package ru.johnspade.taskobot
 
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{Chats, CheckTask, Page, Tasks}
+import ru.johnspade.taskobot.core.{Chats, CheckTask, Page, SetLanguage, Tasks}
+import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.user.User
@@ -39,4 +40,13 @@ object Keyboards {
     val keyboard = List(tasksButtons) ++ navButtons ++ List(listButtonRow)
     InlineKeyboardMarkup(keyboard)
   }
+
+  val languages: InlineKeyboardMarkup =
+    InlineKeyboardMarkup.singleColumn(
+      Language.values
+        .map { language =>
+          inlineKeyboardButton(language.languageName, SetLanguage(language))
+        }
+        .toList
+    )
 }

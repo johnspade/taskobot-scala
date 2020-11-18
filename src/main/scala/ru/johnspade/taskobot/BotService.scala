@@ -20,6 +20,7 @@ import telegramium.bots.high.implicits._
 import telegramium.bots.{ChatIntId, Message}
 import zio._
 import zio.interop.catz._
+import ru.johnspade.taskobot.core.TelegramOps.toUser
 
 object BotService {
   type BotService = Has[Service]
@@ -39,17 +40,8 @@ object BotService {
     userRepo: UserRepository.Service,
     taskRepo: TaskRepository.Service
   )(implicit api: Api[Task]) extends Service {
-    override def updateUser(tgUser: bots.User, chatId: Option[ChatId] = None): UIO[User] = {
-      val language = tgUser.languageCode.filter(_.startsWith("ru")).fold[Language](Language.English)(_ => Language.Russian)
-      val user = User(
-        id = UserId(tgUser.id),
-        firstName = FirstName(tgUser.firstName),
-        lastName = tgUser.lastName.map(LastName(_)),
-        chatId = chatId,
-        language = language
-      )
-      userRepo.createOrUpdate(user)
-    }
+    override def updateUser(tgUser: bots.User, chatId: Option[ChatId] = None): UIO[User] =
+      userRepo.createOrUpdate(toUser(tgUser, chatId))
 
     override def listTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
       implicit languageId: LanguageId

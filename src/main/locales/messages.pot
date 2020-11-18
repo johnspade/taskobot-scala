@@ -1,6 +1,6 @@
-#  !Generated: 2020-11-18 23:40:57
+#  !Generated: 2020-11-19 01:51:13
 
-#: src/main/scala/ru/johnspade/taskobot/BotService.scala:60
+#: src/main/scala/ru/johnspade/taskobot/BotService.scala:52
 msgid "Chat: "
 msgstr ""
 
@@ -44,19 +44,23 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:83
+#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:88
 msgid "Create task"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:80
+#: src/main/scala/ru/johnspade/taskobot/settings/SettingsController.scala:73
+msgid "Current language: %(language)"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:81
 msgid "The task must be confirmed by the receiver"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:152
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:153
 msgid "Task has been marked as completed."
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:165
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:166
 msgid "Task %(taskText) has been marked as completed by %(completedBy)."
 msgstr ""
 

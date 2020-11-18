@@ -60,7 +60,7 @@ object TaskController {
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
   ) extends Service {
-    override def routes: CbDataRoutes[Task] = CallbackQueryRoutes.of[CbData, Task] {
+    override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of[CbData, Task] {
 
       case ConfirmTask(taskIdOpt) in cb =>
         def confirm(task: BotTask): UIO[Option[Method[_]]] =

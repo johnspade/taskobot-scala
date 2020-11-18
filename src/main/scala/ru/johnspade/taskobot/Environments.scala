@@ -2,6 +2,7 @@ package ru.johnspade.taskobot
 
 import ru.johnspade.taskobot.Configuration.Configuration
 import ru.johnspade.taskobot.Taskobot.Taskobot
+import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.task.{TaskController, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
 import zio.{URLayer, ZLayer}
@@ -22,6 +23,7 @@ object Environments {
   private val commandController =
     (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> CommandController.live
   private val taskController = (repositories ++ botService ++ botApi ++ ZLayer.requires[Clock]) >>> TaskController.live
+  private val settingsController = (userRepo ++ botApi) >>> SettingsController.live
   private val userMiddleware = botService >>> UserMiddleware.live
   private val taskobot = (
     ZLayer.requires[Clock] ++
@@ -31,6 +33,7 @@ object Environments {
       repositories ++
       commandController ++
       taskController ++
+      settingsController ++
       userMiddleware
     ) >>>
     Taskobot.live
