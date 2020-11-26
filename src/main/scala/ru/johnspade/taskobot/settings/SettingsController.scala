@@ -58,9 +58,12 @@ object SettingsController {
     override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of[CbData, Task] {
 
       case SetLanguage(language) in cb =>
-        userRepo.createOrUpdate(toUser(cb.from).copy(language = language)) *> // todo pass language to toUser?
-          listLanguages(cb, language).fork
-            .as(answerCallbackQuery(cb.id).some)
+        for {
+          _ <- userRepo.createOrUpdate(toUser(cb.from).copy(language = language))
+          implicit0(languageId: LanguageId) = LanguageId(language.languageTag)
+          _ <- listLanguages(cb, language).fork
+          answer = answerCallbackQuery(cb.id, t"Language has been changed".some)
+        } yield answer.some
 
     }
 

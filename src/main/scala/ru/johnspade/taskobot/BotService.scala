@@ -2,9 +2,10 @@ package ru.johnspade.taskobot
 
 import cats.implicits._
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.StringMessageEntity.{Bold, Italic, Plain}
-import ru.johnspade.taskobot.core.{Page, StringMessageEntity}
-import ru.johnspade.taskobot.i18n.{Language, messages}
+import ru.johnspade.taskobot.core.TypedMessageEntity._
+import ru.johnspade.taskobot.core.TelegramOps.toUser
+import ru.johnspade.taskobot.core.{Page, TypedMessageEntity}
+import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
@@ -20,7 +21,6 @@ import telegramium.bots.high.implicits._
 import telegramium.bots.{ChatIntId, Message}
 import zio._
 import zio.interop.catz._
-import ru.johnspade.taskobot.core.TelegramOps.toUser
 
 object BotService {
   type BotService = Has[Service]
@@ -49,23 +49,23 @@ object BotService {
       Page.request[BotTask, UIO](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
         .flatMap { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
-          val header = List(Plain(t"Chat: "), Bold(chatName), Plain("\n"))
+          val header = List(Plain(t"Chat: "), Bold(chatName), plain"\n")
           val taskList = page
             .items
             .map(_.text)
             .zipWithIndex
             .flatMap { case (text, i) =>
-              val senderName = if (collaborator.id == `for`.id) Plain("") else Italic(s"– ${collaborator.firstName}")
-              List(Plain(s"${i + 1}. $text"), senderName, Plain("\n"))
+              val senderName = if (collaborator.id == `for`.id) plain"" else italic"– ${collaborator.firstName}"
+              List(plain"${i + 1}. $text", senderName, plain"\n")
             }
-          val footer = List(Plain("\n"), Italic("Select the task number to mark it as completed."))
+          val footer = List(plain"\n", italic"Select the task number to mark it as completed.")
           val messageEntities = header ++ taskList ++ footer
 
           editMessageText(
             ChatIntId(message.chat.id).some,
             message.messageId.some,
             text = messageEntities.map(_.value).mkString,
-            entities = StringMessageEntity.toMessageEntities(messageEntities),
+            entities = TypedMessageEntity.toMessageEntities(messageEntities),
             replyMarkup = Keyboards.tasks(page, collaborator).some
           )
             .exec
