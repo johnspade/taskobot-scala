@@ -4,17 +4,29 @@ import ru.johnspade.taskobot.core.CbData
 import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
 import ru.johnspade.taskobot.tags.PageSize
 import ru.johnspade.taskobot.user.User
-import supertagged.TaggedType
+import supertagged.{TaggedOps, TaggedType}
 
 package object taskobot {
   object tags {
-    object PageNumber extends TaggedType[Int]
+    object PageNumber extends TaggedType[Int] {
+      def apply(value: Int): Type =
+        if (value >= 0) TaggedOps(this)(value)
+        else throw new IllegalArgumentException("Can't be less than zero")
+    }
     type PageNumber = PageNumber.Type
 
-    object PageSize extends TaggedType[Int]
+    object PageSize extends TaggedType[Int] {
+      def apply(value: Int): Type =
+        if (value >= 0) TaggedOps(this)(value)
+        else throw new IllegalArgumentException("Can't be less than zero")
+    }
     type PageSize = PageSize.Type
 
-    object Offset extends TaggedType[Long]
+    object Offset extends TaggedType[Long] {
+      def apply(value: Long): Type =
+        if (value >= 0) TaggedOps(this)(value)
+        else throw new IllegalArgumentException("Can't be less than zero")
+    }
     type Offset = Offset.Type
   }
 
