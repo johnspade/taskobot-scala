@@ -4,7 +4,7 @@ name := "tasko_bot"
 
 version := "0.1"
 
-scalaVersion := "2.13.3"
+scalaVersion := "2.13.4"
 
 scalacOptions ++= Seq(
   "-language:higherKinds",
@@ -17,7 +17,7 @@ libraryDependencies ++= distributionDependencies ++ testDependencies.map(_ % Tes
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
-addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
+addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full)
 
 enablePlugins(Scalingua)
 templateTarget in Compile := file("src/main/locales/messages.pot")
