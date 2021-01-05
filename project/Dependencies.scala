@@ -7,7 +7,7 @@ object Dependencies {
     val cats = "2.2.0"
     val pureconfig = "0.12.3"
     val skunk = "0.0.21"
-    val flyway = "6.4.1"
+    val flyway = "7.4.0"
     val enumeratum = "1.6.1"
     val supertagged = "2.0-RC2"
     val kantan = "0.6.0"
@@ -15,6 +15,8 @@ object Dependencies {
     val http4s = "0.21.8"
     val scalingua = "0.9"
     val postgresql = "42.2.18"
+    val chimney = "0.6.1"
+    val testcontainers = "0.38.8"
   }
 
   val distributionDependencies = Seq(
@@ -39,6 +41,8 @@ object Dependencies {
 
   val testDependencies = Seq(
     "dev.zio" %% "zio-test" % V.zio,
-    "dev.zio" %% "zio-test-sbt" % V.zio
+    "dev.zio" %% "zio-test-sbt" % V.zio,
+    "io.scalaland" %% "chimney" % V.chimney,
+    "com.dimafeng" %% "testcontainers-scala-postgresql" % V.testcontainers
   )
 }

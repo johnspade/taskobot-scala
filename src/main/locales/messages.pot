@@ -1,6 +1,6 @@
-#  !Generated: 2020-12-20 17:40:54
+#  !Generated: 2021-01-05 12:23:46
 
-#: src/main/scala/ru/johnspade/taskobot/BotService.scala:52
+#: src/main/scala/ru/johnspade/taskobot/BotService.scala:49
 msgid "Chat: "
 msgstr ""
 
@@ -60,11 +60,11 @@ msgstr ""
 msgid "The task must be confirmed by the receiver"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:153
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:152
 msgid "Task has been marked as completed."
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:166
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:165
 msgid "Task %(taskText) has been marked as completed by %(completedBy)."
 msgstr ""
 

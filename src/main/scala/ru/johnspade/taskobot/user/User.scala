@@ -6,9 +6,9 @@ import ru.johnspade.taskobot.user.tags._
 final case class User(
   id: UserId,
   firstName: FirstName,
-  lastName: Option[LastName],
-  chatId: Option[ChatId],
-  language: Language
+  language: Language,
+  chatId: Option[ChatId] = None,
+  lastName: Option[LastName] = None,
 ) {
   def fullName: String = firstName + lastName.fold("")(n => s" $n")
 }

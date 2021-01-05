@@ -57,32 +57,32 @@ object UserRepository {
     val userCodec: Codec[User] = (
       UserId.lift(int4) ~
         FirstName.lift(varchar(255)) ~
-        LastName.lift(varchar(255)).opt ~
+        varchar(255) ~
         ChatId.lift(int8).opt ~
-        varchar(255)
+        LastName.lift(varchar(255)).opt
       ).imap {
-      case id ~ firstName ~ lastName ~ chatId ~ language =>
-        User(id, firstName, lastName, chatId, Language.withName(language))
-    }(u => u.id ~ u.firstName ~ u.lastName ~ u.chatId ~ u.language.entryName)
+      case id ~ firstName ~ language ~ chatId ~ lastName =>
+        User(id, firstName, Language.withName(language), chatId, lastName)
+    }(u => u.id ~ u.firstName ~ u.language.entryName ~ u.chatId ~ u.lastName)
 
     val selectById: Query[UserId, User] =
       sql"""
-        select id, first_name, last_name, chat_id, language
+        select id, first_name, language, chat_id, last_name
         from users
         where id = ${UserId.lift(int4)}
       """.query(userCodec)
 
     val upsert: Query[User, User] =
       sql"""
-        insert into users (id, first_name, last_name, chat_id, language) values ($userCodec)
+        insert into users (id, first_name, language, chat_id, last_name) values ($userCodec)
         on conflict(id) do update set
         first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id
-        returning id, first_name, last_name, chat_id, language
+        returning id, first_name, language, chat_id, last_name
       """.query(userCodec)
 
     val selectBySharedTasks: Query[UserId ~ UserId ~ UserId ~ Offset ~ PageSize, User] =
       sql"""
-        select u.id, u.first_name, u.last_name, u.chat_id, u.language
+        select u.id, u.first_name, u.language, u.chat_id, u.last_name
         from users as u
                  join (select t3.collaborator, t3.created_at
                        from (

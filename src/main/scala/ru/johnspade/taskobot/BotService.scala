@@ -1,9 +1,7 @@
 package ru.johnspade.taskobot
 
-import cats.implicits._
-import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.TypedMessageEntity._
 import ru.johnspade.taskobot.core.TelegramOps.toUser
+import ru.johnspade.taskobot.core.TypedMessageEntity._
 import ru.johnspade.taskobot.core.{Page, TypedMessageEntity}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.tags.PageNumber
@@ -15,39 +13,38 @@ import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots
-import telegramium.bots.high.Api
-import telegramium.bots.high.Methods.editMessageText
-import telegramium.bots.high.implicits._
-import telegramium.bots.{ChatIntId, Message}
+import telegramium.bots.Message
 import zio._
 import zio.interop.catz._
+import zio.macros.accessible
 
+@accessible
 object BotService {
   type BotService = Has[Service]
 
   trait Service {
     def updateUser(tgUser: telegramium.bots.User, chatId: Option[ChatId] = None): UIO[User]
 
-    def listTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
+    def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
       implicit languageId: LanguageId
-    ): UIO[Unit]
+    ): UIO[(Page[BotTask], List[TypedMessageEntity])]
   }
 
-  val live: URLayer[UserRepository with TaskRepository with TelegramBotApi, BotService] =
-    ZLayer.fromServices[UserRepository.Service, TaskRepository.Service, Api[Task], Service](new LiveService(_, _)(_))
+  val live: URLayer[UserRepository with TaskRepository, BotService] =
+    ZLayer.fromServices[UserRepository.Service, TaskRepository.Service, Service](new LiveService(_, _))
 
   final class LiveService(
     userRepo: UserRepository.Service,
     taskRepo: TaskRepository.Service
-  )(implicit api: Api[Task]) extends Service {
+  ) extends Service {
     override def updateUser(tgUser: bots.User, chatId: Option[ChatId] = None): UIO[User] =
       userRepo.createOrUpdate(toUser(tgUser, chatId))
 
-    override def listTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
+    override def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
       implicit languageId: LanguageId
-    ): UIO[Unit] = {
+    ): UIO[(Page[BotTask], List[TypedMessageEntity])] = {
       Page.request[BotTask, UIO](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
-        .flatMap { page =>
+        .map { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
           val header = List(Plain(t"Chat: "), Bold(chatName), plain"\n")
           val taskList = page
@@ -61,16 +58,7 @@ object BotService {
           val footer = List(plain"\n", italic"Select the task number to mark it as completed.")
           val messageEntities = header ++ taskList ++ footer
 
-          editMessageText(
-            ChatIntId(message.chat.id).some,
-            message.messageId.some,
-            text = messageEntities.map(_.value).mkString,
-            entities = TypedMessageEntity.toMessageEntities(messageEntities),
-            replyMarkup = Keyboards.tasks(page, collaborator).some
-          )
-            .exec
-            .orDie
-            .void
+          (page, messageEntities)
         }
     }
   }

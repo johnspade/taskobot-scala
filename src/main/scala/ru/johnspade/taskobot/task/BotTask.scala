@@ -9,6 +9,6 @@ case class BotTask(
   text: TaskText,
   receiver: Option[UserId],
   createdAt: CreatedAt,
-  doneAt: Option[DoneAt],
-  done: Done
+  doneAt: Option[DoneAt] = None,
+  done: Done = Done(false)
 )

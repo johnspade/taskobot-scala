@@ -6,7 +6,7 @@ import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
 import ru.johnspade.taskobot.core.callbackqueries.CallbackQueryDsl._
-import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Page, Tasks}
+import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Page, Tasks, TypedMessageEntity}
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.DoneAt
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
@@ -114,16 +114,14 @@ object TaskController {
 
       case Tasks(collaboratorId, pageNumber) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
-        userRepo.findById(collaboratorId).flatMap { userOpt =>
-          (for {
-            collaborator <- userOpt
-            message <- cb.message
-          } yield {
-            botService.listTasks(collaborator, collaborator, pageNumber, message)
-              .as(answerCallbackQuery(cb.id))
-          })
-            .sequence
-        }
+        (for {
+          userOpt <- userRepo.findById(collaboratorId)
+          collaborator <- ZIO.fromOption(userOpt)
+          message <- ZIO.fromOption(cb.message)
+          (page, messageEntities) <- botService.getTasks(collaborator, collaborator, pageNumber, message)
+          _ <- listTasks(message, messageEntities, page, collaborator)
+        } yield answerCallbackQuery(cb.id))
+          .optional
 
       case CheckTask(id, pageNumber, collaboratorId) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
@@ -138,7 +136,8 @@ object TaskController {
           userRepo.findById(collaboratorId).flatMap { userOpt =>
             userOpt.fold(ZIO.unit) { collaborator =>
               for {
-                _ <- botService.listTasks(user, collaborator, pageNumber, message)
+                (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
+                _ <- listTasks(message, messageEntities, page, collaborator)
                 _ <- notify(task, user, collaborator).when(user.id != collaboratorId)
               } yield ()
             }
@@ -169,5 +168,20 @@ object TaskController {
           .orDie
           .void
       }
+
+    private def listTasks(message: Message, messageEntities: List[TypedMessageEntity], page: Page[BotTask], collaborator: User)(
+      implicit languageId: LanguageId
+    ) =
+      editMessageText(
+        ChatIntId(message.chat.id).some,
+        message.messageId.some,
+        text = messageEntities.map(_.value).mkString,
+        entities = TypedMessageEntity.toMessageEntities(messageEntities),
+        replyMarkup = Keyboards.tasks(page, collaborator).some
+      )
+        .exec
+        .orDie
+        .void
+
   }
 }
