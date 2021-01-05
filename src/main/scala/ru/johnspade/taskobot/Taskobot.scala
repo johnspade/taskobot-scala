@@ -2,22 +2,21 @@ package ru.johnspade.taskobot
 
 import cats.effect.ConcurrentEffect
 import cats.implicits._
-import org.http4s.server.Server
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.CommandController.CommandController
 import ru.johnspade.taskobot.Configuration.BotConfig
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.{CbData, ConfirmTask}
+import ru.johnspade.taskobot.UserMiddleware.UserMiddleware
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import UserMiddleware.UserMiddleware
 import ru.johnspade.taskobot.core.callbackqueries.{CallbackDataDecoder, CallbackQueryContextMiddleware, CallbackQueryHandler, DecodeError, ParseError}
+import ru.johnspade.taskobot.core.{CbData, ConfirmTask}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.settings.SettingsController.SettingsController
 import ru.johnspade.taskobot.task.TaskController.TaskController
-import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
+import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.tags.ChatId
 import ru.makkarpov.scalingua.I18n._
@@ -31,7 +30,7 @@ import zio.interop.catz._
 import zio.interop.catz.implicits._
 
 object Taskobot {
-  type Taskobot = Has[TaskManaged[Server[Task]]]
+  type Taskobot = Has[LiveTaskobot]
 
   val live: URLayer[
     Clock
@@ -45,7 +44,7 @@ object Taskobot {
       with UserMiddleware,
     Taskobot
   ] =
-    ZLayer.fromServices[
+    ZLayer.fromServicesM[
       Clock.Service,
       Api[Task],
       BotConfig,
@@ -55,12 +54,14 @@ object Taskobot {
       TaskController.Service,
       SettingsController.Service,
       CallbackQueryContextMiddleware[CbData, User, Task],
-      TaskManaged[Server[Task]]
+      Any,
+      Nothing,
+      LiveTaskobot
     ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware) =>
-      Task.concurrentEffect.toManaged_.flatMap { implicit CE: ConcurrentEffect[Task] =>
+      Task.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
         new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware)(
           api, CE
-        ).start().toManaged
+        )
       }
     }
 

@@ -23,7 +23,7 @@ object BotServiceSpec extends DefaultRunnableSpec {
   private val botService = repositories >>> BotService.live
   private val testEnv = TestEnvironments.itLayer >+> (repositories ++ botService)
 
-  override def spec: ZSpec[TestEnvironment, Any] = (suite("BotServiceSpec")(
+  override def spec: ZSpec[TestEnvironment, Nothing] = (suite("BotServiceSpec")(
     suite("updateUser")(
       testM("should convert and create a Telegram user") {
         val tgUser = telegramium.bots.User(1337, isBot = false, "John")

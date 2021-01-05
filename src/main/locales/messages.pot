@@ -1,4 +1,4 @@
-#  !Generated: 2021-01-05 12:23:46
+#  !Generated: 2021-01-05 23:40:40
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:49
 msgid "Chat: "
@@ -44,7 +44,7 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:88
+#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:89
 msgid "Create task"
 msgstr ""
 

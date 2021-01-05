@@ -1,5 +1,6 @@
 package ru.johnspade.taskobot
 
+import cats.effect.ConcurrentEffect
 import ru.johnspade.taskobot.Environments.{AppEnvironment, appEnvironment}
 import ru.johnspade.taskobot.Taskobot.Taskobot
 import zio._
@@ -9,7 +10,9 @@ object Main extends zio.App {
   val program: ZIO[AppEnvironment, Throwable, Unit] =
     for {
       _ <- FlywayMigration.migrate
-      _ <- ZIO.accessM[Taskobot](_.get.useForever)
+      _ <- Task.concurrentEffect.flatMap { implicit CE: ConcurrentEffect[Task] =>
+        ZIO.accessM[Taskobot](_.get.start().toManaged.useForever)
+      }
     } yield ()
 
   def run(args: List[String]): URIO[ZEnv, ExitCode] =
