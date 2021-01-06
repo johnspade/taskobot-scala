@@ -118,7 +118,7 @@ object TaskController {
           userOpt <- userRepo.findById(collaboratorId)
           collaborator <- ZIO.fromOption(userOpt)
           message <- ZIO.fromOption(cb.message)
-          (page, messageEntities) <- botService.getTasks(collaborator, collaborator, pageNumber, message)
+          (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
           _ <- listTasks(message, messageEntities, page, collaborator)
         } yield answerCallbackQuery(cb.id))
           .optional
@@ -162,7 +162,7 @@ object TaskController {
         val completedBy = from.fullName
         sendMessage(
           ChatIntId(chatId),
-          t"Task $taskText has been marked as completed by $completedBy."
+          t"""Task "$taskText" has been marked as completed by $completedBy."""
         )
           .exec
           .orDie

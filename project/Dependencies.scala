@@ -17,6 +17,7 @@ object Dependencies {
     val postgresql = "42.2.18"
     val chimney = "0.6.1"
     val testcontainers = "0.38.8"
+    val mockitoScala = "1.16.13"
   }
 
   val distributionDependencies = Seq(
@@ -43,6 +44,7 @@ object Dependencies {
     "dev.zio" %% "zio-test" % V.zio,
     "dev.zio" %% "zio-test-sbt" % V.zio,
     "io.scalaland" %% "chimney" % V.chimney,
-    "com.dimafeng" %% "testcontainers-scala-postgresql" % V.testcontainers
+    "com.dimafeng" %% "testcontainers-scala-postgresql" % V.testcontainers,
+    "org.mockito" %% "mockito-scala" % V.mockitoScala
   )
 }

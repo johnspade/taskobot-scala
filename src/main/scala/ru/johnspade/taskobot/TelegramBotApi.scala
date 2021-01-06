@@ -15,7 +15,7 @@ object TelegramBotApi {
   val live: URLayer[Has[BotConfig], TelegramBotApi] =
     ZLayer.fromServiceManaged[BotConfig, Any, Nothing, Api[Task]] { cfg =>
       Task.concurrentEffect.toManaged_.flatMap { implicit CE: ConcurrentEffect[Task] =>
-        BlazeClientBuilder[Task](ExecutionContext.global).resource.toManaged.map { httpClient =>
+        BlazeClientBuilder[Task](ExecutionContext.global).resource.toManaged.map { httpClient => // todo ec
           BotApi[Task](httpClient, s"https://api.telegram.org/bot${cfg.token}")
         }
       }

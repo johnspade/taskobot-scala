@@ -1,4 +1,4 @@
-#  !Generated: 2021-01-05 23:40:40
+#  !Generated: 2021-01-08 13:37:06
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:49
 msgid "Chat: "
@@ -65,6 +65,6 @@ msgid "Task has been marked as completed."
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:165
-msgid "Task %(taskText) has been marked as completed by %(completedBy)."
+msgid "Task \"%(taskText)\" has been marked as completed by %(completedBy)."
 msgstr ""
 
