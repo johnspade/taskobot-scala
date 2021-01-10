@@ -7,6 +7,7 @@ import ru.johnspade.taskobot.Configuration.BotConfig
 import ru.johnspade.taskobot.MigrationAspects.migrate
 import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
+import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.TypedMessageEntity._
@@ -17,13 +18,12 @@ import ru.johnspade.taskobot.task.tags.TaskId
 import ru.johnspade.taskobot.task.{TaskController, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.tags.UserId
-import telegramium.bots.client.{Method, MethodReq}
+import telegramium.bots.client.Method
 import telegramium.bots.high.{Api, InlineKeyboardButton, InlineKeyboardMarkup, Methods}
 import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, MessageEntity, ParseMode, User}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.test.Assertion.{equalTo, isSome}
-import zio.test.AssertionM.Render.param
 import zio.test.TestAspect.sequential
 import zio.test._
 import zio.test.environment.TestEnvironment
@@ -70,16 +70,16 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
         for {
           listReply <- sendMessage("/list", isCommand = true, chatId = kaitrinChatId)
           assertions = assert(listReply)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(1),
+            ChatIntId(kaitrinChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Kaitrin", Tasks(UserId(kaitrinId), PageNumber(0)))).some
+              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Kaitrin", Tasks(UserId(kaitrinId), firstPage))).some
           ))))
         } yield assertions
 
       val listTasks =
         for {
-          tasksReply <- sendCallbackQuery(Tasks(UserId(johnId), PageNumber(0)), kaitrin, chatId = kaitrinChatId)
+          tasksReply <- sendCallbackQuery(Tasks(UserId(johnId), firstPage), kaitrin, chatId = kaitrinChatId)
           listTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
             messageId = 0.some,
@@ -90,8 +90,8 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"\n", italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkup.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(TaskId(1L), PageNumber(0), UserId(johnId))),
-              inlineKeyboardButton("Chat list", Chats(PageNumber(0)))
+              inlineKeyboardButton("1", CheckTask(TaskId(1L), firstPage, UserId(johnId))),
+              inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
           tasksReplyAssertions = assert(tasksReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
@@ -99,7 +99,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(1L), PageNumber(0), UserId(johnId)), kaitrin, chatId = 1)
+          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(1L), firstPage, UserId(johnId)), kaitrin, chatId = 1)
           _ <- ZIO.effect(Thread.sleep(1000))
           noTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
@@ -109,7 +109,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"Chat: ", bold"John", plain"\n",
               plain"\n", italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(PageNumber(0)))).some
+            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
           checkTaskReplyAssertions =
           assert(checkTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))))
@@ -177,13 +177,13 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(johnChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Personal tasks", Tasks(UserId(johnId), PageNumber(0)))).some
+              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Personal tasks", Tasks(UserId(johnId), firstPage))).some
           ))))
         } yield assertions
 
       val listTasks =
         for {
-          tasksReply <- sendCallbackQuery(Tasks(UserId(johnId), PageNumber(0)))
+          tasksReply <- sendCallbackQuery(Tasks(UserId(johnId), firstPage))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
@@ -194,15 +194,15 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"\n", italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkup.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(TaskId(2L), PageNumber(0), UserId(johnId))),
-              inlineKeyboardButton("Chat list", Chats(PageNumber(0)))
+              inlineKeyboardButton("1", CheckTask(TaskId(2L), firstPage, UserId(johnId))),
+              inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
         } yield assert(tasksReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(2L), PageNumber(0), UserId(johnId)))
+          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(2L), firstPage, UserId(johnId)))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
@@ -211,7 +211,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"Chat: ", bold"Personal tasks", plain"\n",
               plain"\n", italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(PageNumber(0)))).some
+            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
         } yield assert(checkTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))))
 
@@ -244,6 +244,8 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
   private val kaitrinId = 911
   private val kaitrinChatId = 1
   private val kaitrin = User(kaitrinId, isBot = false, "Kaitrin")
+
+  private val firstPage = PageNumber(0)
 
   private def createMessage(text: String, isCommand: Boolean = false, chatId: Int = johnChatId, replyToMessage: Option[Message] = None) =
     Message(
@@ -289,17 +291,6 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     val captor = ArgCaptor[Method[Res]]
     verify(api, atLeastOnce).execute(captor)
     assert(captor.values)(Assertion.exists(isMethodsEqual(method)))
-  }
-
-  private def isMethodsEqual[Res](reference: Method[Res]): Assertion[Method[_]] =
-    Assertion.assertion("isMethodsEqual")(param(reference)) { actual =>
-      compareMethods(reference, actual.asInstanceOf[Method[Res]])
-    }
-
-  private def compareMethods[Res](expected: Method[Res], actual: Method[Res]): Boolean = {
-    val actualReq = actual.asInstanceOf[MethodReq[Res]]
-    val expectedReq = expected.asInstanceOf[MethodReq[Res]]
-    actualReq.name == expectedReq.name && actualReq.json == expectedReq.json && actualReq.files == expectedReq.files
   }
 
   private object TestEnvironment {

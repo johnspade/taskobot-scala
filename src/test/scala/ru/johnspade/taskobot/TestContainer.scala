@@ -13,7 +13,7 @@ object TestContainer {
     ZManaged.make {
       effectBlocking {
         val container = new PostgreSQLContainer(
-          dockerImageNameOverride = Some(DockerImageName.parse("postgres"))
+          dockerImageNameOverride = Some(DockerImageName.parse("postgres:13.1"))
         )
         container.start()
         container
