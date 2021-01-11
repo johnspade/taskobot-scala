@@ -32,14 +32,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
     suite("ConfirmTask")(
       testM("receiver should be able to confirm task") {
         for {
-          now <- clock.instant
-          task <- TaskRepository.create(
-            NewTask(UserId(johnId), TaskText("Buy some milk"), CreatedAt(now.toEpochMilli))
-          )
-          cbData = ConfirmTask(task.id.some)
-          reply <- ZIO.accessM[TaskController] {
-            _.get.routes.run(CallbackQueryData(cbData, callbackQuery(cbData, kaitrin, inlineMessageId = "0".some))).value.map(_.flatten)
-          }
+          task <- createTask("Buy some milk")
+          reply <- confirmTask(ConfirmTask(UserId(johnId), task.id.some), kaitrin)
           confirmedTask <- TaskRepository.findById(task.id)
           confirmedTaskAssertions = assert(confirmedTask.get.receiver)(isSome(equalTo(UserId(kaitrinId))))
           _ <- ZIO.effect(Thread.sleep(1000))
@@ -50,18 +44,23 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
 
       testM("sender should not be able to confirm task") {
         for {
-          now <- clock.instant
-          task <- TaskRepository.create(
-            NewTask(UserId(johnId), TaskText("Buy groceries"), CreatedAt(now.toEpochMilli))
-          )
-          cbData = ConfirmTask(task.id.some)
-          reply <- ZIO.accessM[TaskController] {
-            _.get.routes.run(CallbackQueryData(cbData, callbackQuery(cbData, john, inlineMessageId = "0".some))).value.map(_.flatten)
-          }
+          task <- createTask("Buy groceries")
+          reply <- confirmTask(ConfirmTask(UserId(johnId), task.id.some), john)
           unconfirmedTask <- TaskRepository.findById(task.id)
           confirmTaskReplyAssertions = assert(reply)(isSome(equalTo(
             Methods.answerCallbackQuery("0", "The task must be confirmed by the receiver".some)
           )))
+          unconfirmedTaskAssertions = assert(unconfirmedTask.get.receiver)(isNone)
+        } yield confirmTaskReplyAssertions && unconfirmedTaskAssertions
+      },
+
+      testM("cannot confirm task with wrong senderId") {
+        for {
+          task <- createTask("Buy some bread")
+          bobId = UserId(0)
+          reply <- confirmTask(ConfirmTask(bobId, task.id.some), TgUser(bobId, isBot = false, "Bob"))
+          unconfirmedTask <- TaskRepository.findById(task.id)
+          confirmTaskReplyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
           unconfirmedTaskAssertions = assert(unconfirmedTask.get.receiver)(isNone)
         } yield confirmTaskReplyAssertions && unconfirmedTaskAssertions
       }
@@ -92,6 +91,19 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
     verify(apiMock, atLeastOnce).execute(captor)
     assert(captor.values)(Assertion.exists(isMethodsEqual(method)))
   }
+
+  private def createTask(text: String) =
+    for {
+      now <- clock.instant
+      task <- TaskRepository.create(
+        NewTask(UserId(johnId), TaskText(text), CreatedAt(now.toEpochMilli))
+      )
+    } yield task
+
+  private def confirmTask(cbData: CbData, from: TgUser) =
+    ZIO.accessM[TaskController] {
+      _.get.routes.run(CallbackQueryData(cbData, callbackQuery(cbData, from, inlineMessageId = "0".some))).value.map(_.flatten)
+    }
 
   private object TestEnvironment {
     private val botApi = ZLayer.succeed(botApiMock)

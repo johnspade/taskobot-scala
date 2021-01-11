@@ -20,7 +20,7 @@ sealed abstract class CbData extends Product with Serializable {
 }
 
 @TypeId(0)
-final case class ConfirmTask(id: Option[TaskId]) extends CbData
+final case class ConfirmTask(senderId: UserId, id: Option[TaskId]) extends CbData
 
 @TypeId(1)
 final case class Chats(page: PageNumber) extends CbData

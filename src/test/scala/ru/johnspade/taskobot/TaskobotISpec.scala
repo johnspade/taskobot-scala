@@ -41,7 +41,10 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               results = List(
                 InlineQueryResultArticle(
                   "1", "Create task", InputTextMessageContent("*Buy some milk*", Markdown2.some),
-                  InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(id = None))).some,
+                  InlineKeyboardMarkup.singleButton(
+                    inlineKeyboardButton("Confirm task", ConfirmTask(UserId(johnId), id = None))
+                  )
+                    .some,
                   description = "Buy some milk".some
                 )
               )
@@ -55,13 +58,15 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             withTaskobotService(_.onChosenInlineResultReply(ChosenInlineResult("0", john, query = "Buy some milk", inlineMessageId = "0".some)))
           expectedEditMessageReplyMarkupReq = Methods.editMessageReplyMarkup(
             inlineMessageId = "0".some,
-            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(TaskId(1L).some))).some
+            replyMarkup = InlineKeyboardMarkup.singleButton(
+              inlineKeyboardButton("Confirm task", ConfirmTask(UserId(johnId), TaskId(1L).some))
+            ).some
           )
         } yield assert(chosenInlineResultReply)(isSome(isMethodsEqual(expectedEditMessageReplyMarkupReq)))
 
       val confirmTask =
         for {
-          confirmTaskReply <- sendCallbackQuery(ConfirmTask(TaskId(1L).some), kaitrin, inlineMessageId = "0".some)
+          confirmTaskReply <- sendCallbackQuery(ConfirmTask(UserId(johnId), TaskId(1L).some), kaitrin, inlineMessageId = "0".some)
           removeMarkupAssertions = verifyMethodCall(botApiMock, Methods.editMessageReplyMarkup(inlineMessageId = "0".some, replyMarkup = None))
           confirmTaskReplyAssertions = assert(confirmTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
         } yield removeMarkupAssertions && confirmTaskReplyAssertions

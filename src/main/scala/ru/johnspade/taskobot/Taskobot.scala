@@ -18,7 +18,7 @@ import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
 import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
 import ru.johnspade.taskobot.user.User
-import ru.johnspade.taskobot.user.tags.ChatId
+import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
@@ -88,7 +88,10 @@ object Taskobot {
         id = "1",
         title = t"Create task",
         inputMessageContent = InputTextMessageContent(s"*$text*", Markdown2.some),
-        replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(id = None))).some,
+        replyMarkup = InlineKeyboardMarkup.singleButton(
+          inlineKeyboardButton("Confirm task", ConfirmTask(UserId(query.from.id), id = None))
+        )
+          .some,
         description = text.some
       )
       Task.succeed {
@@ -103,7 +106,10 @@ object Taskobot {
         task <- taskRepo.create(NewTask(user.id, TaskText(inlineResult.query), CreatedAt(now.toEpochMilli), None))
         method = editMessageReplyMarkup(
           inlineMessageId = inlineResult.inlineMessageId,
-          replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Confirm task", ConfirmTask(task.id.some))).some
+          replyMarkup = InlineKeyboardMarkup.singleButton(
+            inlineKeyboardButton("Confirm task", ConfirmTask(user.id, task.id.some))
+          )
+            .some
         )
       } yield method.some
 
