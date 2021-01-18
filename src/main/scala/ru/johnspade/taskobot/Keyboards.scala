@@ -20,7 +20,7 @@ object Keyboards {
     val nextButtonRow = if (page.hasNext) List(nextButton) else List.empty
     val prevButtonRow = if (page.hasPrevious) List(prevButton) else List.empty
     val navButtons = List(prevButtonRow, nextButtonRow)
-    val keyboard = (navButtons ++ chatsButtons).filterNot(_.isEmpty)
+    val keyboard = (chatsButtons ++ navButtons).filterNot(_.isEmpty)
     InlineKeyboardMarkup(keyboard)
   }
 

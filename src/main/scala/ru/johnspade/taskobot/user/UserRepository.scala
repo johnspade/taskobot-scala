@@ -82,7 +82,7 @@ object UserRepository {
 
     val selectBySharedTasks: Query[UserId ~ UserId ~ UserId ~ Offset ~ PageSize, User] =
       sql"""
-        select u.id, u.first_name, u.language, u.chat_id, u.last_name
+        select distinct u.id, u.first_name, u.language, u.chat_id, u.last_name
         from users as u
                  join (select t3.collaborator, t3.created_at
                        from (
