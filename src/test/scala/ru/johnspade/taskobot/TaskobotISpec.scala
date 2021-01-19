@@ -4,7 +4,6 @@ import cats.syntax.option._
 import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import ru.johnspade.taskobot.Configuration.BotConfig
-import ru.johnspade.taskobot.MigrationAspects.migrate
 import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
 import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
@@ -234,7 +233,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
         listTasksAssertions &&
         checkTaskAssertions
     }
-  ) @@ migrate @@ sequential).provideCustomLayerShared(TestEnvironment.env)
+  ) @@ sequential).provideCustomLayerShared(TestEnvironment.env)
 
   private def mockMessage(chatId: Int = 0) =
     Message(0, date = 0, chat = Chat(chatId, `type` = ""), from = User(id = 123, isBot = true, "Taskobot").some)
@@ -294,7 +293,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
   private def verifyMethodCall[Res](api: Api[Task], method: Method[Res]) = {
     val captor = ArgCaptor[Method[Res]]
-    verify(api, atLeastOnce).execute(captor)
+    verify(api, atLeastOnce).execute(captor).asInstanceOf[Unit]
     assert(captor.values)(Assertion.exists(isMethodsEqual(method)))
   }
 

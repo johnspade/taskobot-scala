@@ -1,6 +1,7 @@
 package ru.johnspade.taskobot.user
 
 import cats.effect.Resource
+import cats.implicits._
 import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.{Offset, PageSize}
@@ -22,6 +23,8 @@ object UserRepository {
     def createOrUpdate(user: User): UIO[User]
 
     def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): UIO[List[User]]
+
+    def clear(): UIO[Unit]
   }
 
   val live: URLayer[SessionPool, UserRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -49,6 +52,15 @@ object UserRepository {
                 .toList
             }
           }
+            .orDie
+
+        override def clear(): UIO[Unit] =
+          sessionPool.use {
+            _.prepare(deleteAll).use {
+              _.execute(Void)
+            }
+          }
+            .void
             .orDie
       }
   }
@@ -99,5 +111,7 @@ object UserRepository {
                        where max_created_at = t3.created_at
                        order by t3.created_at desc) c on u.id = c.collaborator offset ${Offset.lift(int8)} limit ${PageSize.lift(int4)};
       """.query(userCodec)
+
+    val deleteAll: Command[Void] = sql"delete from users where true".command
   }
 }

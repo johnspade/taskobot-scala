@@ -3,19 +3,19 @@ package ru.johnspade.taskobot.task
 import cats.syntax.option._
 import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import ru.johnspade.taskobot.MigrationAspects.migrate
 import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.TypedMessageEntity._
 import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
-import ru.johnspade.taskobot.core.{CbData, Chats, ConfirmTask, Tasks}
+import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks, TypedMessageEntity}
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.TaskController.TaskController
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
-import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
+import ru.johnspade.taskobot.task.tags.{CreatedAt, Done, TaskId, TaskText}
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
-import ru.johnspade.taskobot.user.tags.{FirstName, UserId}
+import ru.johnspade.taskobot.user.tags.{ChatId, FirstName, UserId}
 import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.johnspade.taskobot.{BotService, TestEnvironments}
 import telegramium.bots.client.Method
@@ -23,7 +23,7 @@ import telegramium.bots.high.{Api, InlineKeyboardMarkup, Methods}
 import telegramium.bots.{CallbackQuery, Chat, ChatIntId, Message, User => TgUser}
 import zio.blocking.Blocking
 import zio.clock.Clock
-import zio.test.Assertion.{equalTo, isNone, isSome}
+import zio.test.Assertion.{equalTo, hasField, isNone, isSome}
 import zio.test.TestAspect.{before, sequential}
 import zio.test._
 import zio.test.environment.TestEnvironment
@@ -35,7 +35,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("should list chats as a single page") {
         for {
           _ <- createUsersAndTasks(5)
-          reply <- listChats(Chats(firstPage), johnTg)
+          reply <- callUserRoute(Chats(firstPage), johnTg)
           chatsReplyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
           listChatsAssertions = verifyMethodCall(Methods.editMessageText(
             chatId = ChatIntId(0).some,
@@ -51,8 +51,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("should list chats as multiple pages") {
         for {
           _ <- createUsersAndTasks(11)
-          reply <- listChats(Chats(PageNumber(1)), johnTg)
-          chatsReplyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
+          reply <- callUserRoute(Chats(PageNumber(1)), johnTg)
+          replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
           listChatsAssertions = verifyMethodCall(Methods.editMessageText(
             chatId = ChatIntId(0).some,
             messageId = 0.some,
@@ -67,7 +67,95 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
               )
             ).some
           ))
-        } yield chatsReplyAssertions && listChatsAssertions
+        } yield replyAssertions && listChatsAssertions
+      }
+    ),
+
+    suite("Tasks")(
+      testM("should list tasks as a single page") {
+        for {
+          task <- createTask("Wash dishes please", kaitrin.id.some)
+          reply <- callUserRoute(Tasks(kaitrin.id, firstPage), johnTg)
+          replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
+          listTasksAssertions = verifyMethodCall(Methods.editMessageText(
+            chatId = ChatIntId(0).some,
+            messageId = 0.some,
+            text = "Chat: Kaitrin\\n1. Wash dishes please– Kaitrin\\n\\nSelect the task number to mark it as completed.",
+            entities = TypedMessageEntity.toMessageEntities(List(
+              plain"Chat: ", bold"Kaitrin", plain"\n",
+              plain"1. Wash dishes please", italic"– Kaitrin", plain"\n",
+              plain"\n", italic"Select the task number to mark it as completed."
+            )),
+            replyMarkup = InlineKeyboardMarkup.singleColumn(List(
+              inlineKeyboardButton("1", CheckTask(task.id, firstPage, kaitrin.id)),
+              inlineKeyboardButton("Chat list", Chats(firstPage))
+            )).some
+          ))
+        } yield replyAssertions && listTasksAssertions
+      },
+
+      testM("should list tasks as multiple pages") {
+        for {
+          _ <- createKaitrinTasks(11)
+          reply <- callUserRoute(Tasks(kaitrin.id, PageNumber(1)), johnTg)
+          replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
+          listTasksAssertions = verifyMethodCall(Methods.editMessageText(
+            chatId = ChatIntId(0).some,
+            messageId = 0.some,
+            text = "Chat: Kaitrin\\n1. 5– Kaitrin\\n2. 6– Kaitrin\\n3. 7– Kaitrin\\n4. 8– Kaitrin\\n5. 9– Kaitrin\\n\\nSelect the task number to mark it as completed.",
+            entities = TypedMessageEntity.toMessageEntities(List(
+              plain"Chat: ", bold"Kaitrin", plain"\n",
+              plain"1. 5", italic"– Kaitrin", plain"\n",
+              plain"2. 6", italic"– Kaitrin", plain"\n",
+              plain"3. 7", italic"– Kaitrin", plain"\n",
+              plain"4. 8", italic"– Kaitrin", plain"\n",
+              plain"5. 9", italic"– Kaitrin", plain"\n",
+              plain"\n", italic"Select the task number to mark it as completed."
+            )),
+            replyMarkup = InlineKeyboardMarkup(List(
+              List(
+                inlineKeyboardButton("1", CheckTask(TaskId(23L), PageNumber(1), kaitrin.id)),
+                inlineKeyboardButton("2", CheckTask(TaskId(24L), PageNumber(1), kaitrin.id)),
+                inlineKeyboardButton("3", CheckTask(TaskId(25L), PageNumber(1), kaitrin.id)),
+                inlineKeyboardButton("4", CheckTask(TaskId(26L), PageNumber(1), kaitrin.id)),
+                inlineKeyboardButton("5", CheckTask(TaskId(27L), PageNumber(1), kaitrin.id))
+              ),
+              List(inlineKeyboardButton("Previous page", Tasks(kaitrin.id, firstPage))),
+              List(inlineKeyboardButton("Next page", Tasks(kaitrin.id, PageNumber(2)))),
+              List(inlineKeyboardButton("Chat list", Chats(firstPage)))
+            )).some
+          ))
+        } yield replyAssertions && listTasksAssertions
+      }
+    ),
+
+    suite("CheckTask")(
+      testM("should check a task") {
+        for {
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          reply <- callUserRoute(CheckTask(task.id, firstPage, kaitrin.id), johnTg)
+          checkedTask <- TaskRepository.findById(task.id)
+          checkedTaskAssertions = assert(checkedTask.get)(hasField("done", _.done, equalTo(Done(true)))) &&
+            assert(checkedTask.get)(hasField("doneAt", _.doneAt, isSome))
+          replyAssertions = assert(reply)(isSome(equalTo(
+            Methods.answerCallbackQuery("0", "Task has been marked as completed.".some)
+          )))
+          _ <- ZIO.effect(Thread.sleep(1000))
+          listTasksAssertions = verifyMethodCall(Methods.editMessageText(
+            ChatIntId(0).some,
+            messageId = 0.some,
+            text = "Chat: Kaitrin\\n\\nSelect the task number to mark it as completed.",
+            entities = TypedMessageEntity.toMessageEntities(List(
+              plain"Chat: ", bold"Kaitrin", plain"\n",
+              plain"\n", italic"Select the task number to mark it as completed."
+            )),
+            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
+          ))
+          notifyAssertions = verifyMethodCall(Methods.sendMessage(
+            ChatIntId(kaitrinChatId),
+            """Task "Buy some milk" has been marked as completed by John."""
+          ))
+        } yield replyAssertions && checkedTaskAssertions && listTasksAssertions && notifyAssertions
       }
     ),
 
@@ -115,7 +203,12 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       _ <- UserRepository.createOrUpdate(kaitrin)
     } yield ()
   }
-    @@ migrate)
+    @@ TestAspect.after {
+    for {
+      _ <- TaskRepository.clear()
+      _ <- UserRepository.clear()
+    } yield ()
+  })
     .provideCustomLayerShared(TestEnvironment.env)
 
   private val botApiMock = mock[Api[Task]]
@@ -128,7 +221,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
   private val kaitrinTg = TgUser(kaitrinId, isBot = false, "Kaitrin")
 
   private val john = User(UserId(johnId), FirstName(johnTg.firstName), Language.English)
-  private val kaitrin = User(UserId(kaitrinId), FirstName(kaitrinTg.firstName), Language.English)
+  private val kaitrinChatId = ChatId(17L)
+  private val kaitrin = User(UserId(kaitrinId), FirstName(kaitrinTg.firstName), Language.English, kaitrinChatId.some)
 
   private val firstPage = PageNumber(0)
 
@@ -164,6 +258,15 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       }
     } yield ()
 
+  private def createKaitrinTasks(count: Int) =
+    for {
+      now <- clock.instant
+      tasks = List.tabulate(count) { n =>
+        NewTask(john.id, TaskText(n.toString), CreatedAt(now.toEpochMilli), kaitrin.id.some)
+      }
+      _ <- ZIO.foreach_(tasks)(TaskRepository.create)
+    } yield ()
+
   private def confirmTask(cbData: ConfirmTask, from: TgUser) =
     ZIO.accessM[TaskController] {
       _.get
@@ -173,7 +276,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
         .map(_.flatten)
     }
 
-  private def listChats(cbData: Chats, from: TgUser) =
+  private def callUserRoute(cbData: CbData, from: TgUser) =
     ZIO.accessM[TaskController] {
       _.get
         .userRoutes

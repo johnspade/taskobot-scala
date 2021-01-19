@@ -27,6 +27,8 @@ object TaskRepository {
     def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]]
 
     def check(id: TaskId, doneAt: DoneAt, userId: UserId): UIO[Unit]
+
+    def clear(): UIO[Unit]
   }
 
   val live: URLayer[SessionPool, TaskRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -67,6 +69,15 @@ object TaskRepository {
           sessionPool.use {
             _.prepare(setDone).use {
               _.execute(doneAt ~ id ~ userId ~ userId)
+            }
+          }
+            .void
+            .orDie
+
+        override def clear(): UIO[Unit] =
+          sessionPool.use {
+            _.prepare(deleteAll).use {
+              _.execute(Void)
             }
           }
             .void
@@ -136,4 +147,6 @@ private object TaskQueries {
         (sender_id = ${UserId.lift(int4)} or receiver_id = ${UserId.lift(int4)})
     """
       .command
+
+  val deleteAll: Command[Void] = sql"delete from tasks where true".command
 }

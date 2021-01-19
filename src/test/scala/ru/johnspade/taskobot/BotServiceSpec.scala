@@ -1,6 +1,5 @@
 package ru.johnspade.taskobot
 
-import ru.johnspade.taskobot.MigrationAspects.migrate
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.task.{BotTask, NewTask, TaskRepository}
 import ru.johnspade.taskobot.user.tags.{FirstName, LastName, UserId}
@@ -23,7 +22,7 @@ object BotServiceSpec extends DefaultRunnableSpec {
   private val botService = repositories >>> BotService.live
   private val testEnv = TestEnvironments.itLayer >+> (repositories ++ botService)
 
-  override def spec: ZSpec[TestEnvironment, Nothing] = (suite("BotServiceSpec")(
+  override def spec: ZSpec[TestEnvironment, Nothing] = suite("BotServiceSpec")(
     suite("updateUser")(
       testM("should convert and create a Telegram user") {
         val tgUser = telegramium.bots.User(1337, isBot = false, "John")
@@ -80,5 +79,5 @@ object BotServiceSpec extends DefaultRunnableSpec {
           assert(page.number)(equalTo(PageNumber(0)))
       }
     )
-  ) @@ migrate).provideCustomLayerShared(testEnv)
+  ).provideCustomLayerShared(testEnv)
 }
