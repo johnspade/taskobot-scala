@@ -6,7 +6,7 @@ import zio.blocking._
 import zio.{Has, RIO, ZIO}
 
 object FlywayMigration {
-  val migrate: RIO[Has[DbConfig] with Blocking, Unit] =
+  val migrate: RIO[Has[DbConfig] with Blocking, Any] =
     ZIO.accessM { env =>
       val cfg = env.get[DbConfig]
       effectBlocking {

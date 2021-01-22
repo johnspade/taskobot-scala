@@ -28,6 +28,10 @@ object TypedMessageEntity {
     def value: String = text
   }
 
+  object Plain {
+    val lineBreak: Plain = Plain("\n")
+  }
+
   final case class Bold(text: String) extends TypedMessageEntity {
     def `type`: String = "bold"
     def value: String = text

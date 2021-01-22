@@ -11,7 +11,7 @@ import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.DoneAt
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.user.{User, UserRepository}
-import ru.johnspade.taskobot.{BotService, CbDataRoutes, CbDataUserRoutes, DefaultPageSize, Keyboards, Messages}
+import ru.johnspade.taskobot.{BotService, CbDataRoutes, CbDataUserRoutes, DefaultPageSize, Errors, Keyboards, Messages}
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.{ChatIntId, Message}
 import telegramium.bots.high.Methods.{answerCallbackQuery, editMessageReplyMarkup, editMessageText, sendMessage}
@@ -123,39 +123,41 @@ object TaskController {
         } yield answerCallbackQuery(cb.id))
           .optional
 
-      case CheckTask(id, pageNumber, collaboratorId) in cb as user =>
+      case CheckTask(id, pageNumber) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
 
-        def checkTask(task: BotTask) =
+        def checkTask(task: TaskWithCollaborator) =
           for {
             now <- clock.instant
             _ <- taskRepo.check(task.id, DoneAt(now.toEpochMilli), user.id)
           } yield ()
 
-        def withCollaborator(task: BotTask, message: Message) =
-          userRepo.findById(collaboratorId).flatMap { userOpt =>
-            userOpt.fold(ZIO.unit) { collaborator =>
-              for {
-                (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
-                _ <- listTasks(message, messageEntities, page, collaborator)
-                _ <- notify(task, user, collaborator).when(user.id != collaboratorId)
-              } yield ()
-            }
+        def listTasksAndNotify(task: TaskWithCollaborator, message: Message) =
+          task.collaborator.fold(ZIO.unit) { collaborator =>
+            for {
+              (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
+              _ <- listTasks(message, messageEntities, page, collaborator)
+              _ <- notify(task, user, collaborator).when(user.id != collaborator.id)
+            } yield ()
           }
 
-        (for {
-          taskOpt <- taskRepo.findById(id)
-          task <- ZIO.fromOption(taskOpt)
-          message <- ZIO.fromOption(cb.message)
+        val answer = for {
+          taskOpt <- taskRepo.findByIdWithCollaborator(id, user.id)
+          task <- ZIO.fromEither(taskOpt.toRight(Errors.NotFound))
+          message <- ZIO.fromEither(cb.message.toRight(Errors.Default))
           _ <- checkTask(task)
-          _ <- withCollaborator(task, message).fork
-          answer = answerCallbackQuery(cb.id, t"Task has been marked as completed.".some)
-        } yield answer)
-          .optional
+          _ <- listTasksAndNotify(task, message).fork
+        } yield t"Task has been marked as completed."
+
+        answer
+          .merge
+          .map { answerText =>
+            answerCallbackQuery(cb.id, answerText.some).some
+          }
 
     }
 
-    private def notify(task: BotTask, from: User, collaborator: User) =
+    private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
       collaborator.chatId.fold(ZIO.unit) { chatId =>
         implicit val languageId: LanguageId = LanguageId(collaborator.language.languageTag)
         val taskText = task.text

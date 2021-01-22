@@ -29,7 +29,7 @@ final case class Chats(page: PageNumber) extends CbData
 final case class Tasks(collaboratorId: UserId, pageNumber: PageNumber) extends CbData
 
 @TypeId(3)
-final case class CheckTask(id: TaskId, pageNumber: PageNumber, collaboratorId: UserId) extends CbData
+final case class CheckTask(id: TaskId, pageNumber: PageNumber) extends CbData
 
 @TypeId(4)
 case object ChangeLanguage extends CbData

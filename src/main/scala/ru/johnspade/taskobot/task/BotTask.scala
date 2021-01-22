@@ -1,6 +1,7 @@
 package ru.johnspade.taskobot.task
 
 import ru.johnspade.taskobot.task.tags._
+import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.tags._
 
 case class BotTask(
@@ -11,4 +12,10 @@ case class BotTask(
   createdAt: CreatedAt,
   doneAt: Option[DoneAt] = None,
   done: Done = Done(false)
+)
+
+case class TaskWithCollaborator(
+  id: TaskId,
+  text: TaskText,
+  collaborator: Option[User]
 )

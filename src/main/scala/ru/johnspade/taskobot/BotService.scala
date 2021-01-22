@@ -1,6 +1,7 @@
 package ru.johnspade.taskobot
 
 import ru.johnspade.taskobot.core.TelegramOps.toUser
+import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.taskobot.core.TypedMessageEntity._
 import ru.johnspade.taskobot.core.{Page, TypedMessageEntity}
 import ru.johnspade.taskobot.i18n.messages
@@ -46,16 +47,16 @@ object BotService {
       Page.request[BotTask, UIO](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
         .map { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
-          val header = List(Plain(t"Chat: "), Bold(chatName), plain"\n")
+          val header = List(Plain(t"Chat: "), Bold(chatName), lineBreak)
           val taskList = page
             .items
             .map(_.text)
             .zipWithIndex
             .flatMap { case (text, i) =>
               val senderName = if (collaborator.id == `for`.id) plain"" else italic"– ${collaborator.firstName}"
-              List(plain"${i + 1}. $text", senderName, plain"\n")
+              List(plain"${i + 1}. $text", senderName, lineBreak)
             }
-          val footer = List(plain"\n", italic"Select the task number to mark it as completed.")
+          val footer = List(lineBreak, italic"Select the task number to mark it as completed.")
           val messageEntities = header ++ taskList ++ footer
 
           (page, messageEntities)

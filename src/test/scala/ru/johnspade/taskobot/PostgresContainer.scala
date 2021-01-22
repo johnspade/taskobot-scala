@@ -6,10 +6,10 @@ import ru.johnspade.taskobot.Configuration.DbConfig
 import zio._
 import zio.blocking.{Blocking, effectBlocking}
 
-object TestContainer {
+object PostgresContainer {
   type Postgres = Has[PostgreSQLContainer]
 
-  val postgres: URLayer[Blocking, Postgres] =
+  val container: URLayer[Blocking, Postgres] =
     ZManaged.make {
       effectBlocking {
         val container = new PostgreSQLContainer(
@@ -31,5 +31,4 @@ object TestContainer {
         container.password
       )
     }
-
 }

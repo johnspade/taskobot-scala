@@ -1,19 +1,21 @@
 package ru.johnspade.taskobot
 
+import cats.syntax.option._
+import io.scalaland.chimney.dsl._
+import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
+import ru.johnspade.taskobot.core.TypedMessageEntity._
 import ru.johnspade.taskobot.i18n.Language
+import ru.johnspade.taskobot.tags.PageNumber
+import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskId, TaskText}
 import ru.johnspade.taskobot.task.{BotTask, NewTask, TaskRepository}
 import ru.johnspade.taskobot.user.tags.{FirstName, LastName, UserId}
 import ru.johnspade.taskobot.user.{User, UserRepository}
-import zio.test.Assertion._
-import zio.test._
-import zio.test.environment.TestEnvironment
-import cats.syntax.option._
-import ru.johnspade.taskobot.tags.PageNumber
-import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskId, TaskText}
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.{Chat, Message}
-import io.scalaland.chimney.dsl._
-import ru.johnspade.taskobot.core.TypedMessageEntity._
+import zio.test.Assertion._
+import zio.test.TestAspect.sequential
+import zio.test._
+import zio.test.environment.TestEnvironment
 
 object BotServiceSpec extends DefaultRunnableSpec {
   private val userRepo = UserRepository.live
@@ -41,7 +43,7 @@ object BotServiceSpec extends DefaultRunnableSpec {
           savedUser <- UserRepository.findById(UserId(1337))
         } yield assert(user)(equalTo(expectedUser)) && assert(savedUser)(isSome(equalTo(expectedUser)))
       }
-    ),
+    ) @@ sequential,
 
     suite("getTasks")(
       testM("should return tasks") {
@@ -63,10 +65,10 @@ object BotServiceSpec extends DefaultRunnableSpec {
           task1.into[BotTask].withFieldConst(_.id, TaskId(1L)).transform
         )
         val expectedMessageEntities = List(
-          plain"Chat: ", bold"Alice", plain"\n",
-          plain"1. task2", italic"– Alice", plain"\n",
-          plain"2. task1", italic"– Alice", plain"\n",
-          plain"\n", italic"Select the task number to mark it as completed."
+          plain"Chat: ", bold"Alice", lineBreak,
+          plain"1. task2", italic"– Alice", lineBreak,
+          plain"2. task1", italic"– Alice", lineBreak,
+          lineBreak, italic"Select the task number to mark it as completed."
         )
         for {
           _ <- UserRepository.createOrUpdate(bob)

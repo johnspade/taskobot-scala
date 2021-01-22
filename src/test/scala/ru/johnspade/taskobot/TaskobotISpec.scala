@@ -9,6 +9,7 @@ import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
 import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.taskobot.core.TypedMessageEntity._
 import ru.johnspade.taskobot.core.{CbData, ChangeLanguage, Chats, CheckTask, ConfirmTask, Tasks, TypedMessageEntity}
 import ru.johnspade.taskobot.settings.SettingsController
@@ -87,14 +88,14 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
           listTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
             messageId = 0.some,
-            text = "Chat: John\\n1. Buy some milk– John\\n\\nSelect the task number to mark it as completed.",
+            text = "Chat: John\n1. Buy some milk– John\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"John", plain"\n",
-              plain"1. Buy some milk", italic"– John", plain"\n",
-              plain"\n", italic"Select the task number to mark it as completed."
+              plain"Chat: ", bold"John", lineBreak,
+              plain"1. Buy some milk", italic"– John", lineBreak,
+              lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkup.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(TaskId(1L), firstPage, UserId(johnId))),
+              inlineKeyboardButton("1", CheckTask(TaskId(1L), firstPage)),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
@@ -103,15 +104,15 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(1L), firstPage, UserId(johnId)), kaitrin, chatId = 1)
+          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(1L), firstPage), kaitrin, chatId = 1)
           _ <- ZIO.effect(Thread.sleep(1000))
           noTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
             messageId = 0.some,
-            text = "Chat: John\\n\\nSelect the task number to mark it as completed.",
+            text = "Chat: John\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"John", plain"\n",
-              plain"\n", italic"Select the task number to mark it as completed."
+              plain"Chat: ", bold"John", lineBreak,
+              lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
@@ -191,14 +192,14 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
-            text = "Chat: Personal tasks\\n1. Buy groceries\\n\\nSelect the task number to mark it as completed.",
+            text = "Chat: Personal tasks\n1. Buy groceries\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"Personal tasks", plain"\n",
-              plain"1. Buy groceries", plain"\n",
-              plain"\n", italic"Select the task number to mark it as completed."
+              plain"Chat: ", bold"Personal tasks", lineBreak,
+              plain"1. Buy groceries", lineBreak,
+              lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkup.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(TaskId(2L), firstPage, UserId(johnId))),
+              inlineKeyboardButton("1", CheckTask(TaskId(2L), firstPage)),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
@@ -206,14 +207,14 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(2L), firstPage, UserId(johnId)))
+          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(2L), firstPage))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
-            text = "Chat: Personal tasks\\n\\nSelect the task number to mark it as completed.",
+            text = "Chat: Personal tasks\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"Personal tasks", plain"\n",
-              plain"\n", italic"Select the task number to mark it as completed."
+              plain"Chat: ", bold"Personal tasks", lineBreak,
+              lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
