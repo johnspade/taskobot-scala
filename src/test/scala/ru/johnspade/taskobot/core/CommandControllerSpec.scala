@@ -24,7 +24,7 @@ import zio.test.{DefaultRunnableSpec, ZSpec, _}
 import zio.{Task, URLayer, ZIO, ZLayer, clock}
 
 object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with ArgumentMatchersSugar {
-  override def spec: ZSpec[TestEnvironment, Throwable] = suite("CommandControllerSpec")(
+  def spec: ZSpec[TestEnvironment, Throwable] = suite("CommandControllerSpec")(
     suite("/create")(
       testM("should create a task passed as an argument") {
         val taskMessage = createMessage("/create Buy some milk")
