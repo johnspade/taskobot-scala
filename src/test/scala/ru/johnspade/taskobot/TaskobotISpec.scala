@@ -8,6 +8,8 @@ import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
 import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
+import ru.johnspade.taskobot.TestHelpers.createMessage
+import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.taskobot.core.TypedMessageEntity._
@@ -17,10 +19,9 @@ import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
 import ru.johnspade.taskobot.task.{TaskController, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
-import ru.johnspade.taskobot.user.tags.UserId
 import telegramium.bots.client.Method
 import telegramium.bots.high.{Api, InlineKeyboardButton, InlineKeyboardMarkup, Methods}
-import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, MessageEntity, ParseMode, User}
+import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, ParseMode, User}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.test.Assertion.{equalTo, isSome}
@@ -34,7 +35,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     testM("collaborative tasks") {
       val typeTask =
         for {
-          inlineQueryReply <- withTaskobotService(_.onInlineQueryReply(InlineQuery("0", john, query = "Buy some milk", offset = "0")))
+          inlineQueryReply <- withTaskobotService(_.onInlineQueryReply(InlineQuery("0", johnTg, query = "Buy some milk", offset = "0")))
           assertions = assert(inlineQueryReply)(isSome(equalTo {
             Methods.answerInlineQuery(
               "0", cacheTime = 0.some,
@@ -42,7 +43,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
                 InlineQueryResultArticle(
                   "1", "Create task", InputTextMessageContent("*Buy some milk*", Markdown2.some),
                   InlineKeyboardMarkup.singleButton(
-                    inlineKeyboardButton("Confirm task", ConfirmTask(UserId(johnId), id = None))
+                    inlineKeyboardButton("Confirm task", ConfirmTask(john.id, id = None))
                   )
                     .some,
                   description = "Buy some milk".some
@@ -55,18 +56,18 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
       val createTask =
         for {
           chosenInlineResultReply <-
-            withTaskobotService(_.onChosenInlineResultReply(ChosenInlineResult("0", john, query = "Buy some milk", inlineMessageId = "0".some)))
+            withTaskobotService(_.onChosenInlineResultReply(ChosenInlineResult("0", johnTg, query = "Buy some milk", inlineMessageId = "0".some)))
           expectedEditMessageReplyMarkupReq = Methods.editMessageReplyMarkup(
             inlineMessageId = "0".some,
             replyMarkup = InlineKeyboardMarkup.singleButton(
-              inlineKeyboardButton("Confirm task", ConfirmTask(UserId(johnId), TaskId(1L).some))
+              inlineKeyboardButton("Confirm task", ConfirmTask(john.id, TaskId(1L).some))
             ).some
           )
         } yield assert(chosenInlineResultReply)(isSome(isMethodsEqual(expectedEditMessageReplyMarkupReq)))
 
       val confirmTask =
         for {
-          confirmTaskReply <- sendCallbackQuery(ConfirmTask(UserId(johnId), TaskId(1L).some), kaitrin, inlineMessageId = "0".some)
+          confirmTaskReply <- sendCallbackQuery(ConfirmTask(john.id, TaskId(1L).some), kaitrinTg, inlineMessageId = "0".some)
           removeMarkupAssertions = verifyMethodCall(botApiMock, Methods.editMessageReplyMarkup(inlineMessageId = "0".some, replyMarkup = None))
           confirmTaskReplyAssertions = assert(confirmTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
         } yield removeMarkupAssertions && confirmTaskReplyAssertions
@@ -78,13 +79,13 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(kaitrinChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Kaitrin", Tasks(UserId(kaitrinId), firstPage))).some
+              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Kaitrin", Tasks(kaitrin.id, firstPage))).some
           ))))
         } yield assertions
 
       val listTasks =
         for {
-          tasksReply <- sendCallbackQuery(Tasks(UserId(johnId), firstPage), kaitrin, chatId = kaitrinChatId)
+          tasksReply <- sendCallbackQuery(Tasks(john.id, firstPage), kaitrinTg, chatId = kaitrinChatId)
           listTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
             messageId = 0.some,
@@ -104,7 +105,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(1L), firstPage), kaitrin, chatId = 1)
+          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(1L), firstPage), kaitrinTg, chatId = kaitrinChatId)
           _ <- ZIO.effect(Thread.sleep(1000))
           noTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
@@ -182,13 +183,13 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(johnChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Personal tasks", Tasks(UserId(johnId), firstPage))).some
+              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Personal tasks", Tasks(john.id, firstPage))).some
           ))))
         } yield assertions
 
       val listTasks =
         for {
-          tasksReply <- sendCallbackQuery(Tasks(UserId(johnId), firstPage))
+          tasksReply <- sendCallbackQuery(Tasks(john.id, firstPage))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
@@ -243,25 +244,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
   when(botApiMock.execute[Message](*)).thenReturn(Task.succeed(mockMessage()))
   when(botApiMock.execute[Either[Boolean, Message]](*)).thenReturn(Task.right(mockMessage()))
 
-  private val johnId = 1337
-  private val johnChatId = 0
-  private val john = User(johnId, isBot = false, "John")
-  private val kaitrinId = 911
-  private val kaitrinChatId = 1
-  private val kaitrin = User(kaitrinId, isBot = false, "Kaitrin")
-
   private val firstPage = PageNumber(0)
-
-  private def createMessage(text: String, isCommand: Boolean = false, chatId: Int = johnChatId, replyToMessage: Option[Message] = None) =
-    Message(
-      messageId = 0,
-      date = 0,
-      chat = Chat(id = chatId, `type` = "private"),
-      from = john.some,
-      text = text.some,
-      entities = if (isCommand) List(MessageEntity("bot_command", offset = 0, length = text.length)) else List.empty,
-      replyToMessage = replyToMessage
-    )
 
   private def withTaskobotService(f: LiveTaskobot => Task[Option[Method[_]]]) =
     ZIO.service[LiveTaskobot].flatMap(f)
@@ -269,7 +252,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
   private def sendMessage(text: String, isCommand: Boolean = false, chatId: Int = johnChatId, replyToMessage: Option[Message] = None) =
     withTaskobotService(_.onMessageReply(createMessage(text, isCommand, chatId, replyToMessage)))
 
-  private def sendCallbackQuery(data: CbData, from: User = john, inlineMessageId: Option[String] = None, chatId: Int = 0) =
+  private def sendCallbackQuery(data: CbData, from: User = johnTg, inlineMessageId: Option[String] = None, chatId: Int = 0) =
     withTaskobotService {
       _.onCallbackQueryReply(
         CallbackQuery("0", from, chatInstance = "", data = data.toCsv.some, message = mockMessage(chatId).some, inlineMessageId = inlineMessageId)

@@ -5,6 +5,8 @@ import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
+import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
+import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.{inlineKeyboardButton, toUser}
 import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.taskobot.core.TypedMessageEntity._
@@ -16,12 +18,12 @@ import ru.johnspade.taskobot.task.TaskController.TaskController
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, Done, TaskId, TaskText}
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
-import ru.johnspade.taskobot.user.tags.{ChatId, FirstName, UserId}
+import ru.johnspade.taskobot.user.tags.{FirstName, UserId}
 import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.johnspade.taskobot.{BotService, TestEnvironments}
 import telegramium.bots.client.Method
 import telegramium.bots.high.{Api, InlineKeyboardMarkup, Methods}
-import telegramium.bots.{CallbackQuery, Chat, ChatIntId, Message, User => TgUser}
+import telegramium.bots.{ChatIntId, Message, User => TgUser}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.test.Assertion.{equalTo, hasField, isNone, isSome}
@@ -271,21 +273,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
   when(botApiMock.execute[Message](*)).thenReturn(Task.succeed(mockMessage()))
   when(botApiMock.execute[Either[Boolean, Message]](*)).thenReturn(Task.right(mockMessage()))
 
-  private val johnTg = TgUser(1337, isBot = false, "John")
-  private val kaitrinTg = TgUser(911, isBot = false, "Kaitrin")
-
-  private val johnChatId = ChatId(0L)
-  private val john = toUser(johnTg, johnChatId.some)
-  private val kaitrinChatId = ChatId(17L)
-  private val kaitrin = toUser(kaitrinTg, kaitrinChatId.some)
-
   private val firstPage = PageNumber(0)
-
-  private def mockMessage(chatId: Int = 0) =
-    Message(0, date = 0, chat = Chat(chatId, `type` = ""), from = TgUser(id = 123, isBot = true, "Taskobot").some)
-
-  private def callbackQuery(data: CbData, from: TgUser, inlineMessageId: Option[String] = None) =
-    CallbackQuery("0", from, chatInstance = "", data = data.toCsv.some, message = mockMessage().some, inlineMessageId = inlineMessageId)
 
   private def verifyMethodCalled[Res](method: Method[Res]) = {
     val captor = ArgCaptor[Method[Res]]
