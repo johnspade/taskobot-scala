@@ -29,6 +29,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
       testM("should list languages") {
         for {
           reply <- sendChangeLanguageQuery()
+          _ <- ZIO.effect(Thread.sleep(1000))
           listLanguagesAssertions = verifyMethodCalled(Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
@@ -51,6 +52,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
       testM("should change language") {
         for {
           reply <- sendSetLanguageQuery()
+          _ <- ZIO.effect(Thread.sleep(1000))
           user <- UserRepository.findById(john.id)
           userAssertions = assert(user.get)(hasField("language", _.language, equalTo[Language, Language](Language.Russian)))
           listLanguagesAssertions = verifyMethodCalled(Methods.editMessageText(

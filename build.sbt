@@ -21,6 +21,7 @@ addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVers
 
 enablePlugins(Scalingua)
 templateTarget in Compile := file("src/main/locales/messages.pot")
+sourceDirectories in (Test, compileLocales) := Seq(file("src/main/locales"))
 
 lazy val telegramiumCore = ProjectRef(uri("https://github.com/apimorphism/telegramium.git#master"), "telegramium-core")
 lazy val telegramiumHigh = ProjectRef(uri("https://github.com/apimorphism/telegramium.git#master"), "telegramium-high")
