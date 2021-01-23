@@ -119,10 +119,9 @@ object CommandController {
       )
 
     private def createSettingsMessage(message: Message, user: User)(implicit languageId: LanguageId) = {
-      val languageName = user.language.languageName
       sendMessage(
         ChatIntId(message.chat.id),
-        t"Current language: $languageName",
+        Messages.currentLanguage(user.language),
         replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton(t"Switch language", ChangeLanguage)).some
       )
     }

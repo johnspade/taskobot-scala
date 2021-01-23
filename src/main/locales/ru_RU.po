@@ -3,16 +3,83 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: \n"
+"Last-Translator: \n"
 "Language-Team: \n"
+"Language: ru_RU\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.3\n"
-"Last-Translator: \n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
-"Language: ru_RU\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
 
-#  !Generated: 2020-11-07 00:14:01
-#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:28
+#  !Generated: 2021-01-23 20:14:12
+#: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
+msgid "Chat: "
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:82
+msgid "/create: New personal task"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:125
+msgid "Switch language"
+msgstr "Изменить язык"
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:9
+msgid ""
+"Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</"
+"code> in private chat and select <b>Create task</b>. After receiver's "
+"confirmation collaborative task will be created. Type /list in the bot chat "
+"to see your tasks.\n"
+"\n"
+"Support a creator: https://buymeacoff.ee/johnspade \\u2615"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:13
+msgid "Start creating tasks"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:15
+msgid "Personal task \"%(task)\" has been created."
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
+msgid "Chats with tasks"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
+msgid "Personal tasks"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
+msgid "Previous page"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
+msgid "Next page"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:27
+msgid "Current language: %(languageName)"
+msgstr "Текущий язык: %(languageName)"
+
+#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:89
 msgid "Create task"
 msgstr "Создать задачу"
+
+#: src/main/scala/ru/johnspade/taskobot/settings/SettingsController.scala:65
+msgid "Language has been changed"
+msgstr "Язык изменен"
+
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:81
+msgid "The task must be confirmed by the receiver"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:150
+msgid "Task has been marked as completed."
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:167
+msgid "Task \"%(taskText)\" has been marked as completed by %(completedBy)."
+msgstr ""

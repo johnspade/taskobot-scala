@@ -10,7 +10,7 @@ import ru.johnspade.taskobot.core.{CbData, ChangeLanguage, SetLanguage}
 import ru.johnspade.taskobot.i18n.{Language, messages}
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.user.{User, UserRepository}
-import ru.johnspade.taskobot.{CbDataRoutes, CbDataUserRoutes, Keyboards}
+import ru.johnspade.taskobot.{CbDataRoutes, CbDataUserRoutes, Keyboards, Messages}
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.high.Api
@@ -73,7 +73,7 @@ object SettingsController {
         editMessageText(
           ChatIntId(msg.chat.id).some,
           msg.messageId.some,
-          text = t"Current language: $language",
+          text = Messages.currentLanguage(language),
           replyMarkup = Keyboards.languages.some
         )
           .exec

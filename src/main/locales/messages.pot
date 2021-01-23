@@ -1,4 +1,4 @@
-#  !Generated: 2021-01-23 16:45:36
+#  !Generated: 2021-01-23 20:14:12
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
 msgid "Chat: "
@@ -9,10 +9,6 @@ msgid "/create: New personal task"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:125
-msgid "Current language: %(languageName)"
-msgstr ""
-
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:126
 msgid "Switch language"
 msgstr ""
 
@@ -44,16 +40,16 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:27
+msgid "Current language: %(languageName)"
+msgstr ""
+
 #: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:89
 msgid "Create task"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/settings/SettingsController.scala:65
 msgid "Language has been changed"
-msgstr ""
-
-#: src/main/scala/ru/johnspade/taskobot/settings/SettingsController.scala:76
-msgid "Current language: %(language)"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:81
