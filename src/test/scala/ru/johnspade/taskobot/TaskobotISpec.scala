@@ -6,7 +6,6 @@ import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import ru.johnspade.taskobot.Configuration.BotConfig
 import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
-import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
@@ -63,7 +62,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               inlineKeyboardButton("Confirm task", ConfirmTask(john.id, TaskId(1L).some))
             ).some
           )
-        } yield assert(chosenInlineResultReply)(isSome(isMethodsEqual(expectedEditMessageReplyMarkupReq)))
+        } yield assert(chosenInlineResultReply.get.payload)(equalTo(expectedEditMessageReplyMarkupReq.payload))
 
       val confirmTask =
         for {
@@ -278,7 +277,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
   private def verifyMethodCall[Res](api: Api[Task], method: Method[Res]) = {
     val captor = ArgCaptor[Method[Res]]
     verify(api, atLeastOnce).execute(captor).asInstanceOf[Unit]
-    assert(captor.values)(Assertion.exists(isMethodsEqual(method)))
+    assert(captor.values.map(_.payload))(Assertion.exists(equalTo(method.payload)))
   }
 
   private object TestEnvironment {

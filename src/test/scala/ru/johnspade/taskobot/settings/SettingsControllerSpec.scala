@@ -3,7 +3,6 @@ package ru.johnspade.taskobot.settings
 import cats.syntax.option._
 import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments
 import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg}
@@ -105,7 +104,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
   private def verifyMethodCalled[Res](method: Method[Res]) = {
     val captor = ArgCaptor[Method[Res]]
     verify(botApiMock, atLeastOnce).execute(captor).asInstanceOf[Unit]
-    assert(captor.values)(Assertion.exists(isMethodsEqual(method)))
+    assert(captor.values.map(_.payload))(Assertion.exists(equalTo(method.payload)))
   }
 
 

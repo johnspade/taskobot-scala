@@ -3,7 +3,6 @@ package ru.johnspade.taskobot.task
 import cats.syntax.option._
 import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import ru.johnspade.taskobot.TestAssertions.isMethodsEqual
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
@@ -278,7 +277,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
   private def verifyMethodCalled[Res](method: Method[Res]) = {
     val captor = ArgCaptor[Method[Res]]
     verify(botApiMock, atLeastOnce).execute(captor).asInstanceOf[Unit]
-    assert(captor.values)(Assertion.exists(isMethodsEqual(method)))
+    assert(captor.values.map(_.payload))(Assertion.exists(equalTo(method.payload)))
   }
 
   private def verifyMethodNeverCalled[Res](method: Method[Res]) =
