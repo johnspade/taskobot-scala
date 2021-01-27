@@ -19,7 +19,8 @@ import ru.johnspade.taskobot.task.tags.TaskId
 import ru.johnspade.taskobot.task.{TaskController, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
 import telegramium.bots.client.Method
-import telegramium.bots.high.{Api, InlineKeyboardButton, InlineKeyboardMarkup, Methods}
+import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
+import telegramium.bots.high.{Api, Methods}
 import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, ParseMode, User}
 import zio.blocking.Blocking
 import zio.clock.Clock
@@ -41,7 +42,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               results = List(
                 InlineQueryResultArticle(
                   "1", "Create task", InputTextMessageContent("*Buy some milk*", Markdown2.some),
-                  InlineKeyboardMarkup.singleButton(
+                  InlineKeyboardMarkups.singleButton(
                     inlineKeyboardButton("Confirm task", ConfirmTask(john.id, id = None))
                   )
                     .some,
@@ -58,7 +59,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             withTaskobotService(_.onChosenInlineResultReply(ChosenInlineResult("0", johnTg, query = "Buy some milk", inlineMessageId = "0".some)))
           expectedEditMessageReplyMarkupReq = Methods.editMessageReplyMarkup(
             inlineMessageId = "0".some,
-            replyMarkup = InlineKeyboardMarkup.singleButton(
+            replyMarkup = InlineKeyboardMarkups.singleButton(
               inlineKeyboardButton("Confirm task", ConfirmTask(john.id, TaskId(1L).some))
             ).some
           )
@@ -78,7 +79,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(kaitrinChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Kaitrin", Tasks(kaitrin.id, firstPage))).some
+              InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Kaitrin", Tasks(kaitrin.id, firstPage))).some
           ))))
         } yield assertions
 
@@ -94,7 +95,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"1. Buy some milk", italic"– John", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleColumn(List(
+            replyMarkup = InlineKeyboardMarkups.singleColumn(List(
               inlineKeyboardButton("1", CheckTask(TaskId(1L), firstPage)),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
@@ -114,7 +115,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"Chat: ", bold"John", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
+            replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
           checkTaskReplyAssertions =
           assert(checkTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))))
@@ -144,14 +145,14 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
               "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
               "Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕",
-            InlineKeyboardMarkup.singleButton(InlineKeyboardButton.switchInlineQuery("Start creating tasks", "")).some,
+            InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("Start creating tasks", "")).some,
             Html.some,
             disableWebPagePreview = true.some
           )
         } yield assert(startReply)(isSome(equalTo(Methods.sendMessage(
           ChatIntId(johnChatId),
           "Current language: English",
-          replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
+          replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
         ))))
 
       val create =
@@ -182,7 +183,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(johnChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Personal tasks", Tasks(john.id, firstPage))).some
+              InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Personal tasks", Tasks(john.id, firstPage))).some
           ))))
         } yield assertions
 
@@ -198,7 +199,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"1. Buy groceries", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleColumn(List(
+            replyMarkup = InlineKeyboardMarkups.singleColumn(List(
               inlineKeyboardButton("1", CheckTask(TaskId(2L), firstPage)),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
@@ -216,7 +217,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               plain"Chat: ", bold"Personal tasks", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
+            replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
         } yield assert(checkTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))))
 

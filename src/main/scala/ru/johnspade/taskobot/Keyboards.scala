@@ -7,7 +7,8 @@ import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.user.User
 import ru.makkarpov.scalingua.LanguageId
-import telegramium.bots.high.InlineKeyboardMarkup
+import telegramium.bots.InlineKeyboardMarkup
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 
 object Keyboards {
   def chats(page: Page[User], `for`: User)(implicit languageId: LanguageId): InlineKeyboardMarkup = {
@@ -42,7 +43,7 @@ object Keyboards {
   }
 
   val languages: InlineKeyboardMarkup =
-    InlineKeyboardMarkup.singleColumn(
+    InlineKeyboardMarkups.singleColumn(
       Language.values
         .map { language =>
           inlineKeyboardButton(language.languageName, SetLanguage(language))

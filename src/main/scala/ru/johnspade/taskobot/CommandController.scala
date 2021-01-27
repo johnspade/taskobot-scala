@@ -3,27 +3,28 @@ package ru.johnspade.taskobot
 import cats.syntax.option._
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.{ChangeLanguage, Page}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.{ChangeLanguage, Page}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.tags.PageNumber
-import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
+import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.user.tags.ChatId
 import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
+import telegramium.bots.high.Api
 import telegramium.bots.high.Methods.sendMessage
 import telegramium.bots.high.implicits._
-import telegramium.bots.high.{Api, InlineKeyboardButton, InlineKeyboardMarkup}
+import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
 import telegramium.bots.{ChatIntId, ForceReply, Html, Message}
 import zio._
 import zio.clock.Clock
-import zio.macros.accessible
 import zio.interop.catz._
+import zio.macros.accessible
 
 @accessible
 object CommandController {
@@ -115,14 +116,14 @@ object CommandController {
         Messages.help(),
         Html.some,
         disableWebPagePreview = true.some,
-        replyMarkup = InlineKeyboardMarkup.singleButton(InlineKeyboardButton.switchInlineQuery(Messages.tasksStart(), "")).some
+        replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery(Messages.tasksStart(), "")).some
       )
 
     private def createSettingsMessage(message: Message, user: User)(implicit languageId: LanguageId) = {
       sendMessage(
         ChatIntId(message.chat.id),
         Messages.currentLanguage(user.language),
-        replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton(t"Switch language", ChangeLanguage)).some
+        replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton(t"Switch language", ChangeLanguage)).some
       )
     }
   }

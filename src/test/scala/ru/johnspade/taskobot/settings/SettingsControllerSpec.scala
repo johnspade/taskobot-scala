@@ -15,6 +15,7 @@ import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import telegramium.bots.client.Method
 import telegramium.bots.high._
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.{ChatIntId, Message}
 import zio.blocking.Blocking
 import zio.test.Assertion.{equalTo, hasField, isSome}
@@ -33,7 +34,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
             ChatIntId(johnChatId).some,
             messageId = 0.some,
             text = "Current language: English",
-            replyMarkup = InlineKeyboardMarkup.singleColumn(
+            replyMarkup = InlineKeyboardMarkups.singleColumn(
               List(
                 inlineKeyboardButton("English", SetLanguage(Language.English)),
                 inlineKeyboardButton("Русский", SetLanguage(Language.Russian)),
@@ -58,7 +59,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
             ChatIntId(johnChatId).some,
             messageId = 0.some,
             text = "Текущий язык: Русский",
-            replyMarkup = InlineKeyboardMarkup.singleColumn(
+            replyMarkup = InlineKeyboardMarkups.singleColumn(
               List(
                 inlineKeyboardButton("English", SetLanguage(Language.English)),
                 inlineKeyboardButton("Русский", SetLanguage(Language.Russian)),

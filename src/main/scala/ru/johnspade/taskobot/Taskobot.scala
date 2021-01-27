@@ -22,7 +22,8 @@ import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
-import telegramium.bots.high.{Api, WebhookBot, _}
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.{Api, WebhookBot}
 import telegramium.bots.{BotCommandMessageEntity, CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
 import zio._
 import zio.clock.Clock
@@ -88,7 +89,7 @@ object Taskobot {
         id = "1",
         title = t"Create task",
         inputMessageContent = InputTextMessageContent(s"*$text*", Markdown2.some),
-        replyMarkup = InlineKeyboardMarkup.singleButton(
+        replyMarkup = InlineKeyboardMarkups.singleButton(
           inlineKeyboardButton("Confirm task", ConfirmTask(UserId(query.from.id), id = None))
         )
           .some,
@@ -106,7 +107,7 @@ object Taskobot {
         task <- taskRepo.create(NewTask(user.id, TaskText(inlineResult.query), CreatedAt(now.toEpochMilli), None))
         method = editMessageReplyMarkup(
           inlineMessageId = inlineResult.inlineMessageId,
-          replyMarkup = InlineKeyboardMarkup.singleButton(
+          replyMarkup = InlineKeyboardMarkups.singleButton(
             inlineKeyboardButton("Confirm task", ConfirmTask(user.id, task.id.some))
           )
             .some

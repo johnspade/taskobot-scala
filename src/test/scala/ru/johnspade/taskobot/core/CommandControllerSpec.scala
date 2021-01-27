@@ -13,7 +13,8 @@ import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.{BotService, CommandController, TestEnvironments}
-import telegramium.bots.high.{Api, InlineKeyboardMarkup, Methods}
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.{Api, Methods}
 import telegramium.bots.{ChatIntId, Message}
 import zio.blocking.Blocking
 import zio.clock.Clock
@@ -50,7 +51,7 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
         } yield assert(reply)(isSome(equalTo(Methods.sendMessage(
           ChatIntId(johnChatId),
           "Current language: English",
-          replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
+          replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
         ))))
       }
     )

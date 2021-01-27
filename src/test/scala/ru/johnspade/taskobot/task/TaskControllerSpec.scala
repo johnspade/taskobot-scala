@@ -21,8 +21,9 @@ import ru.johnspade.taskobot.user.tags.{FirstName, UserId}
 import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.johnspade.taskobot.{BotService, TestEnvironments}
 import telegramium.bots.client.Method
-import telegramium.bots.high.{Api, InlineKeyboardMarkup, Methods}
-import telegramium.bots.{ChatIntId, Message, User => TgUser}
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.{Api, Methods}
+import telegramium.bots.{ChatIntId, InlineKeyboardMarkup, Message, User => TgUser}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.test.Assertion.{equalTo, hasField, isNone, isSome}
@@ -43,7 +44,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             chatId = ChatIntId(0).some,
             messageId = 0.some,
             text = "Chats with tasks",
-            replyMarkup = InlineKeyboardMarkup.singleColumn(
+            replyMarkup = InlineKeyboardMarkups.singleColumn(
               List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(UserId(n), firstPage)))
             ).some
           ))
@@ -59,7 +60,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             chatId = ChatIntId(0).some,
             messageId = 0.some,
             text = "Chats with tasks",
-            replyMarkup = InlineKeyboardMarkup.singleColumn(
+            replyMarkup = InlineKeyboardMarkups.singleColumn(
               List.tabulate(5) { n =>
                 val id = n + 5
                 inlineKeyboardButton(id.toString, Tasks(UserId(id), firstPage))
@@ -88,7 +89,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
               plain"1. Wash dishes please", italic"– Kaitrin", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleColumn(List(
+            replyMarkup = InlineKeyboardMarkups.singleColumn(List(
               inlineKeyboardButton("1", CheckTask(task.id, firstPage)),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
@@ -151,7 +152,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
               plain"Chat: ", bold"Kaitrin", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
+            replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
           notifyAssertions = verifyMethodCalled(Methods.sendMessage(
             ChatIntId(kaitrinChatId),
@@ -179,7 +180,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
               plain"Chat: ", bold"John", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
-            replyMarkup = InlineKeyboardMarkup.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
+            replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
           ))
           notifyAssertions = verifyMethodCalled(Methods.sendMessage(
             ChatIntId(johnChatId),
