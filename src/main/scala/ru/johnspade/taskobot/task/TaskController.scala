@@ -177,7 +177,7 @@ object TaskController {
       editMessageText(
         ChatIntId(message.chat.id).some,
         message.messageId.some,
-        text = messageEntities.map(_.value).mkString,
+        text = messageEntities.map(_.text).mkString,
         entities = TypedMessageEntity.toMessageEntities(messageEntities),
         replyMarkup = Keyboards.tasks(page, collaborator).some
       )

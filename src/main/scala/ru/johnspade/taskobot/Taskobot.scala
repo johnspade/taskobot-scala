@@ -23,7 +23,7 @@ import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
 import telegramium.bots.high.{Api, WebhookBot, _}
-import telegramium.bots.{CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
+import telegramium.bots.{BotCommandMessageEntity, CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
 import zio._
 import zio.clock.Clock
 import zio.interop.catz._
@@ -132,8 +132,9 @@ object Taskobot {
 
       def handleCommand() =
         ZIO.foreach(
-          msg.entities
-            .find(entity => entity.`type` == "bot_command" && entity.offset == 0)
+          msg.entities.collectFirst {
+            case BotCommandMessageEntity(0, _) => true
+          }
             .flatMap(_ => msg.text)
         ) {
           case t if t.startsWith("/start") => commandController.onStartCommand(msg)

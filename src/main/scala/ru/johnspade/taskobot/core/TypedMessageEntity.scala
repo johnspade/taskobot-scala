@@ -1,30 +1,29 @@
 package ru.johnspade.taskobot.core
 
-import telegramium.bots.{MessageEntity, User}
+import telegramium.bots.{BoldMessageEntity, ItalicMessageEntity, MessageEntity, PreMessageEntity, TextLinkMessageEntity, TextMentionMessageEntity, User}
 
 sealed abstract class TypedMessageEntity extends Product with Serializable {
-  def `type`: String
-  def value: String
-  def url: Option[String] = None
-  def user: Option[User] = None
-  def language: Option[String] = None
+  def text: String
 }
 
 object TypedMessageEntity {
   def toMessageEntities(entities: List[TypedMessageEntity]): List[MessageEntity] =
     entities.foldLeft((List.empty[MessageEntity], 0)) { case ((acc, offset), entity) =>
+      def accumulate(me: MessageEntity) = (me :: acc, offset + me.length)
+
       entity match {
         case Plain(text) => (acc, offset + text.length)
-        case e: TypedMessageEntity =>
-          val messageEntity = MessageEntity(e.`type`, offset, e.value.length, e.url, e.user, e.language)
-          (messageEntity :: acc, offset + e.value.length)
+        case Bold(text) => accumulate(BoldMessageEntity(offset, text.length))
+        case Italic(text) => accumulate(ItalicMessageEntity(offset, text.length))
+        case TextLinkMessage(text, url) => accumulate(TextLinkMessageEntity(offset, text.length, url))
+        case TextMention(text, user) => accumulate(TextMentionMessageEntity(offset, text.length, user))
+        case Pre(text, language) => accumulate(PreMessageEntity(offset, text.length, language))
       }
     }
       ._1
       .reverse
 
   final case class Plain(text: String) extends TypedMessageEntity {
-    def `type`: String = "plain"
     def value: String = text
   }
 
@@ -32,33 +31,15 @@ object TypedMessageEntity {
     val lineBreak: Plain = Plain("\n")
   }
 
-  final case class Bold(text: String) extends TypedMessageEntity {
-    def `type`: String = "bold"
-    def value: String = text
-  }
+  final case class Bold(text: String) extends TypedMessageEntity
 
-  final case class Italic(text: String) extends TypedMessageEntity {
-    def `type`: String = "italic"
-    def value: String = text
-  }
+  final case class Italic(text: String) extends TypedMessageEntity
 
-  final case class Url(text: String, targetUrl: String) extends TypedMessageEntity {
-    def `type`: String = "url"
-    def value: String = text
-    override def url: Option[String] = Some(targetUrl)
-  }
+  final case class TextLinkMessage(text: String, url: String) extends TypedMessageEntity
 
-  final case class TextMention(text: String, mentionedUser: User) extends TypedMessageEntity {
-    def `type`: String = "text_mention"
-    def value: String = text
-    override def user: Option[User] = Some(mentionedUser)
-  }
+  final case class TextMention(text: String, user: User) extends TypedMessageEntity
 
-  final case class Pre(text: String, programmingLanguage: String) extends TypedMessageEntity {
-    def `type`: String = "pre"
-    def value: String = text
-    override def language: Option[String] = Some(programmingLanguage)
-  }
+  final case class Pre(text: String, language: String) extends TypedMessageEntity
 
   implicit class StringMessageEntityHelper(val sc: StringContext) extends AnyVal {
     def plain(args: Any*): Plain = Plain(build(args: _*))
