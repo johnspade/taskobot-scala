@@ -7,7 +7,7 @@ import ru.johnspade.taskobot.TestEnvironments
 import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
+import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
 import ru.johnspade.taskobot.core.{ChangeLanguage, SetLanguage}
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.settings.SettingsController.SettingsController

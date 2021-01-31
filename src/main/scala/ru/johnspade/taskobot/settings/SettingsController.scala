@@ -4,8 +4,8 @@ import cats.effect.ConcurrentEffect
 import cats.syntax.option._
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.TelegramOps.toUser
-import ru.johnspade.taskobot.core.callbackqueries.CallbackQueryDsl._
-import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl._
+import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
 import ru.johnspade.taskobot.core.{CbData, ChangeLanguage, SetLanguage}
 import ru.johnspade.taskobot.i18n.{Language, messages}
 import ru.johnspade.taskobot.user.UserRepository.UserRepository

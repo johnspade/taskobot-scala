@@ -8,7 +8,7 @@ import ru.johnspade.taskobot.Configuration.BotConfig
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.UserMiddleware.UserMiddleware
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.callbackqueries.{CallbackDataDecoder, CallbackQueryContextMiddleware, CallbackQueryHandler, DecodeError, ParseError}
+import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryContextMiddleware, CallbackQueryHandler, DecodeError, ParseError}
 import ru.johnspade.taskobot.core.{CbData, ConfirmTask}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.settings.SettingsController

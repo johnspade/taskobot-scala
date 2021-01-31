@@ -7,10 +7,7 @@ import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.{inlineKeyboardButton, toUser}
-import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.taskobot.core.TypedMessageEntity._
-import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
-import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks, TypedMessageEntity}
+import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks}
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.TaskController.TaskController
@@ -20,6 +17,10 @@ import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.user.tags.{FirstName, UserId}
 import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.johnspade.taskobot.{BotService, TestEnvironments}
+import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import telegramium.bots.client.Method
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.{Api, Methods}

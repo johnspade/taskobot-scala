@@ -1,9 +1,9 @@
 package ru.johnspade
 
 import ru.johnspade.taskobot.core.CbData
-import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
 import ru.johnspade.taskobot.tags.PageSize
 import ru.johnspade.taskobot.user.User
+import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
 import supertagged.{TaggedOps, TaggedType}
 
 package object taskobot {

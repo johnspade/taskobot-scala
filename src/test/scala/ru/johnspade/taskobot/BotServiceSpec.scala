@@ -2,8 +2,8 @@ package ru.johnspade.taskobot
 
 import cats.syntax.option._
 import io.scalaland.chimney.dsl._
-import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.taskobot.core.TypedMessageEntity._
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskId, TaskText}

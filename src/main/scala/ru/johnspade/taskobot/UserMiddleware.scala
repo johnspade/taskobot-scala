@@ -3,7 +3,7 @@ package ru.johnspade.taskobot
 import cats.data.{Kleisli, OptionT}
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.core.CbData
-import ru.johnspade.taskobot.core.callbackqueries.{CallbackQueryContextMiddleware, CallbackQueryData, ContextCallbackQuery}
+import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextMiddleware, CallbackQueryData, ContextCallbackQuery}
 import ru.johnspade.taskobot.user.User
 import zio._
 import zio.interop.catz._

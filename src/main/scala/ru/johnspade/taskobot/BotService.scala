@@ -1,9 +1,7 @@
 package ru.johnspade.taskobot
 
+import ru.johnspade.taskobot.core.Page
 import ru.johnspade.taskobot.core.TelegramOps.toUser
-import ru.johnspade.taskobot.core.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.taskobot.core.TypedMessageEntity._
-import ru.johnspade.taskobot.core.{Page, TypedMessageEntity}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
@@ -11,6 +9,9 @@ import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.user.tags._
 import ru.johnspade.taskobot.user.{User, UserRepository}
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots
