@@ -54,7 +54,7 @@ object Taskobot {
       CommandController.Service,
       TaskController.Service,
       SettingsController.Service,
-      CallbackQueryContextMiddleware[CbData, User, Task],
+      CallbackQueryUserMiddleware,
       Any,
       Nothing,
       LiveTaskobot
@@ -74,7 +74,7 @@ object Taskobot {
     commandController: CommandController.Service,
     taskController: TaskController.Service,
     settingsController: SettingsController.Service,
-    userMiddleware: CallbackQueryContextMiddleware[CbData, User, Task]
+    userMiddleware: CallbackQueryUserMiddleware
   )(
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
@@ -160,7 +160,7 @@ object Taskobot {
         .toEitherT[Task]
 
     override def onCallbackQueryReply(query: CallbackQuery): Task[Option[Method[_]]] = {
-      CallbackQueryHandler.handle[Task, CbData](
+      CallbackQueryHandler.handle(
         query,
         cbRoutes,
         cbDataDecoder,

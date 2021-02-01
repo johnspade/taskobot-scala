@@ -4,13 +4,13 @@ import cats.effect.ConcurrentEffect
 import cats.syntax.option._
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.TelegramOps.toUser
+import ru.johnspade.taskobot.core.{ChangeLanguage, SetLanguage}
+import ru.johnspade.taskobot.i18n.{Language, messages}
+import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.taskobot.user.UserRepository.UserRepository
+import ru.johnspade.taskobot.{CbDataRoutes, CbDataUserRoutes, Keyboards, Messages}
 import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl._
 import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
-import ru.johnspade.taskobot.core.{CbData, ChangeLanguage, SetLanguage}
-import ru.johnspade.taskobot.i18n.{Language, messages}
-import ru.johnspade.taskobot.user.UserRepository.UserRepository
-import ru.johnspade.taskobot.user.{User, UserRepository}
-import ru.johnspade.taskobot.{CbDataRoutes, CbDataUserRoutes, Keyboards, Messages}
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.high.Api
@@ -47,7 +47,7 @@ object SettingsController {
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
   ) extends Service {
-    override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of[CbData, User, Task] {
+    override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
 
       case ChangeLanguage in cb as user =>
         listLanguages(cb, user.language).fork
@@ -55,7 +55,7 @@ object SettingsController {
 
     }
 
-    override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of[CbData, Task] {
+    override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of {
 
       case SetLanguage(language) in cb =>
         for {

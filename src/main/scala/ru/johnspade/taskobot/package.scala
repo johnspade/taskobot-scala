@@ -3,8 +3,10 @@ package ru.johnspade
 import ru.johnspade.taskobot.core.CbData
 import ru.johnspade.taskobot.tags.PageSize
 import ru.johnspade.taskobot.user.User
-import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
+import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextMiddleware, CallbackQueryContextRoutes, CallbackQueryRoutes}
 import supertagged.{TaggedOps, TaggedType}
+import telegramium.bots.client.Method
+import zio.Task
 
 package object taskobot {
   object tags {
@@ -32,7 +34,9 @@ package object taskobot {
 
   val DefaultPageSize: PageSize = PageSize(5)
 
-  type CbDataRoutes[F[_]] = CallbackQueryRoutes[CbData, F]
+  type CbDataRoutes[F[_]] = CallbackQueryRoutes[CbData, Option[Method[_]], F]
 
-  type CbDataUserRoutes[F[_]] = CallbackQueryContextRoutes[CbData, User, F]
+  type CbDataUserRoutes[F[_]] = CallbackQueryContextRoutes[CbData, User, Option[Method[_]], F]
+
+  type CallbackQueryUserMiddleware = CallbackQueryContextMiddleware[CbData, User, Option[Method[_]], Task]
 }

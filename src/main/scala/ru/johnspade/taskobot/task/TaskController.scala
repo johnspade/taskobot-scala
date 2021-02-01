@@ -4,7 +4,7 @@ import cats.effect.ConcurrentEffect
 import cats.implicits._
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Page, Tasks}
+import ru.johnspade.taskobot.core.{Chats, CheckTask, ConfirmTask, Page, Tasks}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.DoneAt
@@ -61,7 +61,7 @@ object TaskController {
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
   ) extends Service {
-    override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of[CbData, Task] {
+    override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of {
 
       case ConfirmTask(senderId, taskIdOpt) in cb =>
         def confirm(task: BotTask): UIO[Option[Method[_]]] =
@@ -94,7 +94,7 @@ object TaskController {
 
     }
 
-    override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of[CbData, User, Task] {
+    override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
 
       case Chats(pageNumber) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
