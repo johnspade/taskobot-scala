@@ -5,9 +5,9 @@ import kantan.csv.enumeratum._
 import kantan.csv.ops._
 import kantan.csv.{ReadResult, _}
 import ru.johnspade.taskobot.core.CbData._
-import ru.johnspade.taskobot.csv.MagnoliaRowDecoder._
-import ru.johnspade.taskobot.csv.MagnoliaRowEncoder._
-import ru.johnspade.taskobot.csv.TypeId
+import ru.johnspade.tgbot.callbackdata.annotated.MagnoliaRowDecoder._
+import ru.johnspade.tgbot.callbackdata.annotated.MagnoliaRowEncoder._
+import ru.johnspade.tgbot.callbackdata.annotated.TypeId
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
