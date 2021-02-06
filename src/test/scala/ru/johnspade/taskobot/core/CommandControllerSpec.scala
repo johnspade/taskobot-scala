@@ -13,9 +13,9 @@ import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.{BotService, CommandController, TestEnvironments}
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.high.{Api, Methods}
-import telegramium.bots.{ChatIntId, Message}
+import telegramium.bots.{ChatIntId, Message, ReplyKeyboardMarkup}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.duration.Duration
@@ -38,7 +38,17 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
             BotTask(TaskId(1L), john.id, TaskText("Buy some milk"), john.id.some, CreatedAt(now.toEpochMilli))
           )))
           replyAssertions = assert(reply)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(johnChatId), """Personal task "Buy some milk" has been created."""
+            ChatIntId(johnChatId),
+            """Personal task "Buy some milk" has been created.""",
+            replyMarkup = ReplyKeyboardMarkup(
+              List(
+                List(KeyboardButtons.text("➕ Personal task")),
+                List(KeyboardButtons.text("\uD83D\uDCCB Task list")),
+                List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
+              ),
+              resizeKeyboard = true.some
+            )
+              .some
           ))))
         } yield taskAssertions && replyAssertions
       }

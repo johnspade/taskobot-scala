@@ -40,6 +40,8 @@ object CommandController {
     def onCreateCommand(message: Message): UIO[Option[Method[Message]]]
 
     def onListCommand(message: Message): UIO[Option[Method[Message]]]
+
+    def onMenuCommand(message: Message): UIO[Option[Method[Message]]]
   }
 
   val live: URLayer[TelegramBotApi with BotService with TaskRepository with UserRepository with Clock, CommandController] =
@@ -56,7 +58,9 @@ object CommandController {
     override def onStartCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
-        createHelpMessage(message).exec.orDie.as(createSettingsMessage(message, user).some)
+        createHelpMessage(message).exec.orDie *>
+          createSettingsMessage(message, user).exec.orDie
+            .as(createMenuMessage(message).some)
       }
 
     override def onHelpCommand(message: Message): UIO[Option[Method[Message]]] =
@@ -75,25 +79,29 @@ object CommandController {
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
         ZIO.foreach(message.text) { text =>
-          val task = text.drop("/create".length).trim()
-          if (task.isEmpty)
-            ZIO.succeed {
-              sendMessage(
-                ChatIntId(message.chat.id),
-                t"/create: New personal task",
-                replyMarkup = ForceReply(forceReply = true).some
-              )
+          Option.when(text.contains("/create ")) {
+            text.drop("/create".length).trim()
+          }
+            .map { task =>
+              for {
+                now <- clock.instant
+                _ <- taskRepo.create(NewTask(user.id, TaskText(task), CreatedAt(now.toEpochMilli), user.id.some))
+                method = sendMessage(ChatIntId(message.chat.id), Messages.taskCreated(task), replyMarkup = Keyboards.menu().some)
+              } yield method
             }
-          else
-            for {
-              now <- clock.instant
-              _ <- taskRepo.create(NewTask(user.id, TaskText(task), CreatedAt(now.toEpochMilli), user.id.some))
-              method = sendMessage(ChatIntId(message.chat.id), Messages.taskCreated(task))
-            } yield method
+            .getOrElse(
+              ZIO.succeed {
+                sendMessage(
+                  ChatIntId(message.chat.id),
+                  t"/create: New personal task",
+                  replyMarkup = ForceReply(forceReply = true).some
+                )
+              }
+            )
         }
       }
 
-    override def onListCommand(message: Message): UIO[Option[Method[Message]]] = {
+    override def onListCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
         Page.request[User, UIO](PageNumber(0), DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id)).map { page =>
@@ -105,8 +113,13 @@ object CommandController {
             .some
         }
       }
-    }
 
+    override def onMenuCommand(message: Message): UIO[Option[Method[Message]]] = {
+      withSender(message) { user =>
+        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        ZIO.succeed(createMenuMessage(message).some)
+      }
+    }
     private def withSender(message: Message)(handle: User => UIO[Option[Method[Message]]]): UIO[Option[Method[Message]]] =
       ZIO.foreach(message.from)(botService.updateUser(_, ChatId(message.chat.id).some).flatMap(handle(_))).map(_.flatten)
 
@@ -119,12 +132,18 @@ object CommandController {
         replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery(Messages.tasksStart(), "")).some
       )
 
-    private def createSettingsMessage(message: Message, user: User)(implicit languageId: LanguageId) = {
+    private def createSettingsMessage(message: Message, user: User)(implicit languageId: LanguageId) =
       sendMessage(
         ChatIntId(message.chat.id),
         Messages.currentLanguage(user.language),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton(t"Switch language", ChangeLanguage)).some
       )
-    }
+
+    private def createMenuMessage(message: Message)(implicit languageId: LanguageId) =
+      sendMessage(
+        ChatIntId(message.chat.id),
+        "\uD83D\uDD18/☑",
+        replyMarkup = Keyboards.menu().some
+      )
   }
 }

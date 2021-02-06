@@ -1,5 +1,6 @@
 package ru.johnspade.taskobot
 
+import cats.syntax.option._
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.{Chats, CheckTask, Page, SetLanguage, Tasks}
 import ru.johnspade.taskobot.i18n.Language
@@ -7,8 +8,8 @@ import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.user.User
 import ru.makkarpov.scalingua.LanguageId
-import telegramium.bots.InlineKeyboardMarkup
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
+import telegramium.bots.{InlineKeyboardMarkup, ReplyKeyboardMarkup}
 
 object Keyboards {
   def chats(page: Page[User], `for`: User)(implicit languageId: LanguageId): InlineKeyboardMarkup = {
@@ -49,5 +50,15 @@ object Keyboards {
           inlineKeyboardButton(language.languageName, SetLanguage(language))
         }
         .toList
+    )
+
+  def menu()(implicit languageId: LanguageId): ReplyKeyboardMarkup =
+    ReplyKeyboardMarkup(
+      List(
+        List(KeyboardButtons.text("➕ " + Messages.personalTask())),
+        List(KeyboardButtons.text("\uD83D\uDCCB " + Messages.taskList())),
+        List(KeyboardButtons.text("⚙️ " + Messages.settings()), KeyboardButtons.text("❓ " + Messages.helpButton()))
+      ),
+      resizeKeyboard = true.some
     )
 }

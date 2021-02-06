@@ -10,7 +10,7 @@ import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{CbData, ChangeLanguage, Chats, CheckTask, ConfirmTask, Tasks}
+import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks}
 import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
@@ -20,9 +20,9 @@ import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import telegramium.bots.client.Method
-import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
+import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.high.{Api, Methods}
-import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, ParseMode, User}
+import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, ParseMode, ReplyKeyboardMarkup, User}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.test.Assertion.{equalTo, isSome}
@@ -141,7 +141,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     testM("personal tasks") {
       val start =
         for {
-          startReply <- sendMessage("/start", isCommand = true)
+          startReply <- sendMessage("/start", isCommand = true) // todo verify settings
           _ = verifySendMessage(
             "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
               "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
@@ -152,8 +152,16 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
           )
         } yield assert(startReply)(isSome(equalTo(Methods.sendMessage(
           ChatIntId(johnChatId),
-          "Current language: English",
-          replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
+          "\uD83D\uDD18/☑",
+          replyMarkup = ReplyKeyboardMarkup(
+            List(
+              List(KeyboardButtons.text("➕ Personal task")),
+              List(KeyboardButtons.text("\uD83D\uDCCB Task list")),
+              List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
+            ),
+            resizeKeyboard = true.some
+          )
+            .some
         ))))
 
       val create =
@@ -173,7 +181,17 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             replyToMessage = mockMessage().copy(text = "/create: New personal task".some).some
           )
           assertions = assert(personalTaskReply)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(johnChatId), """Personal task "Buy groceries" has been created."""
+            ChatIntId(johnChatId),
+            """Personal task "Buy groceries" has been created.""",
+            replyMarkup = ReplyKeyboardMarkup(
+              List(
+                List(KeyboardButtons.text("➕ Personal task")),
+                List(KeyboardButtons.text("\uD83D\uDCCB Task list")),
+                List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
+              ),
+              resizeKeyboard = true.some
+            )
+              .some
           ))))
         } yield assertions
 

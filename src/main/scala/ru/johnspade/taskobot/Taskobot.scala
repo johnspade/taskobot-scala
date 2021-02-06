@@ -8,7 +8,6 @@ import ru.johnspade.taskobot.Configuration.BotConfig
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.UserMiddleware.UserMiddleware
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryContextMiddleware, CallbackQueryHandler, DecodeError, ParseError}
 import ru.johnspade.taskobot.core.{CbData, ConfirmTask}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.settings.SettingsController
@@ -17,14 +16,14 @@ import ru.johnspade.taskobot.task.TaskController.TaskController
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
 import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
-import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
+import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryHandler, DecodeError, ParseError}
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.{Api, WebhookBot}
-import telegramium.bots.{BotCommandMessageEntity, CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
+import telegramium.bots.{CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
 import zio._
 import zio.clock.Clock
 import zio.interop.catz._
@@ -127,27 +126,22 @@ object Taskobot {
             implicit0(languageId: LanguageId) = LanguageId(user.language.languageTag)
             now <- clock.instant
             _ <- taskRepo.create(NewTask(user.id, TaskText(text), CreatedAt(now.toEpochMilli), user.id.some))
-            method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text))
+            method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text), replyMarkup = Keyboards.menu().some)
           } yield method.some
         }
 
-      def handleCommand() =
-        ZIO.foreach(
-          msg.entities.collectFirst {
-            case BotCommandMessageEntity(0, _) => true
-          }
-            .flatMap(_ => msg.text)
-        ) {
+      def handleText() =
+        ZIO.foreach(msg.text) {
           case t if t.startsWith("/start") => commandController.onStartCommand(msg)
-          case t if t.startsWith("/help") => commandController.onHelpCommand(msg)
-          case t if t.startsWith("/settings") => commandController.onSettingsCommand(msg)
-          case t if t.startsWith("/create") => commandController.onCreateCommand(msg)
-          case t if t.startsWith("/list") => commandController.onListCommand(msg)
+          case t if t.startsWith("/create") || t.startsWith("➕") => commandController.onCreateCommand(msg)
+          case t if t.startsWith("/list") || t.startsWith("\uD83D\uDCCB") => commandController.onListCommand(msg)
+          case t if t.startsWith("/settings") || t.startsWith("⚙") => commandController.onSettingsCommand(msg)
+          case t if t.startsWith("/menu") => commandController.onMenuCommand(msg)
           case _ => commandController.onHelpCommand(msg)
         }
           .map(_.flatten)
 
-      handleReply().getOrElse(handleCommand())
+      handleReply().getOrElse(handleText())
     }
 
     private val cbRoutes = taskController.routes <+> settingsController.routes <+>

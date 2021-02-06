@@ -26,4 +26,12 @@ object Messages {
     val languageName = language.languageName
     t"Current language: $languageName"
   }
+
+  def personalTask()(implicit languageId: LanguageId): String = t"Personal task"
+
+  def taskList()(implicit languageId: LanguageId): String = t"Task list"
+
+  def settings()(implicit languageId: LanguageId): String = t"Settings"
+
+  def helpButton()(implicit languageId: LanguageId): String = t"Help"
 }
