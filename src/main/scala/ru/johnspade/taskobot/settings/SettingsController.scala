@@ -14,7 +14,7 @@ import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQ
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.high.Api
-import telegramium.bots.high.Methods.{answerCallbackQuery, editMessageText}
+import telegramium.bots.high.Methods.{answerCallbackQuery, editMessageText, sendMessage}
 import telegramium.bots.high.implicits._
 import telegramium.bots.{CallbackQuery, ChatIntId}
 import zio._
@@ -59,10 +59,10 @@ object SettingsController {
 
       case SetLanguage(language) in cb =>
         for {
-          _ <- userRepo.createOrUpdate(toUser(cb.from).copy(language = language))
+          _ <- userRepo.createOrUpdateWithLanguage(toUser(cb.from).copy(language = language))
           implicit0(languageId: LanguageId) = LanguageId(language.languageTag)
-          _ <- listLanguages(cb, language).fork
-          answer = answerCallbackQuery(cb.id, t"Language has been changed".some)
+          _ <- (listLanguages(cb, language) *> notifyLanguageChanged(cb, language)).fork
+          answer = answerCallbackQuery(cb.id)
         } yield answer.some
 
     }
@@ -75,6 +75,19 @@ object SettingsController {
           msg.messageId.some,
           text = Messages.currentLanguage(language),
           replyMarkup = Keyboards.languages.some
+        )
+          .exec
+          .orDie
+      }
+    }
+
+    private def notifyLanguageChanged(cb: CallbackQuery, language: Language): UIO[Unit] = {
+      implicit val languageId: LanguageId = LanguageId(language.languageTag)
+      ZIO.foreach_(cb.message) { msg =>
+        sendMessage(
+          ChatIntId(msg.chat.id),
+          t"Language has been changed",
+          replyMarkup = Keyboards.menu().some
         )
           .exec
           .orDie

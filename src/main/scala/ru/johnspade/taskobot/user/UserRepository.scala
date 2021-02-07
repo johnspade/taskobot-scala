@@ -22,6 +22,8 @@ object UserRepository {
 
     def createOrUpdate(user: User): UIO[User]
 
+    def createOrUpdateWithLanguage(user: User): UIO[User]
+
     def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): UIO[List[User]]
 
     def clear(): UIO[Unit]
@@ -41,6 +43,12 @@ object UserRepository {
         override def createOrUpdate(user: User): UIO[User] =
           sessionPool.use {
             _.prepare(upsert).use(_.unique(user))
+          }
+            .orDie
+
+        override def createOrUpdateWithLanguage(user: User): UIO[User] =
+          sessionPool.use {
+            _.prepare(upsertWithLanguage).use(_.unique(user))
           }
             .orDie
 
@@ -89,6 +97,14 @@ object UserRepository {
         insert into users (id, first_name, language, chat_id, last_name) values ($userCodec)
         on conflict(id) do update set
         first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id
+        returning id, first_name, language, chat_id, last_name
+      """.query(userCodec)
+
+    val upsertWithLanguage: Query[User, User] =
+      sql"""
+        insert into users (id, first_name, language, chat_id, last_name) values ($userCodec)
+        on conflict(id) do update set
+        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id, language = excluded.language
         returning id, first_name, language, chat_id, last_name
       """.query(userCodec)
 

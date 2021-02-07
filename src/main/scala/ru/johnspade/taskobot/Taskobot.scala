@@ -136,7 +136,7 @@ object Taskobot {
           case t if t.startsWith("/create") || t.startsWith("➕") => commandController.onCreateCommand(msg)
           case t if t.startsWith("/list") || t.startsWith("\uD83D\uDCCB") => commandController.onListCommand(msg)
           case t if t.startsWith("/settings") || t.startsWith("⚙") => commandController.onSettingsCommand(msg)
-          case t if t.startsWith("/menu") => commandController.onMenuCommand(msg)
+          case t if t.startsWith("/menu") => commandController.onHelpCommand(msg)
           case _ => commandController.onHelpCommand(msg)
         }
           .map(_.flatten)

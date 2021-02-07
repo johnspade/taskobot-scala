@@ -40,8 +40,6 @@ object CommandController {
     def onCreateCommand(message: Message): UIO[Option[Method[Message]]]
 
     def onListCommand(message: Message): UIO[Option[Method[Message]]]
-
-    def onMenuCommand(message: Message): UIO[Option[Method[Message]]]
   }
 
   val live: URLayer[TelegramBotApi with BotService with TaskRepository with UserRepository with Clock, CommandController] =
@@ -58,15 +56,20 @@ object CommandController {
     override def onStartCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
-        createHelpMessage(message).exec.orDie *>
-          createSettingsMessage(message, user).exec.orDie
-            .as(createMenuMessage(message).some)
+        for {
+          _ <- createHelpMessage(message).exec.orDie
+          _ <- createSwitchMessage(message).exec.orDie
+          reply = createSettingsMessage(message, user)
+        } yield reply.some
       }
 
     override def onHelpCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
-        ZIO.succeed(createHelpMessage(message).some)
+        createHelpMessage(message)
+          .exec
+          .orDie
+          .as(createSwitchMessage(message).some)
       }
 
     override def onSettingsCommand(message: Message): UIO[Option[Method[Message]]] =
@@ -114,12 +117,6 @@ object CommandController {
         }
       }
 
-    override def onMenuCommand(message: Message): UIO[Option[Method[Message]]] = {
-      withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
-        ZIO.succeed(createMenuMessage(message).some)
-      }
-    }
     private def withSender(message: Message)(handle: User => UIO[Option[Method[Message]]]): UIO[Option[Method[Message]]] =
       ZIO.foreach(message.from)(botService.updateUser(_, ChatId(message.chat.id).some).flatMap(handle(_))).map(_.flatten)
 
@@ -129,6 +126,13 @@ object CommandController {
         Messages.help(),
         Html.some,
         disableWebPagePreview = true.some,
+        replyMarkup = Keyboards.menu().some
+      )
+
+    private def createSwitchMessage(message: Message)(implicit languageId: LanguageId) =
+      sendMessage(
+        ChatIntId(message.chat.id),
+        t"Press the button to create a collaborative task.",
         replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery(Messages.tasksStart(), "")).some
       )
 
@@ -137,13 +141,6 @@ object CommandController {
         ChatIntId(message.chat.id),
         Messages.currentLanguage(user.language),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton(t"Switch language", ChangeLanguage)).some
-      )
-
-    private def createMenuMessage(message: Message)(implicit languageId: LanguageId) =
-      sendMessage(
-        ChatIntId(message.chat.id),
-        "\uD83D\uDD18/☑",
-        replyMarkup = Keyboards.menu().some
       )
   }
 }

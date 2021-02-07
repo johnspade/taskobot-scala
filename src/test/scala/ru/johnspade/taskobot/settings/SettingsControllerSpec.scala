@@ -68,7 +68,6 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
               )
             ).some
           ))
-
           replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Язык изменен".some))))
         } yield userAssertions && listLanguagesAssertions && replyAssertions
       }
