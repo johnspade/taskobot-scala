@@ -80,7 +80,10 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(kaitrinChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Kaitrin", Tasks(kaitrin.id, firstPage))).some
+              InlineKeyboardMarkups.singleColumn(List(
+                inlineKeyboardButton("Kaitrin", Tasks(kaitrin.id, firstPage)),
+                InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
+              )).some
           ))))
         } yield assertions
 
@@ -202,7 +205,10 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(johnChatId),
             "Chats with tasks",
             replyMarkup =
-              InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Personal tasks", Tasks(john.id, firstPage))).some
+              InlineKeyboardMarkups.singleColumn(List(
+                inlineKeyboardButton("Personal tasks", Tasks(john.id, firstPage)),
+                InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
+              )).some
           ))))
         } yield assertions
 

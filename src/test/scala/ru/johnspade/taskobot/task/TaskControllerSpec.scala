@@ -22,7 +22,7 @@ import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import telegramium.bots.client.Method
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
 import telegramium.bots.high.{Api, Methods}
 import telegramium.bots.{ChatIntId, InlineKeyboardMarkup, Message, User => TgUser}
 import zio.blocking.Blocking
@@ -46,7 +46,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             messageId = 0.some,
             text = "Chats with tasks",
             replyMarkup = InlineKeyboardMarkups.singleColumn(
-              List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(UserId(n), firstPage)))
+              List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(UserId(n), firstPage))) ++
+                List(InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade"))
             ).some
           ))
         } yield chatsReplyAssertions && listChatsAssertions
@@ -68,7 +69,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
               } ++ List(
                 inlineKeyboardButton("Previous page", Chats(PageNumber(0))),
                 inlineKeyboardButton("Next page", Chats(PageNumber(2)))
-              )
+              ) ++
+                List(InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade"))
             ).some
           ))
         } yield replyAssertions && listChatsAssertions

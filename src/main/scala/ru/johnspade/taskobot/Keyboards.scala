@@ -3,12 +3,13 @@ package ru.johnspade.taskobot
 import cats.syntax.option._
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.{Chats, CheckTask, Page, SetLanguage, Tasks}
-import ru.johnspade.taskobot.i18n.Language
+import ru.johnspade.taskobot.i18n.{Language, messages}
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.user.User
+import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
-import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
+import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.{InlineKeyboardMarkup, ReplyKeyboardMarkup}
 
 object Keyboards {
@@ -22,7 +23,8 @@ object Keyboards {
     val nextButtonRow = if (page.hasNext) List(nextButton) else List.empty
     val prevButtonRow = if (page.hasPrevious) List(prevButton) else List.empty
     val navButtons = List(prevButtonRow, nextButtonRow)
-    val keyboard = (chatsButtons ++ navButtons).filterNot(_.isEmpty)
+    val supportButtonRow = List(List(InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")))
+    val keyboard = (chatsButtons ++ navButtons ++ supportButtonRow).filterNot(_.isEmpty)
     InlineKeyboardMarkup(keyboard)
   }
 
@@ -55,9 +57,9 @@ object Keyboards {
   def menu()(implicit languageId: LanguageId): ReplyKeyboardMarkup =
     ReplyKeyboardMarkup(
       List(
-        List(KeyboardButtons.text("➕ " + Messages.personalTask())),
-        List(KeyboardButtons.text("\uD83D\uDCCB " + Messages.taskList())),
-        List(KeyboardButtons.text("⚙️ " + Messages.settings()), KeyboardButtons.text("❓ " + Messages.helpButton()))
+        List(KeyboardButtons.text("➕ " + t"Personal task")),
+        List(KeyboardButtons.text("\uD83D\uDCCB " + t"Task list")),
+        List(KeyboardButtons.text("⚙️ " + t"Settings"), KeyboardButtons.text("❓ " + t"Help"))
       ),
       resizeKeyboard = true.some
     )
