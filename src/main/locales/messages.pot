@@ -1,4 +1,4 @@
-#  !Generated: 2021-02-08 01:40:56
+#  !Generated: 2021-02-08 02:22:32
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
 msgid "Chat"
@@ -30,7 +30,7 @@ msgid "Settings"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:9
-msgid "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕"
+msgid "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade \u2615"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:13
