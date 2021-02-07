@@ -1,79 +1,105 @@
-#  !Generated: 2021-02-08 01:40:56
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: tr_TR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.3\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#  !Generated: 2021-02-08 00:34:29
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
 msgid "Chat"
-msgstr ""
+msgstr "Sohbet"
 
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:97
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "New personal task"
-msgstr ""
+msgstr "Yeni kişisel görev"
 
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:133
 msgid "Start creating tasks"
-msgstr ""
+msgstr "Görev oluşturmaya başlayın"
 
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:141
 msgid "Switch language"
-msgstr ""
+msgstr "Dili değiştirin"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
 msgid "Tasks"
-msgstr ""
+msgstr "Görevler"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
 msgid "Help"
-msgstr ""
+msgstr "Yardım"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
 msgid "Settings"
-msgstr ""
+msgstr "Ayarlar"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:9
-msgid "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕"
+msgid ""
+"Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</"
+"code> in private chat and select <b>Create task</b>. After receiver's "
+"confirmation collaborative task will be created. Type /list in the bot chat "
+"to see your tasks.\n"
+"\n"
+"Support a creator: https://buymeacoff.ee/johnspade ☕"
 msgstr ""
+"Taskobot, bir görev iş birliği botu. Özel sohbette <code>@tasko_bot görev</"
+"code> yazabilir ve <b>Görev oluştur</b>'u seçebilirsiniz. Alıcının onayından "
+"sonra, görev iş birliği oluşturulacak. Görevlerinizi görmek için bot "
+"sohbetinde /list yazın.\n"
+"\n"
+"https://buymeacoff.ee/johnspade ☕"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:13
 msgid "Personal task \"%(task)\" has been created."
-msgstr ""
+msgstr "\"%(task)\" isimli kişisel görev oluşturuldu."
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:15
 msgid "Chats with tasks"
-msgstr ""
+msgstr "Görevli sohbetler"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
 msgid "Personal tasks"
-msgstr ""
+msgstr "Kişisel görevler"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
 msgid "Previous page"
-msgstr ""
+msgstr "Önceki sayfa"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
 msgid "Next page"
-msgstr ""
+msgstr "Sonraki sayfa"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:25
 msgid "Current language: %(languageName)"
-msgstr ""
+msgstr "Şu anki dil: %(languageName)"
 
 #: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:89
 msgid "Create task"
-msgstr ""
+msgstr "Görev oluştur"
 
 #: src/main/scala/ru/johnspade/taskobot/settings/SettingsController.scala:89
 msgid "Language has been changed"
-msgstr ""
+msgstr "Dil değiştirildi"
 
 #: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:82
 msgid "The task must be confirmed by the receiver"
-msgstr ""
+msgstr "Görev, alıcı tarafından onaylanmalı"
 
 #: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:151
 msgid "Task has been marked as completed."
-msgstr ""
+msgstr "Görev, tamamlandı olarak işaretlendi."
 
 #: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:168
 msgid "Task \"%(taskText)\" has been marked as completed by %(completedBy)."
 msgstr ""
-
+"\"%(taskText)\" isimli görev, %(completedBy) tarafından tamamlandı olarak "
+"işaretlendi."

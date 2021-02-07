@@ -15,24 +15,21 @@ msgstr ""
 
 #  !Generated: 2021-01-23 20:14:12
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
-msgid "Chat: "
-msgstr "Чат: "
+msgid "Chat"
+msgstr "Чат"
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:99
-msgid "/create: New personal task"
-msgstr "/create: Новая личная задача"
-
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:135
-msgid "Start creating tasks"
-msgstr "Начать создавать задачи"
-
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:143
-msgid "Switch language"
-msgstr "Изменить язык"
-
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:97
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "New personal task"
 msgstr "Новая личная задача"
+
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:133
+msgid "Start creating tasks"
+msgstr "Начать создавать задачи"
+
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:141
+msgid "Switch language"
+msgstr "Изменить язык"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
 msgid "Tasks"
@@ -53,13 +50,12 @@ msgid ""
 "confirmation collaborative task will be created. Type /list in the bot chat "
 "to see your tasks.\n"
 "\n"
-"Support a creator: https://buymeacoff.ee/johnspade \\u2615"
+"Support a creator: https://buymeacoff.ee/johnspade ☕"
 msgstr ""
-"Таскобот позволяет создавать совместные задачи. В чате с собеседником напиши "
-"<code>@tasko_bot {задача}</code> и \n"
-"нажми <b>Создать задачу</b>. После подтверждения собеседником будет создана "
-"общая задача. Для получения списка своих \n"
-"задач напиши мне команду /list.\n"
+"Таскобот позволяет создавать совместные задачи. В чате с собеседником "
+"напиши <code>@tasko_bot {задача}</code> и нажми <b>Создать задачу</b>. "
+"После подтверждения собеседником будет создана общая задача. Для получения "
+"списка своих задач напиши мне команду /list.\n"
 "\n"
 "Поддержать создателя: https://buymeacoff.ee/johnspade ☕"
 

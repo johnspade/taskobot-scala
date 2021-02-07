@@ -48,7 +48,7 @@ object BotService {
       Page.request[BotTask, UIO](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
         .map { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
-          val header = List(Plain(t"Chat: "), Bold(chatName), lineBreak)
+          val header = List(Plain(t"Chat" + ": "), Bold(chatName), lineBreak)
           val taskList = page
             .items
             .map(_.text)

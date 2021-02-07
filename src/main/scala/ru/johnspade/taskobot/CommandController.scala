@@ -94,7 +94,7 @@ object CommandController {
               ZIO.succeed {
                 sendMessage(
                   ChatIntId(message.chat.id),
-                  t"/create: New personal task",
+                  "/create: " + t"New personal task",
                   replyMarkup = ForceReply(forceReply = true).some
                 )
               }
