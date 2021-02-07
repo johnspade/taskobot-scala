@@ -42,8 +42,8 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
             """Personal task "Buy some milk" has been created.""",
             replyMarkup = ReplyKeyboardMarkup(
               List(
-                List(KeyboardButtons.text("➕ Personal task")),
-                List(KeyboardButtons.text("\uD83D\uDCCB Task list")),
+                List(KeyboardButtons.text("➕ New personal task")),
+                List(KeyboardButtons.text("\uD83D\uDCCB Tasks")),
                 List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
               ),
               resizeKeyboard = true.some

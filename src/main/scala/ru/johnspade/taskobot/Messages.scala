@@ -10,8 +10,6 @@ object Messages {
       "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
       "Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕")
 
-  def tasksStart()(implicit languageId: LanguageId): String = t"Start creating tasks"
-
   def taskCreated(task: String)(implicit languageId: LanguageId): String = t"""Personal task "$task" has been created."""
 
   def chatsWithTasks()(implicit languageId: LanguageId): String = t"Chats with tasks"

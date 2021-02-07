@@ -56,11 +56,9 @@ object CommandController {
     override def onStartCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
-        for {
-          _ <- createHelpMessage(message).exec.orDie
-          _ <- createSwitchMessage(message).exec.orDie
-          reply = createSettingsMessage(message, user)
-        } yield reply.some
+        createHelpMessage(message).exec.orDie *>
+          createSwitchMessage(message).exec.orDie
+            .as(createSettingsMessage(message, user).some)
       }
 
     override def onHelpCommand(message: Message): UIO[Option[Method[Message]]] =
@@ -132,8 +130,8 @@ object CommandController {
     private def createSwitchMessage(message: Message)(implicit languageId: LanguageId) =
       sendMessage(
         ChatIntId(message.chat.id),
-        t"Press the button to create a collaborative task.",
-        replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery(Messages.tasksStart(), "")).some
+        t"Start creating tasks" + ":",
+        replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("\uD83D\uDE80", "")).some
       )
 
     private def createSettingsMessage(message: Message, user: User)(implicit languageId: LanguageId) =

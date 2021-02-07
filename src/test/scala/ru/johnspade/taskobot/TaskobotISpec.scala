@@ -10,7 +10,7 @@ import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks}
+import ru.johnspade.taskobot.core.{CbData, ChangeLanguage, Chats, CheckTask, ConfirmTask, Tasks}
 import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
@@ -144,27 +144,31 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     testM("personal tasks") {
       val start =
         for {
-          startReply <- sendMessage("/start", isCommand = true) // todo verify settings
+          settingsMessage <- sendMessage("/start", isCommand = true)
+          _ = verifySendMessage(
+            "Start creating tasks:",
+            InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("\uD83D\uDE80", "")).some
+          )
           _ = verifySendMessage(
             "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
               "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
               "Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕",
-            InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("Start creating tasks", "")).some,
+            ReplyKeyboardMarkup(
+              List(
+                List(KeyboardButtons.text("➕ New personal task")),
+                List(KeyboardButtons.text("\uD83D\uDCCB Tasks")),
+                List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
+              ),
+              resizeKeyboard = true.some
+            )
+              .some,
             Html.some,
             disableWebPagePreview = true.some
           )
-        } yield assert(startReply)(isSome(equalTo(Methods.sendMessage(
+        } yield assert(settingsMessage)(isSome(equalTo(Methods.sendMessage(
           ChatIntId(johnChatId),
-          "\uD83D\uDD18/☑",
-          replyMarkup = ReplyKeyboardMarkup(
-            List(
-              List(KeyboardButtons.text("➕ Personal task")),
-              List(KeyboardButtons.text("\uD83D\uDCCB Task list")),
-              List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
-            ),
-            resizeKeyboard = true.some
-          )
-            .some
+          "Current language: English",
+          replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
         ))))
 
       val create =
@@ -188,8 +192,8 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             """Personal task "Buy groceries" has been created.""",
             replyMarkup = ReplyKeyboardMarkup(
               List(
-                List(KeyboardButtons.text("➕ Personal task")),
-                List(KeyboardButtons.text("\uD83D\uDCCB Task list")),
+                List(KeyboardButtons.text("➕ New personal task")),
+                List(KeyboardButtons.text("\uD83D\uDCCB Tasks")),
                 List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
               ),
               resizeKeyboard = true.some

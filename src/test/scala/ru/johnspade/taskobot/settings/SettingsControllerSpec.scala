@@ -15,8 +15,8 @@ import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import telegramium.bots.client.Method
 import telegramium.bots.high._
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import telegramium.bots.{ChatIntId, Message}
+import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
+import telegramium.bots.{ChatIntId, Message, ReplyKeyboardMarkup}
 import zio.blocking.Blocking
 import zio.test.Assertion.{equalTo, hasField, isSome}
 import zio.test._
@@ -68,8 +68,21 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
               )
             ).some
           ))
-          replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Язык изменен".some))))
-        } yield userAssertions && listLanguagesAssertions && replyAssertions
+          replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
+          notificationAssertions = verifyMethodCalled(Methods.sendMessage(
+            ChatIntId(johnChatId),
+            text = "Язык изменен",
+            replyMarkup = ReplyKeyboardMarkup(
+              List(
+                List(KeyboardButtons.text("➕ Новая личная задача")),
+                List(KeyboardButtons.text("\uD83D\uDCCB Задачи")),
+                List(KeyboardButtons.text("⚙️ Настройки"), KeyboardButtons.text("❓ Справка"))
+              ),
+              resizeKeyboard = true.some
+            )
+              .some
+          ))
+        } yield userAssertions && listLanguagesAssertions && replyAssertions && notificationAssertions
       }
     )
   )

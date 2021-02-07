@@ -16,22 +16,26 @@ msgstr ""
 #  !Generated: 2021-01-23 20:14:12
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
 msgid "Chat: "
-msgstr ""
+msgstr "Чат: "
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:96
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:99
 msgid "/create: New personal task"
 msgstr "/create: Новая личная задача"
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:139
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:135
+msgid "Start creating tasks"
+msgstr "Начать создавать задачи"
+
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:143
 msgid "Switch language"
 msgstr "Изменить язык"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
-msgid "Personal task"
-msgstr "Личная задача"
+msgid "New personal task"
+msgstr "Новая личная задача"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
-msgid "Task list"
+msgid "Tasks"
 msgstr "Задачи"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
@@ -51,8 +55,8 @@ msgid ""
 "\n"
 "Support a creator: https://buymeacoff.ee/johnspade \\u2615"
 msgstr ""
-"Таскобот позволяет создавать совместные задачи. В чате с собеседником "
-"напиши <code>@tasko_bot {задача}</code> и \n"
+"Таскобот позволяет создавать совместные задачи. В чате с собеседником напиши "
+"<code>@tasko_bot {задача}</code> и \n"
 "нажми <b>Создать задачу</b>. После подтверждения собеседником будет создана "
 "общая задача. Для получения списка своих \n"
 "задач напиши мне команду /list.\n"
@@ -60,30 +64,26 @@ msgstr ""
 "Поддержать создателя: https://buymeacoff.ee/johnspade ☕"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:13
-msgid "Start creating tasks"
-msgstr "Начать создавать задачи"
-
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:15
 msgid "Personal task \"%(task)\" has been created."
 msgstr "Личная задача \"%(task)\" создана."
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:15
 msgid "Chats with tasks"
 msgstr "Чаты с задачами"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
 msgid "Personal tasks"
 msgstr "Личные задачи"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
 msgid "Previous page"
 msgstr "Предыдущая страница"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
 msgid "Next page"
 msgstr "Следующая страница"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:27
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:25
 msgid "Current language: %(languageName)"
 msgstr "Текущий язык: %(languageName)"
 
@@ -91,7 +91,7 @@ msgstr "Текущий язык: %(languageName)"
 msgid "Create task"
 msgstr "Создать задачу"
 
-#: src/main/scala/ru/johnspade/taskobot/settings/SettingsController.scala:65
+#: src/main/scala/ru/johnspade/taskobot/settings/SettingsController.scala:89
 msgid "Language has been changed"
 msgstr "Язык изменен"
 

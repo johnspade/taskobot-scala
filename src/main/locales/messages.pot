@@ -1,27 +1,27 @@
-#  !Generated: 2021-02-07 22:01:52
+#  !Generated: 2021-02-08 00:34:29
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
 msgid "Chat: "
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:99
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:97
 msgid "/create: New personal task"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:135
-msgid "Press the button to create a collaborative task"
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:133
+msgid "Start creating tasks"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:143
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:141
 msgid "Switch language"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
-msgid "Personal task"
+msgid "New personal task"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
-msgid "Task list"
+msgid "Tasks"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
@@ -37,30 +37,26 @@ msgid "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task<
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:13
-msgid "Start creating tasks"
-msgstr ""
-
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:15
 msgid "Personal task \"%(task)\" has been created."
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:15
 msgid "Chats with tasks"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
 msgid "Personal tasks"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
 msgid "Previous page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
 msgid "Next page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:27
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:25
 msgid "Current language: %(languageName)"
 msgstr ""
 
