@@ -11,7 +11,9 @@ case class BotTask(
   receiver: Option[UserId],
   createdAt: CreatedAt,
   doneAt: Option[DoneAt] = None,
-  done: Done = Done(false)
+  done: Done = Done(false),
+  forwardFromId: Option[UserId] = None,
+  forwardFromSenderName: Option[SenderName] = None
 )
 
 case class TaskWithCollaborator(

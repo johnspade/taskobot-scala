@@ -66,8 +66,8 @@ object BotServiceSpec extends DefaultRunnableSpec {
         )
         val expectedMessageEntities = List(
           plain"Chat: ", bold"Alice", lineBreak,
-          plain"1. task2", italic"– Alice", lineBreak,
-          plain"2. task1", italic"– Alice", lineBreak,
+          plain"1. task2", italic" – Alice", lineBreak,
+          plain"2. task1", italic" – Alice", lineBreak,
           lineBreak, italic"Select the task number to mark it as completed."
         )
         for {

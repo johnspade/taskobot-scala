@@ -98,9 +98,18 @@ object TaskRepository {
 
 private object TaskQueries {
   val newTaskCodec: Codec[NewTask] =
-    (UserId.lift(int4) ~ TaskText.lift(varchar(4096)) ~ CreatedAt.lift(int8) ~ UserId.lift(int4).opt ~ Done.lift(bool)).imap {
-      case senderId ~ text ~ createdAt ~ receiver ~ done => NewTask(senderId, text, createdAt, receiver, done)
-    }(t => t.sender ~ t.text ~ t.createdAt ~ t.receiver ~ t.done)
+    (
+      UserId.lift(int4) ~
+        TaskText.lift(varchar(4096)) ~
+        CreatedAt.lift(int8) ~
+        UserId.lift(int4).opt ~
+        Done.lift(bool) ~
+        UserId.lift(int4).opt ~
+        SenderName.lift(varchar(255)).opt
+      ).imap {
+      case senderId ~ text ~ createdAt ~ receiver ~ done ~ forwardFromId ~ forwardFromSenderName =>
+        NewTask(senderId, text, createdAt, receiver, done, forwardFromId, forwardFromSenderName)
+    }(t => t.sender ~ t.text ~ t.createdAt ~ t.receiver ~ t.done ~ t.forwardFromId ~ t.forwardFromSenderName)
 
   val botTaskCodec: Codec[BotTask] = (
     TaskId.lift(int8) ~
@@ -109,10 +118,12 @@ private object TaskQueries {
       UserId.lift(int4).opt ~
       CreatedAt.lift(int8) ~
       DoneAt.lift(int8).opt ~
-      Done.lift(bool)
-    ).imap { case id ~ senderId ~ text ~ receiverId ~ createdAt ~ doneAt ~ done =>
-    BotTask(id, senderId, text, receiverId, createdAt, doneAt, done)
-  }(t => t.id ~ t.sender ~ t.text ~ t.receiver ~ t.createdAt ~ t.doneAt ~ t.done)
+      Done.lift(bool) ~
+      UserId.lift(int4).opt ~
+      SenderName.lift(varchar(255)).opt
+    ).imap { case id ~ senderId ~ text ~ receiverId ~ createdAt ~ doneAt ~ done ~ forwardFromId ~ forwardFromSenderName =>
+    BotTask(id, senderId, text, receiverId, createdAt, doneAt, done, forwardFromId, forwardFromSenderName)
+  }(t => t.id ~ t.sender ~ t.text ~ t.receiver ~ t.createdAt ~ t.doneAt ~ t.done ~ t.forwardFromId ~ t.forwardFromSenderName)
 
   val taskWithCollaboratorDecoder: Decoder[TaskWithCollaborator] = (
     TaskId.lift(int8) ~
@@ -135,7 +146,7 @@ private object TaskQueries {
 
   val selectById: Query[TaskId, BotTask] =
     sql"""
-      select id, sender_id, text, receiver_id, created_at, done_at, done
+      select id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name
       from tasks
       where id = ${TaskId.lift(int8)}
     """
@@ -155,8 +166,8 @@ private object TaskQueries {
 
   val insert: Query[NewTask, BotTask] =
     sql"""
-      insert into tasks (sender_id, text, created_at, receiver_id, done) values ($newTaskCodec)
-      returning id, sender_id, text, receiver_id, created_at, done_at, done
+      insert into tasks (sender_id, text, created_at, receiver_id, done, forward_from_id, forward_sender_name) values ($newTaskCodec)
+      returning id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name
     """
       .query(botTaskCodec)
 
@@ -170,7 +181,7 @@ private object TaskQueries {
 
   val selectByUserId: Query[UserId ~ UserId ~ UserId ~ UserId ~ Offset ~ PageSize, BotTask] =
     sql"""
-      select id, sender_id, text, receiver_id, created_at, done_at, done
+      select id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name
       from tasks
       where receiver_id is not null and done <> true and
       ((sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}) or

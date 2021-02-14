@@ -51,11 +51,15 @@ object BotService {
           val header = List(Plain(t"Chat" + ": "), Bold(chatName), lineBreak)
           val taskList = page
             .items
-            .map(_.text)
             .zipWithIndex
-            .flatMap { case (text, i) =>
-              val senderName = if (collaborator.id == `for`.id) plain"" else italic"– ${collaborator.firstName}"
-              List(plain"${i + 1}. $text", senderName, lineBreak)
+            .flatMap { case (task, i) =>
+              val senderName = if (collaborator.id == `for`.id) {
+                task.forwardFromSenderName
+                  .map(n => italic" – $n")
+                  .getOrElse(plain"")
+              } else
+                italic" – ${collaborator.firstName}"
+              List(plain"${i + 1}. ${task.text}", senderName, lineBreak)
             }
           val footer = List(lineBreak, italic"Select the task number to mark it as completed.")
           val messageEntities = header ++ taskList ++ footer

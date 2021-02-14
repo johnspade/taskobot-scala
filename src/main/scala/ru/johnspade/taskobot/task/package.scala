@@ -18,5 +18,8 @@ package object task {
 
     object Done extends TaggedType[Boolean]
     type Done = Done.Type
+
+    object SenderName extends TaggedType[String]
+    type SenderName = SenderName.Type
   }
 }

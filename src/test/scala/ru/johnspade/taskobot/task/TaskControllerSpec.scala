@@ -86,10 +86,10 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
           listTasksAssertions = verifyMethodCalled(Methods.editMessageText(
             chatId = ChatIntId(0).some,
             messageId = 0.some,
-            text = "Chat: Kaitrin\n1. Wash dishes please– Kaitrin\n\nSelect the task number to mark it as completed.",
+            text = "Chat: Kaitrin\n1. Wash dishes please – Kaitrin\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
               plain"Chat: ", bold"Kaitrin", lineBreak,
-              plain"1. Wash dishes please", italic"– Kaitrin", lineBreak,
+              plain"1. Wash dishes please", italic" – Kaitrin", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkups.singleColumn(List(
@@ -108,14 +108,14 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
           listTasksAssertions = verifyMethodCalled(Methods.editMessageText(
             chatId = ChatIntId(0).some,
             messageId = 0.some,
-            text = "Chat: Kaitrin\n1. 5– Kaitrin\n2. 6– Kaitrin\n3. 7– Kaitrin\n4. 8– Kaitrin\n5. 9– Kaitrin\n\nSelect the task number to mark it as completed.",
+            text = "Chat: Kaitrin\n1. 5 – Kaitrin\n2. 6 – Kaitrin\n3. 7 – Kaitrin\n4. 8 – Kaitrin\n5. 9 – Kaitrin\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
               plain"Chat: ", bold"Kaitrin", lineBreak,
-              plain"1. 5", italic"– Kaitrin", lineBreak,
-              plain"2. 6", italic"– Kaitrin", lineBreak,
-              plain"3. 7", italic"– Kaitrin", lineBreak,
-              plain"4. 8", italic"– Kaitrin", lineBreak,
-              plain"5. 9", italic"– Kaitrin", lineBreak,
+              plain"1. 5", italic" – Kaitrin", lineBreak,
+              plain"2. 6", italic" – Kaitrin", lineBreak,
+              plain"3. 7", italic" – Kaitrin", lineBreak,
+              plain"4. 8", italic" – Kaitrin", lineBreak,
+              plain"5. 9", italic" – Kaitrin", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkup(List(

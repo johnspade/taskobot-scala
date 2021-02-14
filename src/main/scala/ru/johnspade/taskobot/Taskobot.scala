@@ -14,7 +14,7 @@ import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.settings.SettingsController.SettingsController
 import ru.johnspade.taskobot.task.TaskController.TaskController
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
-import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskText}
+import ru.johnspade.taskobot.task.tags.{CreatedAt, SenderName, TaskText}
 import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
 import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
 import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryHandler, DecodeError, ParseError}
@@ -130,6 +130,34 @@ object Taskobot {
           } yield method.some
         }
 
+      def handleForward() =
+        for {
+          _ <- msg.forwardDate
+          senderName = msg.forwardSenderName
+            .orElse {
+              msg.forwardFrom
+                .map(u => u.firstName + u.lastName.map(" " + _).getOrElse(""))
+            }
+          text <- msg.text
+          from <- msg.from
+        } yield {
+          for {
+            user <- botService.updateUser(from, ChatId(msg.chat.id).some)
+            implicit0(languageId: LanguageId) = LanguageId(user.language.languageTag)
+            now <- clock.instant
+            newTask = NewTask(
+              user.id,
+              TaskText(text),
+              CreatedAt(now.toEpochMilli),
+              user.id.some,
+              forwardFromId = msg.forwardFrom.map(user => UserId(user.id)),
+              forwardFromSenderName = senderName.map(SenderName(_))
+            )
+            _ <- taskRepo.create(newTask)
+            method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text), replyMarkup = Keyboards.menu().some)
+          } yield method.some
+        }
+
       def handleText() =
         ZIO.foreach(msg.text) {
           case t if t.startsWith("/start") => commandController.onStartCommand(msg)
@@ -137,11 +165,14 @@ object Taskobot {
           case t if t.startsWith("/list") || t.startsWith("\uD83D\uDCCB") => commandController.onListCommand(msg)
           case t if t.startsWith("/settings") || t.startsWith("⚙") => commandController.onSettingsCommand(msg)
           case t if t.startsWith("/menu") => commandController.onHelpCommand(msg)
-          case _ => commandController.onHelpCommand(msg)
+          case t if t.startsWith("/help") || t.startsWith("❓") => commandController.onHelpCommand(msg)
+          case _ => ZIO.none
         }
           .map(_.flatten)
 
-      handleReply().getOrElse(handleText())
+      handleReply()
+        .orElse(handleForward())
+        .getOrElse(handleText())
     }
 
     private val cbRoutes = taskController.routes <+> settingsController.routes <+>
