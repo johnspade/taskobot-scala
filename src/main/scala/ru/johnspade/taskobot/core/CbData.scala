@@ -26,7 +26,7 @@ final case class ConfirmTask(id: Option[TaskId], senderId: Option[UserId]) exten
 final case class Chats(page: PageNumber) extends CbData
 
 @TypeId(2)
-final case class Tasks(collaboratorId: UserId, pageNumber: PageNumber) extends CbData
+final case class Tasks(pageNumber: PageNumber, collaboratorId: UserId) extends CbData
 
 @TypeId(3)
 final case class CheckTask(id: TaskId, pageNumber: PageNumber) extends CbData

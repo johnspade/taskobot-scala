@@ -46,7 +46,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             messageId = 0.some,
             text = "Chats with tasks",
             replyMarkup = InlineKeyboardMarkups.singleColumn(
-              List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(UserId(n), firstPage))) ++
+              List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(firstPage, UserId(n)))) ++
                 List(InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade"))
             ).some
           ))
@@ -65,7 +65,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             replyMarkup = InlineKeyboardMarkups.singleColumn(
               List.tabulate(5) { n =>
                 val id = n + 5
-                inlineKeyboardButton(id.toString, Tasks(UserId(id), firstPage))
+                inlineKeyboardButton(id.toString, Tasks(firstPage, UserId(id)))
               } ++ List(
                 inlineKeyboardButton("Previous page", Chats(PageNumber(0))),
                 inlineKeyboardButton("Next page", Chats(PageNumber(2)))
@@ -81,7 +81,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("should list tasks as a single page") {
         for {
           task <- createTask("Wash dishes please", kaitrin.id.some)
-          reply <- callUserRoute(Tasks(kaitrin.id, firstPage), johnTg)
+          reply <- callUserRoute(Tasks(firstPage, kaitrin.id), johnTg)
           replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
           listTasksAssertions = verifyMethodCalled(Methods.editMessageText(
             chatId = ChatIntId(0).some,
@@ -103,7 +103,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("should list tasks as multiple pages") {
         for {
           _ <- createKaitrinTasks()
-          reply <- callUserRoute(Tasks(kaitrin.id, PageNumber(1)), johnTg)
+          reply <- callUserRoute(Tasks(PageNumber(1), kaitrin.id), johnTg)
           replyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
           listTasksAssertions = verifyMethodCalled(Methods.editMessageText(
             chatId = ChatIntId(0).some,
@@ -126,8 +126,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
                 inlineKeyboardButton("4", CheckTask(TaskId(26L), PageNumber(1))),
                 inlineKeyboardButton("5", CheckTask(TaskId(27L), PageNumber(1)))
               ),
-              List(inlineKeyboardButton("Previous page", Tasks(kaitrin.id, firstPage))),
-              List(inlineKeyboardButton("Next page", Tasks(kaitrin.id, PageNumber(2)))),
+              List(inlineKeyboardButton("Previous page", Tasks(firstPage, kaitrin.id))),
+              List(inlineKeyboardButton("Next page", Tasks(PageNumber(2), kaitrin.id))),
               List(inlineKeyboardButton("Chat list", Chats(firstPage)))
             )).some
           ))

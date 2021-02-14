@@ -113,7 +113,7 @@ object TaskController {
           ack = answerCallbackQuery(cb.id).some
         } yield ack
 
-      case Tasks(collaboratorId, pageNumber) in cb as user =>
+      case Tasks(pageNumber, collaboratorId) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
         (for {
           userOpt <- userRepo.findById(collaboratorId)

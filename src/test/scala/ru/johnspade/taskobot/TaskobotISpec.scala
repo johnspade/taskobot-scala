@@ -81,7 +81,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             "Chats with tasks",
             replyMarkup =
               InlineKeyboardMarkups.singleColumn(List(
-                inlineKeyboardButton("Kaitrin", Tasks(kaitrin.id, firstPage)),
+                inlineKeyboardButton("Kaitrin", Tasks(firstPage, kaitrin.id)),
                 InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
               )).some
           ))))
@@ -89,7 +89,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val listTasks =
         for {
-          tasksReply <- sendCallbackQuery(Tasks(john.id, firstPage), kaitrinTg, chatId = kaitrinChatId)
+          tasksReply <- sendCallbackQuery(Tasks(firstPage, john.id), kaitrinTg, chatId = kaitrinChatId)
           listTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
             messageId = 0.some,
@@ -188,7 +188,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val listTasks =
         for {
-          tasksReply <- sendCallbackQuery(Tasks(john.id, firstPage))
+          tasksReply <- sendCallbackQuery(Tasks(firstPage, john.id))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
@@ -260,7 +260,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val listTasks =
         for {
-          tasksReply <- sendCallbackQuery(Tasks(john.id, firstPage))
+          tasksReply <- sendCallbackQuery(Tasks(firstPage, john.id))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
@@ -325,7 +325,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
         "Chats with tasks",
         replyMarkup =
           InlineKeyboardMarkups.singleColumn(List(
-            inlineKeyboardButton("Personal tasks", Tasks(john.id, firstPage)),
+            inlineKeyboardButton("Personal tasks", Tasks(firstPage, john.id)),
             InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
           )).some
       ))))

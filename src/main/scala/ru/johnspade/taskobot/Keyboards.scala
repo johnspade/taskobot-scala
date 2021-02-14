@@ -18,7 +18,7 @@ object Keyboards {
     lazy val nextButton = inlineKeyboardButton(Messages.nextPage(), Chats(PageNumber(page.number + 1)))
     val chatsButtons = page.items.map { user =>
       val chatName = if (user.id == `for`.id) Messages.personalTasks() else user.fullName
-      List(inlineKeyboardButton(chatName, Tasks(user.id, PageNumber(0))))
+      List(inlineKeyboardButton(chatName, Tasks(PageNumber(0), user.id)))
     }
     val nextButtonRow = if (page.hasNext) List(nextButton) else List.empty
     val prevButtonRow = if (page.hasPrevious) List(prevButton) else List.empty
@@ -29,8 +29,8 @@ object Keyboards {
   }
 
   def tasks(page: Page[BotTask], collaborator: User)(implicit languageId: LanguageId): InlineKeyboardMarkup = {
-    lazy val prevButton = inlineKeyboardButton(Messages.previousPage(), Tasks(collaborator.id, PageNumber(page.number - 1)))
-    lazy val nextButton = inlineKeyboardButton(Messages.nextPage(), Tasks(collaborator.id, PageNumber(page.number + 1)))
+    lazy val prevButton = inlineKeyboardButton(Messages.previousPage(), Tasks(PageNumber(page.number - 1), collaborator.id))
+    lazy val nextButton = inlineKeyboardButton(Messages.nextPage(), Tasks(PageNumber(page.number + 1), collaborator.id))
     val tasksButtons = page
       .items
       .zipWithIndex
