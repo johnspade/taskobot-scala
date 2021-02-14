@@ -26,7 +26,7 @@ object TaskRepository {
 
     def create(task: NewTask): UIO[BotTask]
 
-    def setReceiver(id: TaskId, senderId: UserId, receiverId: UserId): UIO[Unit]
+    def setReceiver(id: TaskId, senderId: Option[UserId], receiverId: UserId): UIO[Unit]
 
     def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]]
 
@@ -58,9 +58,15 @@ object TaskRepository {
           }
             .orDie
 
-        override def setReceiver(id: TaskId, senderId: UserId, receiverId: UserId): UIO[Unit] =
-          sessionPool.use {
-            _.prepare(updateReceiverId).use(_.execute(receiverId ~ id ~ senderId))
+        override def setReceiver(id: TaskId, senderId: Option[UserId], receiverId: UserId): UIO[Unit] =
+          sessionPool.use { pool =>
+            senderId
+              .map { sId =>
+                pool.prepare(updateReceiverId).use(_.execute(receiverId ~ id ~ sId))
+              }
+              .getOrElse {
+                pool.prepare(updateReceiverIdWithoutSenderCheck).use(_.execute(receiverId ~ id))
+              }
           }
             .void
             .orDie
@@ -176,6 +182,14 @@ private object TaskQueries {
       update tasks
       set receiver_id = ${UserId.lift(int4)}
       where id = ${TaskId.lift(int8)} and sender_id = ${UserId.lift(int4)} and receiver_id is null
+    """
+      .command
+
+  val updateReceiverIdWithoutSenderCheck: Command[UserId ~ TaskId] =
+    sql"""
+      update tasks
+      set receiver_id = ${UserId.lift(int4)}
+      where id = ${TaskId.lift(int8)} and receiver_id is null
     """
       .command
 

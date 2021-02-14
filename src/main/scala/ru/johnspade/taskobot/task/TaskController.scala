@@ -63,11 +63,11 @@ object TaskController {
   ) extends Service {
     override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of {
 
-      case ConfirmTask(senderId, taskIdOpt) in cb =>
+      case ConfirmTask(taskIdOpt, senderIdOpt) in cb =>
         def confirm(task: BotTask): UIO[Option[Method[_]]] =
           for {
             user <- botService.updateUser(cb.from)
-            _ <- taskRepo.setReceiver(task.id, senderId, user.id)
+            _ <- taskRepo.setReceiver(task.id, senderIdOpt, user.id)
             _ <- editMessageReplyMarkup(inlineMessageId = cb.inlineMessageId, replyMarkup = Option.empty)
               .exec
               .orDie

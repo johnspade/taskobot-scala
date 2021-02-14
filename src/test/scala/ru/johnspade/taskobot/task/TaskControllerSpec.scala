@@ -224,7 +224,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("receiver should be able to confirm task") {
         for {
           task <- createTask("Buy some milk")
-          reply <- confirmTask(ConfirmTask(john.id, task.id.some), kaitrinTg)
+          reply <- confirmTask(ConfirmTask(task.id.some, john.id.some), kaitrinTg)
           confirmedTask <- TaskRepository.findById(task.id)
           confirmedTaskAssertions = assert(confirmedTask.get.receiver)(isSome(equalTo(kaitrin.id)))
           _ <- ZIO.effect(Thread.sleep(1000))
@@ -236,7 +236,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("sender should not be able to confirm task") {
         for {
           task <- createTask("Buy groceries")
-          reply <- confirmTask(ConfirmTask(john.id, task.id.some), johnTg)
+          reply <- confirmTask(ConfirmTask(task.id.some, john.id.some), johnTg)
           unconfirmedTask <- TaskRepository.findById(task.id)
           confirmTaskReplyAssertions = assert(reply)(isSome(equalTo(
             Methods.answerCallbackQuery("0", "The task must be confirmed by the receiver".some)
@@ -249,7 +249,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
         for {
           task <- createTask("Buy some bread")
           bobId = UserId(0)
-          reply <- confirmTask(ConfirmTask(bobId, task.id.some), TgUser(bobId, isBot = false, "Bob"))
+          reply <- confirmTask(ConfirmTask(task.id.some, bobId.some), TgUser(bobId, isBot = false, "Bob"))
           unconfirmedTask <- TaskRepository.findById(task.id)
           confirmTaskReplyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
           unconfirmedTaskAssertions = assert(unconfirmedTask.get.receiver)(isNone)

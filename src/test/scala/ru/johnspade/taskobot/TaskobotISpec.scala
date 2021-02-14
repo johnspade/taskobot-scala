@@ -44,7 +44,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
                 InlineQueryResultArticle(
                   "1", "Create task", InputTextMessageContent("*Buy some milk*", Markdown2.some),
                   InlineKeyboardMarkups.singleButton(
-                    inlineKeyboardButton("Confirm task", ConfirmTask(john.id, id = None))
+                    inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = john.id.some))
                   )
                     .some,
                   description = "Buy some milk".some
@@ -61,14 +61,14 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
           expectedEditMessageReplyMarkupReq = Methods.editMessageReplyMarkup(
             inlineMessageId = "0".some,
             replyMarkup = InlineKeyboardMarkups.singleButton(
-              inlineKeyboardButton("Confirm task", ConfirmTask(john.id, TaskId(1L).some))
+              inlineKeyboardButton("Confirm task", ConfirmTask(TaskId(1L).some, john.id.some))
             ).some
           )
         } yield assert(chosenInlineResultReply.get.payload)(equalTo(expectedEditMessageReplyMarkupReq.payload))
 
       val confirmTask =
         for {
-          confirmTaskReply <- sendCallbackQuery(ConfirmTask(john.id, TaskId(1L).some), kaitrinTg, inlineMessageId = "0".some)
+          confirmTaskReply <- sendCallbackQuery(ConfirmTask(TaskId(1L).some, john.id.some), kaitrinTg, inlineMessageId = "0".some)
           removeMarkupAssertions = verifyMethodCall(botApiMock, Methods.editMessageReplyMarkup(inlineMessageId = "0".some, replyMarkup = None))
           confirmTaskReplyAssertions = assert(confirmTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
         } yield removeMarkupAssertions && confirmTaskReplyAssertions
