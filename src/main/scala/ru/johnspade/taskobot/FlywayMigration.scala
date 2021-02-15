@@ -13,6 +13,7 @@ object FlywayMigration {
         Flyway
           .configure()
           .dataSource(s"jdbc:postgresql://${cfg.host}:${cfg.port}/${cfg.database}", cfg.user, cfg.password)
+          .baselineOnMigrate(true)
           .load()
           .migrate()
       }
