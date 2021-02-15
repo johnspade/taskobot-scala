@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot.core
 
 import kantan.csv.DecodeError.TypeError
-import kantan.csv.enumeratum._
+import kantan.csv.enumeratum.values._
 import kantan.csv.ops._
 import kantan.csv.{ReadResult, _}
 import ru.johnspade.taskobot.core.CbData._
@@ -29,7 +29,7 @@ final case class Chats(page: PageNumber) extends CbData
 final case class Tasks(pageNumber: PageNumber, collaboratorId: UserId) extends CbData
 
 @TypeId(3)
-final case class CheckTask(id: TaskId, pageNumber: PageNumber) extends CbData
+final case class CheckTask(pageNumber: PageNumber, id: TaskId) extends CbData
 
 @TypeId(4)
 case object ChangeLanguage extends CbData
@@ -55,8 +55,16 @@ object CbData {
   implicit val changeLanguageRowCodec: RowCodec[ChangeLanguage.type] = caseObjectRowCodec(ChangeLanguage)
   implicit val setLanguageRowCodec: RowCodec[SetLanguage] = RowCodec.caseOrdered(SetLanguage.apply _)(SetLanguage.unapply)
 
-  def decode(csv: String): ReadResult[CbData] =
-    csv.readCsv[List, CbData](csvConfig)
-      .headOption
-      .getOrElse(Left(TypeError("Callback data is missing")))
+  def decode(csv: String): ReadResult[CbData] = {
+    def read(s: String) =
+      s.readCsv[List, CbData](csvConfig)
+        .headOption
+        .getOrElse(Left(TypeError("Callback data is missing")))
+
+    csv match {
+      case c if c.startsWith("0%") => read(csv.replaceAll("(%)\\1+", "$1"))
+      case s"3%$pageNumber%$_%$taskId" => Right(CheckTask(PageNumber(pageNumber.toInt), TaskId(taskId.toLong)))
+      case _ => read(csv)
+    }
+  }
 }

@@ -78,7 +78,7 @@ object TaskController {
           (for {
             userOpt <- userRepo.findById(UserId(cb.from.id))
             user <- ZIO.fromOption(userOpt)
-            implicit0(languageId: LanguageId) = LanguageId(user.language.languageTag)
+            implicit0(languageId: LanguageId) = LanguageId(user.language.value)
             answer = answerCallbackQuery(cb.id, t"The task must be confirmed by the receiver".some)
           } yield answer)
             .optional
@@ -97,7 +97,7 @@ object TaskController {
     override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
 
       case Chats(pageNumber) in cb as user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
         for {
           page <- Page.request[User, UIO](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
           _ <- ZIO.foreach_(cb.message) { msg =>
@@ -114,7 +114,7 @@ object TaskController {
         } yield ack
 
       case Tasks(pageNumber, collaboratorId) in cb as user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
         (for {
           userOpt <- userRepo.findById(collaboratorId)
           collaborator <- ZIO.fromOption(userOpt)
@@ -124,8 +124,8 @@ object TaskController {
         } yield answerCallbackQuery(cb.id))
           .optional
 
-      case CheckTask(id, pageNumber) in cb as user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+      case CheckTask(pageNumber, id) in cb as user =>
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
 
         def checkTask(task: TaskWithCollaborator) =
           for {
@@ -160,7 +160,7 @@ object TaskController {
 
     private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
       collaborator.chatId.fold(ZIO.unit) { chatId =>
-        implicit val languageId: LanguageId = LanguageId(collaborator.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(collaborator.language.value)
         val taskText = task.text
         val completedBy = from.fullName
         sendMessage(

@@ -55,7 +55,7 @@ object CommandController {
   )(implicit bot: Api[Task]) extends Service {
     override def onStartCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
         createHelpMessage(message).exec.orDie *>
           createSwitchMessage(message).exec.orDie
             .as(createSettingsMessage(message, user).some)
@@ -63,7 +63,7 @@ object CommandController {
 
     override def onHelpCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
         createHelpMessage(message)
           .exec
           .orDie
@@ -72,13 +72,13 @@ object CommandController {
 
     override def onSettingsCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
         ZIO.succeed(createSettingsMessage(message, user).some)
       }
 
     override def onCreateCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
         ZIO.foreach(message.text) { text =>
           Option.when(text.contains("/create ")) {
             text.drop("/create".length).trim()
@@ -104,7 +104,7 @@ object CommandController {
 
     override def onListCommand(message: Message): UIO[Option[Method[Message]]] =
       withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.languageTag)
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
         Page.request[User, UIO](PageNumber(0), DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id)).map { page =>
           sendMessage(
             ChatIntId(message.chat.id),

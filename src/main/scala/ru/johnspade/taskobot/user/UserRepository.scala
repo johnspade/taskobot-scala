@@ -82,8 +82,8 @@ object UserRepository {
         LastName.lift(varchar(255)).opt
       ).imap {
       case id ~ firstName ~ language ~ chatId ~ lastName =>
-        User(id, firstName, Language.withName(language), chatId, lastName)
-    }(u => u.id ~ u.firstName ~ u.language.entryName ~ u.chatId ~ u.lastName)
+        User(id, firstName, Language.withValue(language), chatId, lastName)
+    }(u => u.id ~ u.firstName ~ u.language.value ~ u.chatId ~ u.lastName)
 
     val selectById: Query[UserId, User] =
       sql"""

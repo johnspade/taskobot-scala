@@ -100,7 +100,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkups.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(TaskId(1L), firstPage)),
+              inlineKeyboardButton("1", CheckTask(firstPage, TaskId(1L))),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
@@ -109,7 +109,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(1L), firstPage), kaitrinTg, chatId = kaitrinChatId)
+          checkTaskReply <- sendCallbackQuery(CheckTask(firstPage, TaskId(1L)), kaitrinTg, chatId = kaitrinChatId)
           _ <- ZIO.effect(Thread.sleep(1000))
           noTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(kaitrinChatId).some,
@@ -199,7 +199,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkups.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(TaskId(2L), firstPage)),
+              inlineKeyboardButton("1", CheckTask(firstPage, TaskId(2L))),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
@@ -207,7 +207,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(2L), firstPage))
+          checkTaskReply <- sendCallbackQuery(CheckTask(firstPage, TaskId(2L)))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,
@@ -271,7 +271,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkups.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(TaskId(3L), firstPage)),
+              inlineKeyboardButton("1", CheckTask(firstPage, TaskId(3L))),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
@@ -279,7 +279,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       val checkTask =
         for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(TaskId(3L), firstPage))
+          checkTaskReply <- sendCallbackQuery(CheckTask(firstPage, TaskId(3L)))
           _ = verifyMethodCall(botApiMock, Methods.editMessageText(
             ChatIntId(johnChatId).some,
             messageId = 0.some,

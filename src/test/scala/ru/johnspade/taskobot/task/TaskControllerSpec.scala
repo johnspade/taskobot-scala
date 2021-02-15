@@ -93,7 +93,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
               lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkups.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(task.id, firstPage)),
+              inlineKeyboardButton("1", CheckTask(firstPage, task.id)),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
           ))
@@ -120,11 +120,11 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             )),
             replyMarkup = InlineKeyboardMarkup(List(
               List(
-                inlineKeyboardButton("1", CheckTask(TaskId(23L), PageNumber(1))),
-                inlineKeyboardButton("2", CheckTask(TaskId(24L), PageNumber(1))),
-                inlineKeyboardButton("3", CheckTask(TaskId(25L), PageNumber(1))),
-                inlineKeyboardButton("4", CheckTask(TaskId(26L), PageNumber(1))),
-                inlineKeyboardButton("5", CheckTask(TaskId(27L), PageNumber(1)))
+                inlineKeyboardButton("1", CheckTask(PageNumber(1), TaskId(23L))),
+                inlineKeyboardButton("2", CheckTask(PageNumber(1), TaskId(24L))),
+                inlineKeyboardButton("3", CheckTask(PageNumber(1), TaskId(25L))),
+                inlineKeyboardButton("4", CheckTask(PageNumber(1), TaskId(26L))),
+                inlineKeyboardButton("5", CheckTask(PageNumber(1), TaskId(27L)))
               ),
               List(inlineKeyboardButton("Previous page", Tasks(firstPage, kaitrin.id))),
               List(inlineKeyboardButton("Next page", Tasks(PageNumber(2), kaitrin.id))),
@@ -139,7 +139,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("sender should be able to check a task") {
         for {
           task <- createTask("Buy some milk", kaitrin.id.some)
-          reply <- callUserRoute(CheckTask(task.id, firstPage), johnTg)
+          reply <- callUserRoute(CheckTask(firstPage, task.id), johnTg)
           checkedTask <- TaskRepository.findById(task.id)
           checkedTaskAssertions = assert(checkedTask.get)(hasField("done", _.done, equalTo(Done(true)))) &&
             assert(checkedTask.get)(hasField("doneAt", _.doneAt, isSome))
@@ -167,7 +167,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("receiver should be able to check a task") {
         for {
           task <- createTask("Buy some milk", kaitrin.id.some)
-          reply <- callUserRoute(CheckTask(task.id, firstPage), kaitrinTg)
+          reply <- callUserRoute(CheckTask(firstPage, task.id), kaitrinTg)
           checkedTask <- TaskRepository.findById(task.id)
           checkedTaskAssertions = assert(checkedTask.get)(hasField("done", _.done, equalTo(Done(true)))) &&
             assert(checkedTask.get)(hasField("doneAt", _.doneAt, isSome))
@@ -195,7 +195,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("cannot check someone else's task") {
         for {
           task <- createTask("Try Taskobot", kaitrin.id.some)
-          reply <- callUserRoute(CheckTask(task.id, firstPage), TgUser(0, isBot = false, "Bob"))
+          reply <- callUserRoute(CheckTask(firstPage, task.id), TgUser(0, isBot = false, "Bob"))
           uncheckedTask <- TaskRepository.findById(task.id)
           uncheckedTaskAssertions = assert(uncheckedTask.get)(hasField("done", _.done, equalTo(Done(false)))) &&
             assert(uncheckedTask.get)(hasField("doneAt", _.doneAt, isNone))

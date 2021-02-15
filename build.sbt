@@ -24,6 +24,3 @@ templateTarget in Compile := file("src/main/locales/messages.pot")
 sourceDirectories in (Test, compileLocales) := Seq(file("src/main/locales"))
 
 resolvers += Resolver.bintrayRepo("johnspade", "maven")
-
-//lazy val `tgbot-utils` = ProjectRef(uri("https://github.com/johnspade/tgbot-utils.git#master"), "root")
-//lazy val root: Project = (project in file(".")).dependsOn(`tgbot-utils`)

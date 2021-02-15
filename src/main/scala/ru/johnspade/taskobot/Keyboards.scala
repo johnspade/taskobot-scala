@@ -35,7 +35,7 @@ object Keyboards {
       .items
       .zipWithIndex
       .map { case (task, i) =>
-        inlineKeyboardButton((i + 1).toString, CheckTask(task.id, page.number))
+        inlineKeyboardButton((i + 1).toString, CheckTask(page.number, task.id))
       }
     val nextButtonRow = if (page.hasNext) List(nextButton) else List.empty
     val prevButtonRow = if (page.hasPrevious) List(prevButton) else List.empty

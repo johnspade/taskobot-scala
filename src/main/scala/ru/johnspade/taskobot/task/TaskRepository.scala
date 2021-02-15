@@ -146,7 +146,7 @@ private object TaskQueries {
         userId <- userIdOpt
         firstName <- firstNameOpt
         language <- languageOpt
-      } yield User(userId, firstName, Language.withName(language), chatIdOpt, lastNameOpt)
+      } yield User(userId, firstName, Language.withValue(language), chatIdOpt, lastNameOpt)
       TaskWithCollaborator(id, text, collaborator)
     }
 

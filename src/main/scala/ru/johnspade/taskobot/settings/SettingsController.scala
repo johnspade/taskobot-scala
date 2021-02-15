@@ -60,7 +60,7 @@ object SettingsController {
       case SetLanguage(language) in cb =>
         for {
           _ <- userRepo.createOrUpdateWithLanguage(toUser(cb.from).copy(language = language))
-          implicit0(languageId: LanguageId) = LanguageId(language.languageTag)
+          implicit0(languageId: LanguageId) = LanguageId(language.value)
           _ <- (listLanguages(cb, language) *> notifyLanguageChanged(cb, language)).fork
           answer = answerCallbackQuery(cb.id)
         } yield answer.some
@@ -68,7 +68,7 @@ object SettingsController {
     }
 
     private def listLanguages(cb: CallbackQuery, language: Language): UIO[Unit] = {
-      implicit val languageId: LanguageId = LanguageId(language.languageTag)
+      implicit val languageId: LanguageId = LanguageId(language.value)
       ZIO.foreach_(cb.message) { msg =>
         editMessageText(
           ChatIntId(msg.chat.id).some,
@@ -82,7 +82,7 @@ object SettingsController {
     }
 
     private def notifyLanguageChanged(cb: CallbackQuery, language: Language): UIO[Unit] = {
-      implicit val languageId: LanguageId = LanguageId(language.languageTag)
+      implicit val languageId: LanguageId = LanguageId(language.value)
       ZIO.foreach_(cb.message) { msg =>
         sendMessage(
           ChatIntId(msg.chat.id),

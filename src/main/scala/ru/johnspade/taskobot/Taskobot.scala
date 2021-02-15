@@ -123,7 +123,7 @@ object Taskobot {
         } yield {
           for {
             user <- botService.updateUser(from, ChatId(msg.chat.id).some)
-            implicit0(languageId: LanguageId) = LanguageId(user.language.languageTag)
+            implicit0(languageId: LanguageId) = LanguageId(user.language.value)
             now <- clock.instant
             _ <- taskRepo.create(NewTask(user.id, TaskText(text), CreatedAt(now.toEpochMilli), user.id.some))
             method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text), replyMarkup = Keyboards.menu().some)
@@ -143,7 +143,7 @@ object Taskobot {
         } yield {
           for {
             user <- botService.updateUser(from, ChatId(msg.chat.id).some)
-            implicit0(languageId: LanguageId) = LanguageId(user.language.languageTag)
+            implicit0(languageId: LanguageId) = LanguageId(user.language.value)
             now <- clock.instant
             newTask = NewTask(
               user.id,

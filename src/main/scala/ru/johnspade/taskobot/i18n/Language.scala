@@ -1,17 +1,16 @@
 package ru.johnspade.taskobot.i18n
 
-import enumeratum.EnumEntry.Uppercase
-import enumeratum._
+import enumeratum.values.{StringEnum, StringEnumEntry}
 
 import scala.collection.immutable.IndexedSeq
 
-sealed abstract class Language(val languageTag: String, val languageName: String) extends EnumEntry with Uppercase
+sealed abstract class Language(val value: String, val languageName: String) extends StringEnumEntry
 
-object Language extends Enum[Language] {
-  case object English extends Language("en-US", "English")
-  case object Russian extends Language("ru-RU", "Русский")
-  case object Turkish extends Language("tr-TR", "Turkish")
-  case object Italian extends Language("it-IT", "Italian")
+object Language extends StringEnum[Language] {
+  case object English extends Language("en", "English")
+  case object Russian extends Language("ru", "Русский")
+  case object Turkish extends Language("tr", "Turkish")
+  case object Italian extends Language("it", "Italian")
 
   override val values: IndexedSeq[Language] = findValues
 }
