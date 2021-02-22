@@ -26,3 +26,8 @@ templateTarget in Compile := file("src/main/locales/messages.pot")
 sourceDirectories in (Test, compileLocales) := Seq(file("src/main/locales"))
 
 resolvers += Resolver.bintrayRepo("johnspade", "maven")
+
+lazy val telegramiumCore = ProjectRef(uri("https://github.com/apimorphism/telegramium.git#master"), "telegramium-core")
+lazy val telegramiumHigh = ProjectRef(uri("https://github.com/apimorphism/telegramium.git#master"), "telegramium-high")
+
+lazy val root: Project = (project in file(".")).dependsOn(telegramiumCore, telegramiumHigh)
