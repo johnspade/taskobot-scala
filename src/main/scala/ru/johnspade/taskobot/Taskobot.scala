@@ -77,7 +77,7 @@ object Taskobot {
   )(
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
-  ) extends WebhookBot[Task](api, botConfig.port, url = s"${botConfig.url}/${botConfig.token}", path = botConfig.token) {
+  ) extends WebhookBot[Task](api, botConfig.port, url = s"${botConfig.url}/${botConfig.token}", path = botConfig.token, host = "0.0.0.0") {
 
     private val botId = botConfig.token.split(":").head.toInt
 
