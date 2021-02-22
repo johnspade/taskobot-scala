@@ -19,6 +19,8 @@ testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.2" cross CrossVersion.full)
 
+enablePlugins(JavaAppPackaging)
+
 enablePlugins(Scalingua)
 templateTarget in Compile := file("src/main/locales/messages.pot")
 sourceDirectories in (Test, compileLocales) := Seq(file("src/main/locales"))
