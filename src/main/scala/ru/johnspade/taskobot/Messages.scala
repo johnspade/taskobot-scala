@@ -5,10 +5,11 @@ import ru.johnspade.taskobot.i18n.{Language, messages}
 import ru.makkarpov.scalingua.I18n._
 
 object Messages {
-  def help()(implicit languageId: LanguageId): String =
-    t("Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
-      "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
-      "Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕")
+  def help()(implicit languageId: LanguageId): String = t(
+    """Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks.
+      |
+      |Support a creator: https://buymeacoff.ee/johnspade ☕""".stripMargin
+  )
 
   def taskCreated(task: String)(implicit languageId: LanguageId): String = t"""Personal task "$task" has been created."""
 
