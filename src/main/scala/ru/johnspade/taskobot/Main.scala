@@ -6,7 +6,7 @@ import ru.johnspade.taskobot.Taskobot.Taskobot
 import zio._
 import zio.interop.catz._
 
-object Main extends zio.App {
+object Main extends zio.interop.catz.CatsApp {
   val program: ZIO[AppEnvironment, Throwable, Unit] =
     for {
       _ <- ZIO.effect(println("Starting..."))
