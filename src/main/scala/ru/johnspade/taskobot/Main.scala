@@ -11,7 +11,9 @@ object Main extends zio.interop.catz.CatsApp {
     for {
       _ <- FlywayMigration.migrate
       _ <- Task.concurrentEffect.flatMap { implicit CE: ConcurrentEffect[Task] =>
-        ZIO.accessM[Taskobot](_.get.start(runtime.platform.executor.asEC).toManaged.useForever)
+        blocking.blockingExecutor.flatMap { ec =>
+          ZIO.accessM[Taskobot](_.get.start(ec.asEC).toManaged.useForever)
+        }
       }
     } yield ()
 
