@@ -30,4 +30,5 @@
 
 	<logger name="org.http4s.client.middleware.RequestLogger" level="WARN" />
 	<logger name="org.http4s.client.middleware.ResponseLogger" level="WARN" />
+	<logger name="org.http4s.blaze" level="WARN" />
 </configuration>
