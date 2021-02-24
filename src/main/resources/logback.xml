@@ -25,6 +25,7 @@
 
 	<root level="INFO">
 		<appender-ref ref="STDOUT" />
+		<appender-ref ref="FILE" />
 	</root>
 
 	<logger name="org.http4s.client.middleware.RequestLogger" level="WARN" />

@@ -6,14 +6,12 @@ import ru.johnspade.taskobot.Taskobot.Taskobot
 import zio._
 import zio.interop.catz._
 
-object Main extends zio.interop.catz.CatsApp {
+object Main extends zio.App {
   val program: ZIO[AppEnvironment, Throwable, Unit] =
     for {
       _ <- FlywayMigration.migrate
       _ <- Task.concurrentEffect.flatMap { implicit CE: ConcurrentEffect[Task] =>
-        blocking.blockingExecutor.flatMap { ec =>
-          ZIO.accessM[Taskobot](_.get.start(ec.asEC).toManaged.useForever)
-        }
+        ZIO.accessM[Taskobot](_.get.start().toManaged.useForever)
       }
     } yield ()
 
