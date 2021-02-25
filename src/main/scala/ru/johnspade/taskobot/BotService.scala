@@ -25,11 +25,11 @@ object BotService {
   type BotService = Has[Service]
 
   trait Service {
-    def updateUser(tgUser: telegramium.bots.User, chatId: Option[ChatId] = None): UIO[User]
+    def updateUser(tgUser: telegramium.bots.User, chatId: Option[ChatId] = None): Task[User]
 
     def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
       implicit languageId: LanguageId
-    ): UIO[(Page[BotTask], List[TypedMessageEntity])]
+    ): Task[(Page[BotTask], List[TypedMessageEntity])]
   }
 
   val live: URLayer[UserRepository with TaskRepository, BotService] =
@@ -39,13 +39,13 @@ object BotService {
     userRepo: UserRepository.Service,
     taskRepo: TaskRepository.Service
   ) extends Service {
-    override def updateUser(tgUser: bots.User, chatId: Option[ChatId] = None): UIO[User] =
+    override def updateUser(tgUser: bots.User, chatId: Option[ChatId] = None): Task[User] =
       userRepo.createOrUpdate(toUser(tgUser, chatId))
 
     override def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
       implicit languageId: LanguageId
-    ): UIO[(Page[BotTask], List[TypedMessageEntity])] = {
-      Page.request[BotTask, UIO](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
+    ): Task[(Page[BotTask], List[TypedMessageEntity])] = {
+      Page.request[BotTask, Task](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
         .map { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
           val header = List(Plain(t"Chat" + ": "), Bold(chatName), lineBreak)

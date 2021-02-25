@@ -64,33 +64,26 @@ object TaskController {
     override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of {
 
       case ConfirmTask(taskIdOpt, senderIdOpt) in cb =>
-        def confirm(task: BotTask): UIO[Option[Method[_]]] =
+        def confirm(task: BotTask, from: User): Task[Option[Method[_]]] =
           for {
-            user <- botService.updateUser(cb.from)
-            _ <- taskRepo.setReceiver(task.id, senderIdOpt, user.id)
+            _ <- taskRepo.setReceiver(task.id, senderIdOpt, from.id)
             _ <- editMessageReplyMarkup(inlineMessageId = cb.inlineMessageId, replyMarkup = Option.empty)
               .exec
-              .orDie
               .fork
           } yield answerCallbackQuery(cb.id).some
 
-        val mustBeConfirmedByReceiver: UIO[Option[Method[_]]] =
-          (for {
-            userOpt <- userRepo.findById(UserId(cb.from.id))
-            user <- ZIO.fromOption(userOpt)
-            implicit0(languageId: LanguageId) = LanguageId(user.language.value)
-            answer = answerCallbackQuery(cb.id, t"The task must be confirmed by the receiver".some)
-          } yield answer)
-            .optional
+        def mustBeConfirmedByReceiver(from: User): UIO[Option[Method[_]]] = {
+          implicit val languageId: LanguageId = LanguageId(from.language.value)
+          ZIO.succeed(answerCallbackQuery(cb.id, t"The task must be confirmed by the receiver".some).some)
+        }
 
-        (for {
-          id <- ZIO.fromOption(taskIdOpt)
+        for {
+          id <- ZIO.fromOption(taskIdOpt).orElseFail(new RuntimeException(Errors.Default))
           taskOpt <- taskRepo.findById(id)
-          task <- ZIO.fromOption(taskOpt)
-          answerOpt <- if (task.sender == UserId(cb.from.id)) mustBeConfirmedByReceiver else confirm(task)
-        } yield answerOpt)
-          .optional
-          .map(_.flatten)
+          task <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
+          user <- botService.updateUser(cb.from)
+          answerOpt <- if (task.sender == UserId(cb.from.id)) mustBeConfirmedByReceiver(user) else confirm(task, user)
+        } yield answerOpt
 
     }
 
@@ -99,7 +92,7 @@ object TaskController {
       case Chats(pageNumber) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
         for {
-          page <- Page.request[User, UIO](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
+          page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
           _ <- ZIO.foreach_(cb.message) { msg =>
             editMessageText(
               ChatIntId(msg.chat.id).some,
@@ -107,22 +100,20 @@ object TaskController {
               text = Messages.chatsWithTasks(),
               replyMarkup = Keyboards.chats(page, user).some
             )
-              .exec
-              .orDie
+              .exec[Task]
           }
           ack = answerCallbackQuery(cb.id).some
         } yield ack
 
       case Tasks(pageNumber, collaboratorId) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
-        (for {
+        for {
           userOpt <- userRepo.findById(collaboratorId)
-          collaborator <- ZIO.fromOption(userOpt)
-          message <- ZIO.fromOption(cb.message)
+          collaborator <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
+          message <- ZIO.fromOption(cb.message).orElseFail(new RuntimeException(Errors.Default))
           (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
           _ <- listTasks(message, messageEntities, page, collaborator)
-        } yield answerCallbackQuery(cb.id))
-          .optional
+        } yield answerCallbackQuery(cb.id).some
 
       case CheckTask(pageNumber, id) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
@@ -134,32 +125,28 @@ object TaskController {
           } yield ()
 
         def listTasksAndNotify(task: TaskWithCollaborator, message: Message) =
-          task.collaborator.fold(ZIO.unit) { collaborator =>
+          task.collaborator.map { collaborator =>
             for {
               (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
               _ <- listTasks(message, messageEntities, page, collaborator)
               _ <- notify(task, user, collaborator).when(user.id != collaborator.id)
             } yield ()
           }
+            .getOrElse(Task.unit)
 
-        val answer = for {
+        for {
           taskOpt <- taskRepo.findByIdWithCollaborator(id, user.id)
-          task <- ZIO.fromEither(taskOpt.toRight(Errors.NotFound))
-          message <- ZIO.fromEither(cb.message.toRight(Errors.Default))
+          task <- ZIO.fromEither(taskOpt.toRight(new RuntimeException(Errors.NotFound)))
+          message <- ZIO.fromEither(cb.message.toRight(new RuntimeException(Errors.Default)))
           _ <- checkTask(task)
           _ <- listTasksAndNotify(task, message).fork
-        } yield t"Task has been marked as completed."
-
-        answer
-          .merge
-          .map { answerText =>
-            answerCallbackQuery(cb.id, answerText.some).some
-          }
+          answerText = t"Task has been marked as completed."
+        } yield answerCallbackQuery(cb.id, answerText.some).some
 
     }
 
     private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
-      collaborator.chatId.fold(ZIO.unit) { chatId =>
+      collaborator.chatId.map { chatId =>
         implicit val languageId: LanguageId = LanguageId(collaborator.language.value)
         val taskText = task.text
         val completedBy = from.fullName
@@ -168,9 +155,9 @@ object TaskController {
           t"""Task "$taskText" has been marked as completed by $completedBy."""
         )
           .exec
-          .orDie
           .void
       }
+        .getOrElse(Task.unit)
 
     private def listTasks(message: Message, messageEntities: List[TypedMessageEntity], page: Page[BotTask], collaborator: User)(
       implicit languageId: LanguageId
@@ -183,7 +170,6 @@ object TaskController {
         replyMarkup = Keyboards.tasks(page, collaborator).some
       )
         .exec
-        .orDie
         .void
 
   }

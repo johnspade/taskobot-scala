@@ -260,8 +260,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
     @@ sequential
     @@ before {
     for {
-      _ <- UserRepository.createOrUpdate(john)
-      _ <- UserRepository.createOrUpdate(kaitrin)
+      _ <- UserRepository.createOrUpdate(john).orDie
+      _ <- UserRepository.createOrUpdate(kaitrin).orDie
     } yield ()
   }
     @@ TestAspect.after {

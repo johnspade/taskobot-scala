@@ -67,7 +67,7 @@ object SettingsController {
 
     }
 
-    private def listLanguages(cb: CallbackQuery, language: Language): UIO[Unit] = {
+    private def listLanguages(cb: CallbackQuery, language: Language): Task[Unit] = {
       implicit val languageId: LanguageId = LanguageId(language.value)
       ZIO.foreach_(cb.message) { msg =>
         editMessageText(
@@ -76,12 +76,11 @@ object SettingsController {
           text = Messages.currentLanguage(language),
           replyMarkup = Keyboards.languages.some
         )
-          .exec
-          .orDie
+          .exec[Task]
       }
     }
 
-    private def notifyLanguageChanged(cb: CallbackQuery, language: Language): UIO[Unit] = {
+    private def notifyLanguageChanged(cb: CallbackQuery, language: Language): Task[Unit] = {
       implicit val languageId: LanguageId = LanguageId(language.value)
       ZIO.foreach_(cb.message) { msg =>
         sendMessage(
@@ -89,8 +88,7 @@ object SettingsController {
           t"Language has been changed",
           replyMarkup = Keyboards.menu().some
         )
-          .exec
-          .orDie
+          .exec[Task]
       }
     }
   }
