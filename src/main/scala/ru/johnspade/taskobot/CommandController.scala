@@ -20,7 +20,7 @@ import telegramium.bots.high.Api
 import telegramium.bots.high.Methods.sendMessage
 import telegramium.bots.high.implicits._
 import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
-import telegramium.bots.{ChatIntId, ForceReply, Html, Message}
+import telegramium.bots.{ChatIntId, ForceReply, Html, InlineKeyboardButton, Message}
 import zio._
 import zio.clock.Clock
 import zio.interop.catz._
@@ -31,15 +31,15 @@ object CommandController {
   type CommandController = Has[Service]
 
   trait Service {
-    def onStartCommand(message: Message): UIO[Option[Method[Message]]]
+    def onStartCommand(message: Message): Task[Option[Method[Message]]]
 
-    def onHelpCommand(message: Message): UIO[Option[Method[Message]]]
+    def onHelpCommand(message: Message): Task[Option[Method[Message]]]
 
-    def onSettingsCommand(message: Message): UIO[Option[Method[Message]]]
+    def onSettingsCommand(message: Message): Task[Option[Method[Message]]]
 
-    def onCreateCommand(message: Message): UIO[Option[Method[Message]]]
+    def onCreateCommand(message: Message): Task[Option[Method[Message]]]
 
-    def onListCommand(message: Message): UIO[Option[Method[Message]]]
+    def onListCommand(message: Message): Task[Option[Method[Message]]]
   }
 
   val live: URLayer[TelegramBotApi with BotService with TaskRepository with UserRepository with Clock, CommandController] =
@@ -53,30 +53,28 @@ object CommandController {
     userRepo: UserRepository.Service,
     clock: Clock.Service
   )(implicit bot: Api[Task]) extends Service {
-    override def onStartCommand(message: Message): UIO[Option[Method[Message]]] =
+    override def onStartCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
-        createHelpMessage(message).exec.orDie *>
-          createSwitchMessage(message).exec.orDie
-            .as(createSettingsMessage(message, user).some)
+        createHelpMessage(message).exec
+          .as(createSwitchMessage(message).some)
       }
 
-    override def onHelpCommand(message: Message): UIO[Option[Method[Message]]] =
+    override def onHelpCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
         createHelpMessage(message)
           .exec
-          .orDie
           .as(createSwitchMessage(message).some)
       }
 
-    override def onSettingsCommand(message: Message): UIO[Option[Method[Message]]] =
+    override def onSettingsCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
         ZIO.succeed(createSettingsMessage(message, user).some)
       }
 
-    override def onCreateCommand(message: Message): UIO[Option[Method[Message]]] =
+    override def onCreateCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
         ZIO.foreach(message.text) { text =>
@@ -102,10 +100,10 @@ object CommandController {
         }
       }
 
-    override def onListCommand(message: Message): UIO[Option[Method[Message]]] =
+    override def onListCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
-        Page.request[User, UIO](PageNumber(0), DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id)).map { page =>
+        Page.request[User, Task](PageNumber(0), DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id)).map { page =>
           sendMessage(
             ChatIntId(message.chat.id),
             Messages.chatsWithTasks(),
@@ -115,7 +113,7 @@ object CommandController {
         }
       }
 
-    private def withSender(message: Message)(handle: User => UIO[Option[Method[Message]]]): UIO[Option[Method[Message]]] =
+    private def withSender(message: Message)(handle: User => Task[Option[Method[Message]]]): Task[Option[Method[Message]]] =
       ZIO.foreach(message.from)(botService.updateUser(_, ChatId(message.chat.id).some).flatMap(handle(_))).map(_.flatten)
 
     private def createHelpMessage(message: Message)(implicit languageId: LanguageId) =
@@ -131,7 +129,7 @@ object CommandController {
       sendMessage(
         ChatIntId(message.chat.id),
         t"Start creating tasks" + ":",
-        replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("\uD83D\uDE80", "")).some
+        replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButton("\uD83D\uDE80", "123".some, callbackData = "123".some)).some
       )
 
     private def createSettingsMessage(message: Message, user: User)(implicit languageId: LanguageId) =

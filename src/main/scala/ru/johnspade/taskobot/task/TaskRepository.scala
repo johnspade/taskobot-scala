@@ -20,19 +20,19 @@ object TaskRepository {
   type TaskRepository = Has[Service]
 
   trait Service {
-    def findById(id: TaskId): UIO[Option[BotTask]]
+    def findById(id: TaskId): Task[Option[BotTask]]
 
-    def findByIdWithCollaborator(id: TaskId, `for`: UserId): UIO[Option[TaskWithCollaborator]]
+    def findByIdWithCollaborator(id: TaskId, `for`: UserId): Task[Option[TaskWithCollaborator]]
 
-    def create(task: NewTask): UIO[BotTask]
+    def create(task: NewTask): Task[BotTask]
 
-    def setReceiver(id: TaskId, senderId: Option[UserId], receiverId: UserId): UIO[Unit]
+    def setReceiver(id: TaskId, senderId: Option[UserId], receiverId: UserId): Task[Unit]
 
-    def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]]
+    def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): Task[List[BotTask]]
 
-    def check(id: TaskId, doneAt: DoneAt, userId: UserId): UIO[Unit]
+    def check(id: TaskId, doneAt: DoneAt, userId: UserId): Task[Unit]
 
-    def clear(): UIO[Unit]
+    def clear(): Task[Unit]
   }
 
   val live: URLayer[SessionPool, TaskRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -40,25 +40,22 @@ object TaskRepository {
       import TaskQueries._
 
       new Service {
-        override def findById(id: TaskId): UIO[Option[BotTask]] =
+        override def findById(id: TaskId): Task[Option[BotTask]] =
           sessionPool.use {
             _.prepare(selectById).use(_.option(id))
           }
-            .orDie
 
-        override def findByIdWithCollaborator(id: TaskId, `for`: UserId): UIO[Option[TaskWithCollaborator]] =
+        override def findByIdWithCollaborator(id: TaskId, `for`: UserId): Task[Option[TaskWithCollaborator]] =
           sessionPool.use {
             _.prepare(selectByIdJoinCollaborator).use(_.option(`for` ~ `for` ~ id ~ `for` ~ `for`))
           }
-            .orDie
 
-        override def create(task: NewTask): UIO[BotTask] =
+        override def create(task: NewTask): Task[BotTask] =
           sessionPool.use {
             _.prepare(insert).use(_.unique(task))
           }
-            .orDie
 
-        override def setReceiver(id: TaskId, senderId: Option[UserId], receiverId: UserId): UIO[Unit] =
+        override def setReceiver(id: TaskId, senderId: Option[UserId], receiverId: UserId): Task[Unit] =
           sessionPool.use { pool =>
             senderId
               .map { sId =>
@@ -69,9 +66,8 @@ object TaskRepository {
               }
           }
             .void
-            .orDie
 
-        override def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): UIO[List[BotTask]] =
+        override def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): Task[List[BotTask]] =
           sessionPool.use {
             _.prepare(selectByUserId).use {
               _.stream(id1 ~ id2 ~ id2 ~ id1 ~ offset ~ limit, limit)
@@ -79,25 +75,22 @@ object TaskRepository {
                 .toList
             }
           }
-            .orDie
 
-        override def check(id: TaskId, doneAt: DoneAt, userId: UserId): UIO[Unit] =
+        override def check(id: TaskId, doneAt: DoneAt, userId: UserId): Task[Unit] =
           sessionPool.use {
             _.prepare(setDone).use {
               _.execute(doneAt ~ id ~ userId ~ userId)
             }
           }
             .void
-            .orDie
 
-        override def clear(): UIO[Unit] =
+        override def clear(): Task[Unit] =
           sessionPool.use {
             _.prepare(deleteAll).use {
               _.execute(Void)
             }
           }
             .void
-            .orDie
       }
   }
 }

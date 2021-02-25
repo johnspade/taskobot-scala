@@ -18,15 +18,15 @@ object UserRepository {
   type UserRepository = Has[Service]
 
   trait Service {
-    def findById(id: UserId): UIO[Option[User]]
+    def findById(id: UserId): Task[Option[User]]
 
-    def createOrUpdate(user: User): UIO[User]
+    def createOrUpdate(user: User): Task[User]
 
-    def createOrUpdateWithLanguage(user: User): UIO[User]
+    def createOrUpdateWithLanguage(user: User): Task[User]
 
-    def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): UIO[List[User]]
+    def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): Task[List[User]]
 
-    def clear(): UIO[Unit]
+    def clear(): Task[Unit]
   }
 
   val live: URLayer[SessionPool, UserRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
@@ -34,25 +34,22 @@ object UserRepository {
       import UserQueries._
 
       new Service {
-        override def findById(id: UserId): UIO[Option[User]] =
+        override def findById(id: UserId): Task[Option[User]] =
           sessionPool.use {
             _.prepare(selectById).use(_.option(id))
           }
-            .orDie
 
-        override def createOrUpdate(user: User): UIO[User] =
+        override def createOrUpdate(user: User): Task[User] =
           sessionPool.use {
             _.prepare(upsert).use(_.unique(user))
           }
-            .orDie
 
-        override def createOrUpdateWithLanguage(user: User): UIO[User] =
+        override def createOrUpdateWithLanguage(user: User): Task[User] =
           sessionPool.use {
             _.prepare(upsertWithLanguage).use(_.unique(user))
           }
-            .orDie
 
-        override def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): UIO[List[User]] =
+        override def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): Task[List[User]] =
           sessionPool.use {
             _.prepare(selectBySharedTasks).use {
               _.stream(id ~ id ~ id ~ offset ~ limit, 512)
@@ -60,16 +57,14 @@ object UserRepository {
                 .toList
             }
           }
-            .orDie
 
-        override def clear(): UIO[Unit] =
+        override def clear(): Task[Unit] =
           sessionPool.use {
             _.prepare(deleteAll).use {
               _.execute(Void)
             }
           }
             .void
-            .orDie
       }
   }
 
