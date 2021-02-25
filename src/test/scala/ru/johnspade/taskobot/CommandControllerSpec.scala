@@ -1,4 +1,4 @@
-package ru.johnspade.taskobot.core
+package ru.johnspade.taskobot
 
 import cats.syntax.option._
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
@@ -6,13 +6,13 @@ import ru.johnspade.taskobot.CommandController.CommandController
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.{createMessage, mockMessage}
 import ru.johnspade.taskobot.TestUsers._
+import ru.johnspade.taskobot.core.ChangeLanguage
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskId, TaskText}
 import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
-import ru.johnspade.taskobot.{BotService, CommandController, TestEnvironments}
 import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.high.{Api, Methods}
 import telegramium.bots.{ChatIntId, Message, ReplyKeyboardMarkup}

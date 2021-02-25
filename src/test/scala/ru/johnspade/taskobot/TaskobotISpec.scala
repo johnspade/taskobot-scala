@@ -10,7 +10,7 @@ import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{CbData, ChangeLanguage, Chats, CheckTask, ConfirmTask, Tasks}
+import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks}
 import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
@@ -144,24 +144,17 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     testM("personal tasks") {
       val start =
         for {
-          settingsMessage <- sendMessage("/start", isCommand = true)
-          _ = verifySendMessage(
-            "Start creating tasks:",
-            InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("\uD83D\uDE80", "")).some
-          )
-          _ = verifySendMessage(
+          startMessage <- sendMessage("/start", isCommand = true)
+          assertions = assert(startMessage)(isSome(equalTo(Methods.sendMessage(
+            ChatIntId(johnChatId),
             "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
               "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
               "Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕",
-            expectedMenu,
             Html.some,
+            replyMarkup = expectedMenu,
             disableWebPagePreview = true.some
-          )
-        } yield assert(settingsMessage)(isSome(equalTo(Methods.sendMessage(
-          ChatIntId(johnChatId),
-          "Current language: English",
-          replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
-        ))))
+          ))))
+        } yield assertions
 
       val create =
         for {

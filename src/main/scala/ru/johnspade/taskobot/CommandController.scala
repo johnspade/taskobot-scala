@@ -18,9 +18,8 @@ import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
 import telegramium.bots.high.Api
 import telegramium.bots.high.Methods.sendMessage
-import telegramium.bots.high.implicits._
-import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
-import telegramium.bots.{ChatIntId, ForceReply, Html, InlineKeyboardButton, Message}
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.{ChatIntId, ForceReply, Html, Message}
 import zio._
 import zio.clock.Clock
 import zio.interop.catz._
@@ -54,19 +53,10 @@ object CommandController {
     clock: Clock.Service
   )(implicit bot: Api[Task]) extends Service {
     override def onStartCommand(message: Message): Task[Option[Method[Message]]] =
-      withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.value)
-        createHelpMessage(message).exec
-          .as(createSwitchMessage(message).some)
-      }
+      createHelpMessage(message)
 
     override def onHelpCommand(message: Message): Task[Option[Method[Message]]] =
-      withSender(message) { user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.value)
-        createHelpMessage(message)
-          .exec
-          .as(createSwitchMessage(message).some)
-      }
+      createHelpMessage(message)
 
     override def onSettingsCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
@@ -116,21 +106,20 @@ object CommandController {
     private def withSender(message: Message)(handle: User => Task[Option[Method[Message]]]): Task[Option[Method[Message]]] =
       ZIO.foreach(message.from)(botService.updateUser(_, ChatId(message.chat.id).some).flatMap(handle(_))).map(_.flatten)
 
-    private def createHelpMessage(message: Message)(implicit languageId: LanguageId) =
-      sendMessage(
-        ChatIntId(message.chat.id),
-        Messages.help(),
-        Html.some,
-        disableWebPagePreview = true.some,
-        replyMarkup = Keyboards.menu().some
-      )
-
-    private def createSwitchMessage(message: Message)(implicit languageId: LanguageId) =
-      sendMessage(
-        ChatIntId(message.chat.id),
-        t"Start creating tasks" + ":",
-        replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButton("\uD83D\uDE80", "123".some, callbackData = "123".some)).some
-      )
+    private def createHelpMessage(message: Message) =
+      withSender(message) { user =>
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
+        ZIO.succeed {
+          sendMessage(
+            ChatIntId(message.chat.id),
+            Messages.help(),
+            Html.some,
+            disableWebPagePreview = true.some,
+            replyMarkup = Keyboards.menu().some
+          )
+            .some
+        }
+      }
 
     private def createSettingsMessage(message: Message, user: User)(implicit languageId: LanguageId) =
       sendMessage(
