@@ -5,11 +5,14 @@ import ru.johnspade.taskobot.i18n.{Language, messages}
 import ru.makkarpov.scalingua.I18n._
 
 object Messages {
-  def help()(implicit languageId: LanguageId): String = t(
-    """Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks.
-      |
-      |Support a creator: https://buymeacoff.ee/johnspade ☕""".stripMargin
-  )
+  def help()(implicit languageId: LanguageId): String =
+    t"Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks." +
+      "\n\n" +
+      switchLanguage() + ": /settings" +
+      "\n" +
+      t"Support a creator" + ": https://buymeacoff.ee/johnspade ☕" +
+      "\n\n" +
+      t"Forward messages here to create personal tasks."
 
   def chatsWithTasks()(implicit languageId: LanguageId): String = t"Chats with tasks"
 
@@ -23,4 +26,6 @@ object Messages {
     val languageName = language.languageName
     t"Current language: $languageName"
   }
+
+  def switchLanguage()(implicit languageId: LanguageId): String = t"Switch language"
 }

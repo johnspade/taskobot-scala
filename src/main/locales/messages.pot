@@ -1,4 +1,4 @@
-#  !Generated: 2021-02-27 22:29:24
+#  !Generated: 2021-02-27 22:42:36
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
 msgid "Chat"
@@ -7,10 +7,6 @@ msgstr ""
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:98
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "New personal task"
-msgstr ""
-
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:141
-msgid "Switch language"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
@@ -25,28 +21,40 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:8
-msgid "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade \u2615"
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:9
+msgid "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>. After receiver's confirmation collaborative task will be created. Type /list in the bot chat to see your tasks."
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:14
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:13
+msgid "Support a creator"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:15
+msgid "Forward messages here to create personal tasks."
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
 msgid "Chats with tasks"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:16
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
 msgid "Personal tasks"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:18
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
 msgid "Previous page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:20
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
 msgid "Next page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:24
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:27
 msgid "Current language: %(languageName)"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:30
+msgid "Switch language"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:92

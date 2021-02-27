@@ -138,7 +138,7 @@ object CommandController {
       sendMessage(
         ChatIntId(message.chat.id),
         Messages.currentLanguage(user.language),
-        replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton(t"Switch language", ChangeLanguage)).some
+        replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton(Messages.switchLanguage(), ChangeLanguage)).some
       )
   }
 }
