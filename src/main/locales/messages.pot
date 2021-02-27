@@ -1,6 +1,6 @@
-#  !Generated: 2021-02-27 22:03:01
+#  !Generated: 2021-02-27 22:29:24
 
-#: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
+#: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
 msgid "Chat"
 msgstr ""
 
@@ -30,26 +30,22 @@ msgid "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task<
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:14
-msgid "Personal task \"%(task)\" has been created."
-msgstr ""
-
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:16
 msgid "Chats with tasks"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:18
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:16
 msgid "Personal tasks"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:20
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:18
 msgid "Previous page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:22
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:20
 msgid "Next page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:26
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:24
 msgid "Current language: %(languageName)"
 msgstr ""
 
