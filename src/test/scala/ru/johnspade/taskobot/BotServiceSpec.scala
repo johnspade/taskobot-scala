@@ -75,7 +75,7 @@ object BotServiceSpec extends DefaultRunnableSpec {
           _ <- UserRepository.createOrUpdate(alice)
           _ <- TaskRepository.create(task1)
           _ <- TaskRepository.create(task2)
-          (page, messageEntities) <- BotService.getTasks(bob, alice, PageNumber(0), message)
+          (page, messageEntities) <- BotService.getTasks(bob, alice, PageNumber(0))
         } yield assert(page.items)(equalTo(expectedTasks)) &&
           assert(messageEntities)(equalTo(expectedMessageEntities)) &&
           assert(page.number)(equalTo(PageNumber(0)))

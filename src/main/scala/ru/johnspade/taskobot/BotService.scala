@@ -15,7 +15,6 @@ import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots
-import telegramium.bots.Message
 import zio._
 import zio.interop.catz._
 import zio.macros.accessible
@@ -27,7 +26,7 @@ object BotService {
   trait Service {
     def updateUser(tgUser: telegramium.bots.User, chatId: Option[ChatId] = None): Task[User]
 
-    def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
+    def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber)(
       implicit languageId: LanguageId
     ): Task[(Page[BotTask], List[TypedMessageEntity])]
   }
@@ -42,7 +41,7 @@ object BotService {
     override def updateUser(tgUser: bots.User, chatId: Option[ChatId] = None): Task[User] =
       userRepo.createOrUpdate(toUser(tgUser, chatId))
 
-    override def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber, message: Message)(
+    override def getTasks(`for`: User, collaborator: User, pageNumber: PageNumber)(
       implicit languageId: LanguageId
     ): Task[(Page[BotTask], List[TypedMessageEntity])] = {
       Page.request[BotTask, Task](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))

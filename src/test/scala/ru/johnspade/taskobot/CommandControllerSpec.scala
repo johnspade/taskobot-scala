@@ -1,4 +1,4 @@
-package ru.johnspade.taskobot.core
+package ru.johnspade.taskobot
 
 import cats.syntax.option._
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
@@ -7,15 +7,19 @@ import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.{createMessage, mockMessage}
 import ru.johnspade.taskobot.TestUsers._
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.{ChangeLanguage, Chats, CheckTask}
+import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskId, TaskText}
 import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
-import ru.johnspade.taskobot.{BotService, CommandController, TestEnvironments}
-import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.{Api, Methods}
-import telegramium.bots.{ChatIntId, Message, ReplyKeyboardMarkup}
+import telegramium.bots.{ChatIntId, Message}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.duration.Duration
@@ -39,16 +43,16 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
           )))
           replyAssertions = assert(reply)(isSome(equalTo(Methods.sendMessage(
             ChatIntId(johnChatId),
-            """Personal task "Buy some milk" has been created.""",
-            replyMarkup = ReplyKeyboardMarkup(
-              List(
-                List(KeyboardButtons.text("➕ New personal task")),
-                List(KeyboardButtons.text("\uD83D\uDCCB Tasks")),
-                List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
-              ),
-              resizeKeyboard = true.some
-            )
-              .some
+            "Chat: Personal tasks\n1. Buy some milk\n\nSelect the task number to mark it as completed.",
+            entities = TypedMessageEntity.toMessageEntities(List(
+              plain"Chat: ", bold"Personal tasks", lineBreak,
+              plain"1. Buy some milk", lineBreak,
+              lineBreak, italic"Select the task number to mark it as completed."
+            )),
+            replyMarkup = InlineKeyboardMarkups.singleColumn(List(
+              inlineKeyboardButton("1", CheckTask(PageNumber(0), TaskId(1L))),
+              inlineKeyboardButton("Chat list", Chats(PageNumber(0)))
+            )).some
           ))))
         } yield taskAssertions && replyAssertions
       }

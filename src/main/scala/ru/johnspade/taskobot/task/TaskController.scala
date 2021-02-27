@@ -111,7 +111,7 @@ object TaskController {
           userOpt <- userRepo.findById(collaboratorId)
           collaborator <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
           message <- ZIO.fromOption(cb.message).orElseFail(new RuntimeException(Errors.Default))
-          (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
+          (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber)
           _ <- listTasks(message, messageEntities, page, collaborator)
         } yield answerCallbackQuery(cb.id).some
 
@@ -127,21 +127,32 @@ object TaskController {
         def listTasksAndNotify(task: TaskWithCollaborator, message: Message) =
           task.collaborator.map { collaborator =>
             for {
-              (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
+              (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber)
               _ <- listTasks(message, messageEntities, page, collaborator)
               _ <- notify(task, user, collaborator).when(user.id != collaborator.id)
             } yield ()
           }
             .getOrElse(Task.unit)
 
-        for {
-          taskOpt <- taskRepo.findByIdWithCollaborator(id, user.id)
-          task <- ZIO.fromEither(taskOpt.toRight(new RuntimeException(Errors.NotFound)))
-          message <- ZIO.fromEither(cb.message.toRight(new RuntimeException(Errors.Default)))
-          _ <- checkTask(task)
-          _ <- listTasksAndNotify(task, message).fork
-          answerText = t"Task has been marked as completed."
-        } yield answerCallbackQuery(cb.id, answerText.some).some
+        taskRepo.findByIdWithCollaborator(id, user.id)
+          .flatMap { taskOpt =>
+            val answerText =
+              (for {
+                _ <- taskOpt.toRight(Errors.NotFound)
+                _ <- cb.message.toRight(Errors.Default)
+              } yield t"Task has been marked as completed.")
+                .merge
+
+            ZIO.collectAll_ {
+              for {
+                task <- taskOpt
+                message <- cb.message
+              } yield
+                checkTask(task) *>
+                  listTasksAndNotify(task, message).fork
+            }
+              .as(answerCallbackQuery(cb.id, answerText.some).some)
+          }
 
     }
 
