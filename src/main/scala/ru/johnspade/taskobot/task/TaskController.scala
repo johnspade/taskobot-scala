@@ -111,7 +111,7 @@ object TaskController {
           userOpt <- userRepo.findById(collaboratorId)
           collaborator <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
           message <- ZIO.fromOption(cb.message).orElseFail(new RuntimeException(Errors.Default))
-          (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
+          (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber)
           _ <- listTasks(message, messageEntities, page, collaborator)
         } yield answerCallbackQuery(cb.id).some
 
@@ -127,7 +127,7 @@ object TaskController {
         def listTasksAndNotify(task: TaskWithCollaborator, message: Message) =
           task.collaborator.map { collaborator =>
             for {
-              (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber, message)
+              (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber)
               _ <- listTasks(message, messageEntities, page, collaborator)
               _ <- notify(task, user, collaborator).when(user.id != collaborator.id)
             } yield ()

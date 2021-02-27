@@ -12,12 +12,15 @@ import ru.johnspade.taskobot.core.{CbData, ConfirmTask}
 import ru.johnspade.taskobot.i18n.messages
 import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.settings.SettingsController.SettingsController
+import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.TaskController.TaskController
 import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
 import ru.johnspade.taskobot.task.tags.{CreatedAt, SenderName, TaskText}
 import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
+import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
 import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryHandler, DecodeError, ParseError}
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
@@ -114,6 +117,17 @@ object Taskobot {
       } yield method.some
 
     override def onMessageReply(msg: Message): Task[Option[Method[_]]] = {
+        def listPersonalTasks(user: User)(implicit language: LanguageId) =
+          botService.getTasks(user, user, PageNumber(0))
+            .map { case (page, messageEntities) =>
+              sendMessage(
+                ChatIntId(msg.chat.id),
+                messageEntities.map(_.text).mkString,
+                replyMarkup = Keyboards.tasks(page, user).some,
+                entities = TypedMessageEntity.toMessageEntities(messageEntities),
+              )
+            }
+
       def handleReply() =
         for {
           replyTo <- msg.replyToMessage
@@ -126,7 +140,7 @@ object Taskobot {
             implicit0(languageId: LanguageId) = LanguageId(user.language.value)
             now <- clock.instant
             _ <- taskRepo.create(NewTask(user.id, TaskText(text), CreatedAt(now.toEpochMilli), user.id.some))
-            method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text), replyMarkup = Keyboards.menu().some)
+            method <- listPersonalTasks(user)
           } yield method.some
         }
 
@@ -154,7 +168,7 @@ object Taskobot {
               forwardFromSenderName = senderName.map(SenderName(_))
             )
             _ <- taskRepo.create(newTask)
-            method = sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text), replyMarkup = Keyboards.menu().some)
+            method <- listPersonalTasks(user)
           } yield method.some
         }
 

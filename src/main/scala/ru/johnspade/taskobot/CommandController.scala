@@ -13,6 +13,7 @@ import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
 import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.taskobot.user.tags.ChatId
 import ru.johnspade.taskobot.user.{User, UserRepository}
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
@@ -67,6 +68,18 @@ object CommandController {
     override def onCreateCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
+
+        val listPersonalTasks =
+          botService.getTasks(user, user, PageNumber(0))
+            .map { case (page, messageEntities) =>
+              sendMessage(
+                ChatIntId(message.chat.id),
+                messageEntities.map(_.text).mkString,
+                replyMarkup = Keyboards.tasks(page, user).some,
+                entities = TypedMessageEntity.toMessageEntities(messageEntities),
+              )
+            }
+
         ZIO.foreach(message.text) { text =>
           Option.when(text.contains("/create ")) {
             text.drop("/create".length).trim()
@@ -75,7 +88,7 @@ object CommandController {
               for {
                 now <- clock.instant
                 _ <- taskRepo.create(NewTask(user.id, TaskText(task), CreatedAt(now.toEpochMilli), user.id.some))
-                method = sendMessage(ChatIntId(message.chat.id), Messages.taskCreated(task), replyMarkup = Keyboards.menu().some)
+                method <- listPersonalTasks
               } yield method
             }
             .getOrElse(

@@ -174,18 +174,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
           )
           assertions = assert(personalTaskReply)(isSome(equalTo(Methods.sendMessage(
             ChatIntId(johnChatId),
-            """Personal task "Buy groceries" has been created.""",
-            replyMarkup = expectedMenu
-          ))))
-        } yield assertions
-
-      val listTasks =
-        for {
-          tasksReply <- sendCallbackQuery(Tasks(firstPage, john.id))
-          _ = verifyMethodCall(botApiMock, Methods.editMessageText(
-            ChatIntId(johnChatId).some,
-            messageId = 0.some,
-            text = "Chat: Personal tasks\n1. Buy groceries\n\nSelect the task number to mark it as completed.",
+            "Chat: Personal tasks\n1. Buy groceries\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
               plain"Chat: ", bold"Personal tasks", lineBreak,
               plain"1. Buy groceries", lineBreak,
@@ -195,8 +184,8 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               inlineKeyboardButton("1", CheckTask(firstPage, TaskId(2L))),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
-          ))
-        } yield assert(tasksReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
+          ))))
+        } yield assertions
 
       val checkTask =
         for {
@@ -217,14 +206,10 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
         startAssertions <- start
         createAssertions <- create
         sendTaskAssertions <- sendTask
-        listChatsAssertions <- listChats
-        listTasksAssertions <- listTasks
         checkTaskAssertions <- checkTask
       } yield startAssertions &&
         createAssertions &&
         sendTaskAssertions &&
-        listChatsAssertions &&
-        listTasksAssertions &&
         checkTaskAssertions
     },
 
@@ -245,19 +230,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
           forwardReply <- withTaskobotService(_.onMessageReply(forwardedMessage))
           assertions = assert(forwardReply)(isSome(equalTo(Methods.sendMessage(
             ChatIntId(johnChatId),
-            """Personal task "Watch Firefly" has been created.""",
-            replyMarkup = expectedMenu
-          ))))
-        } yield assertions
-      }
-
-      val listTasks =
-        for {
-          tasksReply <- sendCallbackQuery(Tasks(firstPage, john.id))
-          _ = verifyMethodCall(botApiMock, Methods.editMessageText(
-            ChatIntId(johnChatId).some,
-            messageId = 0.some,
-            text = "Chat: Personal tasks\n1. Watch Firefly – John\n\nSelect the task number to mark it as completed.",
+            "Chat: Personal tasks\n1. Watch Firefly – John\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
               plain"Chat: ", bold"Personal tasks", lineBreak,
               plain"1. Watch Firefly", italic" – John", lineBreak,
@@ -267,8 +240,9 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               inlineKeyboardButton("1", CheckTask(firstPage, TaskId(3L))),
               inlineKeyboardButton("Chat list", Chats(firstPage))
             )).some
-          ))
-        } yield assert(tasksReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
+          ))))
+        } yield assertions
+      }
 
       val checkTask =
         for {
@@ -288,12 +262,8 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
       for {
         forwardAssertions <- forward
-        listChatsAssertions <- listChats
-        listTasksAssertions <- listTasks
         checkTaskAssertions <- checkTask
       } yield forwardAssertions &&
-        listChatsAssertions &&
-        listTasksAssertions &&
         checkTaskAssertions
     }
   ) @@ sequential).provideCustomLayerShared(TestEnvironment.env)
@@ -309,20 +279,6 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     resizeKeyboard = true.some
   )
     .some
-
-  private val listChats =
-    for {
-      listReply <- sendMessage("/list", isCommand = true)
-      assertions = assert(listReply)(isSome(equalTo(Methods.sendMessage(
-        ChatIntId(johnChatId),
-        "Chats with tasks",
-        replyMarkup =
-          InlineKeyboardMarkups.singleColumn(List(
-            inlineKeyboardButton("Personal tasks", Tasks(firstPage, john.id)),
-            InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
-          )).some
-      ))))
-    } yield assertions
 
   private def mockMessage(chatId: Int = 0) =
     Message(0, date = 0, chat = Chat(chatId, `type` = ""), from = User(id = 123, isBot = true, "Taskobot").some)
