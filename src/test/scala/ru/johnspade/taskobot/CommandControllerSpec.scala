@@ -36,7 +36,7 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
         for {
           _ <- TestClock.setTime(Duration.Zero)
           now <- clock.instant
-          reply <- ZIO.accessM[CommandController](_.get.onCreateCommand(taskMessage))
+          reply <- ZIO.accessM[CommandController](_.get.onPersonalTaskCommand(taskMessage))
           task <- TaskRepository.findById(TaskId(1L))
           taskAssertions = assert(task)(isSome(equalTo(
             BotTask(TaskId(1L), john.id, TaskText("Buy some milk"), john.id.some, CreatedAt(now.toEpochMilli))

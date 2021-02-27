@@ -149,7 +149,9 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
             ChatIntId(johnChatId),
             "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
               "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
-              "Type /list in the bot chat to see your tasks.\n\nSupport a creator: https://buymeacoff.ee/johnspade ☕",
+              "Type /list in the bot chat to see your tasks.\n\nSwitch language: /settings\n" +
+              "Support a creator: https://buymeacoff.ee/johnspade ☕\n\n" +
+              "Forward messages here to create personal tasks.",
             Html.some,
             replyMarkup = expectedMenu,
             disableWebPagePreview = true.some
@@ -272,8 +274,8 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
 
   private val expectedMenu = ReplyKeyboardMarkup(
     List(
-      List(KeyboardButtons.text("➕ New personal task")),
-      List(KeyboardButtons.text("\uD83D\uDCCB Tasks")),
+      List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
+      List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task")),
       List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
     ),
     resizeKeyboard = true.some

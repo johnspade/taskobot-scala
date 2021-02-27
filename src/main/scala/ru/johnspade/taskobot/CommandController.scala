@@ -19,7 +19,7 @@ import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
 import telegramium.bots.high.Api
 import telegramium.bots.high.Methods.sendMessage
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
 import telegramium.bots.{ChatIntId, ForceReply, Html, Message}
 import zio._
 import zio.clock.Clock
@@ -37,7 +37,9 @@ object CommandController {
 
     def onSettingsCommand(message: Message): Task[Option[Method[Message]]]
 
-    def onCreateCommand(message: Message): Task[Option[Method[Message]]]
+    def onPersonalTaskCommand(message: Message): Task[Option[Method[Message]]]
+
+    def onCollaborativeTaskCommand(message: Message): Task[Option[Method[Message]]]
 
     def onListCommand(message: Message): Task[Option[Method[Message]]]
   }
@@ -65,7 +67,7 @@ object CommandController {
         ZIO.succeed(createSettingsMessage(message, user).some)
       }
 
-    override def onCreateCommand(message: Message): Task[Option[Method[Message]]] =
+    override def onPersonalTaskCommand(message: Message): Task[Option[Method[Message]]] =
       withSender(message) { user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
 
@@ -100,6 +102,20 @@ object CommandController {
                 )
               }
             )
+        }
+      }
+
+    override def onCollaborativeTaskCommand(message: Message): Task[Option[Method[Message]]] =
+      withSender(message) { user =>
+        implicit val languageId: LanguageId = LanguageId(user.language.value)
+        ZIO.succeed {
+          sendMessage(
+            ChatIntId(message.chat.id),
+            t"Type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>",
+            Html.some,
+            replyMarkup = InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("\uD83D\uDE80", "")).some
+          )
+            .some
         }
       }
 

@@ -175,7 +175,8 @@ object Taskobot {
       def handleText() =
         ZIO.foreach(msg.text) {
           case t if t.startsWith("/start") => commandController.onStartCommand(msg)
-          case t if t.startsWith("/create") || t.startsWith("➕") => commandController.onCreateCommand(msg)
+          case t if t.startsWith("/create") || t.startsWith("➕") => commandController.onPersonalTaskCommand(msg)
+          case t if t.startsWith("\uD83D\uDE80") => commandController.onCollaborativeTaskCommand(msg)
           case t if t.startsWith("/list") || t.startsWith("\uD83D\uDCCB") => commandController.onListCommand(msg)
           case t if t.startsWith("/settings") || t.startsWith("⚙") => commandController.onSettingsCommand(msg)
           case t if t.startsWith("/menu") => commandController.onHelpCommand(msg)

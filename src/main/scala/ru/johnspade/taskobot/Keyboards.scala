@@ -57,8 +57,8 @@ object Keyboards {
   def menu()(implicit languageId: LanguageId): ReplyKeyboardMarkup =
     ReplyKeyboardMarkup(
       List(
-        List(KeyboardButtons.text("➕ " + t"New personal task")),
-        List(KeyboardButtons.text("\uD83D\uDCCB " + t"Tasks")),
+        List(KeyboardButtons.text("\uD83D\uDCCB " + t"Tasks"), KeyboardButtons.text("➕ " + t"New personal task")),
+        List(KeyboardButtons.text("\uD83D\uDE80 " + t"New collaborative task")),
         List(KeyboardButtons.text("⚙️ " + t"Settings"), KeyboardButtons.text("❓ " + t"Help"))
       ),
       resizeKeyboard = true.some

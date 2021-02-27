@@ -18,14 +18,26 @@ msgstr ""
 msgid "Chat"
 msgstr "Чат"
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:98
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:100
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "New personal task"
 msgstr "Новая личная задача"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:114
+msgid ""
+"Type <code>@tasko_bot task</code> in private chat and select <b>Create task</"
+"b>"
+msgstr ""
+"В чате с собеседником напиши <code>@tasko_bot {задача}</code> и нажми "
+"<b>Создать задачу</b>"
+
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "Tasks"
 msgstr "Задачи"
+
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
+msgid "New collaborative task"
+msgstr "Новая совместная задача"
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
 msgid "Help"

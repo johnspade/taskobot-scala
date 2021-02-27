@@ -74,8 +74,8 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
             text = "Язык изменен",
             replyMarkup = ReplyKeyboardMarkup(
               List(
-                List(KeyboardButtons.text("➕ Новая личная задача")),
-                List(KeyboardButtons.text("\uD83D\uDCCB Задачи")),
+                List(KeyboardButtons.text("\uD83D\uDCCB Задачи"), KeyboardButtons.text("➕ Новая личная задача")),
+                List(KeyboardButtons.text("\uD83D\uDE80 Новая совместная задача")),
                 List(KeyboardButtons.text("⚙️ Настройки"), KeyboardButtons.text("❓ Справка"))
               ),
               resizeKeyboard = true.some
