@@ -25,6 +25,7 @@ import telegramium.bots.{ChatIntId, Message}
 import zio._
 import zio.clock.Clock
 import zio.interop.catz._
+import zio.logging.{Logger, Logging}
 
 object TaskController {
   type TaskController = Has[Service]
@@ -35,20 +36,21 @@ object TaskController {
     def userRoutes: CbDataUserRoutes[Task]
   }
 
-  val live: URLayer[UserRepository with TaskRepository with BotService with TelegramBotApi with Clock, TaskController] =
+  val live: URLayer[UserRepository with TaskRepository with BotService with TelegramBotApi with Clock with Logging, TaskController] =
     ZLayer.fromServicesM[
       UserRepository.Service,
       TaskRepository.Service,
       BotService.Service,
       Api[Task],
       Clock.Service,
+      Logger[String],
       Any,
       Nothing,
       TaskController.Service
     ] {
-      (userRepo, taskRepo, botService, api, clock) =>
+      (userRepo, taskRepo, botService, api, clock, logger) =>
         ZIO.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
-          new LiveTaskController(userRepo, taskRepo, botService, clock)(api, CE)
+          new LiveTaskController(userRepo, taskRepo, botService, clock, logger)(api, CE)
         }
     }
 
@@ -56,7 +58,8 @@ object TaskController {
     userRepo: UserRepository.Service,
     taskRepo: TaskRepository.Service,
     botService: BotService.Service,
-    clock: Clock.Service
+    clock: Clock.Service,
+    logger: Logger[String]
   )(
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
@@ -108,11 +111,14 @@ object TaskController {
       case Tasks(pageNumber, collaboratorId) in cb as user =>
         implicit val languageId: LanguageId = LanguageId(user.language.value)
         for {
+          start <- clock.nanoTime
           userOpt <- userRepo.findById(collaboratorId)
           collaborator <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
           message <- ZIO.fromOption(cb.message).orElseFail(new RuntimeException(Errors.Default))
           (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber)
-          _ <- listTasks(message, messageEntities, page, collaborator)
+          _ <- listTasks(message, messageEntities, page, collaborator).fork
+          finish <- clock.nanoTime
+          _ <- logger.debug(s"Tasks duration: ${(finish - start) / 1000000}")
         } yield answerCallbackQuery(cb.id).some
 
       case CheckTask(pageNumber, id) in cb as user =>

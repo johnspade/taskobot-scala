@@ -57,7 +57,7 @@ object BotService {
                   .map(n => italic" – $n")
                   .getOrElse(plain"")
               } else
-                italic" – ${collaborator.firstName}"
+                italic" – ${collaborator.firstName}" // todo sender?
               List(plain"${i + 1}. ${task.text}", senderName, lineBreak)
             }
           val footer = List(lineBreak, italic"Select the task number to mark it as completed.")
