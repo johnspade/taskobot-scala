@@ -1,16 +1,24 @@
-#  !Generated: 2021-02-27 22:42:36
+#  !Generated: 2021-02-28 03:44:36
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
 msgid "Chat"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:98
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:102
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "New personal task"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:116
+msgid "Type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "Tasks"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
+msgid "New collaborative task"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
@@ -34,30 +42,34 @@ msgid "Forward messages here to create personal tasks."
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
-msgid "Chats with tasks"
+msgid "Personal task \"%(task)\" has been created."
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
-msgid "Personal tasks"
+msgid "Chats with tasks"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
-msgid "Previous page"
+msgid "Personal tasks"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
+msgid "Previous page"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:25
 msgid "Next page"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:27
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:29
 msgid "Current language: %(languageName)"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:30
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:32
 msgid "Switch language"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:92
+#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:93
 msgid "Create task"
 msgstr ""
 

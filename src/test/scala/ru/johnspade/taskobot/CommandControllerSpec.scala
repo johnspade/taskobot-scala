@@ -1,6 +1,7 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option._
+import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import ru.johnspade.taskobot.CommandController.CommandController
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
@@ -17,15 +18,16 @@ import ru.johnspade.taskobot.user.UserRepository.UserRepository
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.client.Method
+import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.high.{Api, Methods}
-import telegramium.bots.{ChatIntId, Message}
+import telegramium.bots.{ChatIntId, Message, ReplyKeyboardMarkup}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.duration.Duration
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test.environment.{TestClock, TestEnvironment}
-import zio.test.{DefaultRunnableSpec, ZSpec, _}
+import zio.test.{DefaultRunnableSpec, ZSpec, assert, _}
 import zio.{Task, URLayer, ZIO, ZLayer, clock}
 
 object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with ArgumentMatchersSugar {
@@ -36,11 +38,24 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
         for {
           _ <- TestClock.setTime(Duration.Zero)
           now <- clock.instant
-          reply <- ZIO.accessM[CommandController](_.get.onCreateCommand(taskMessage))
+          reply <- ZIO.accessM[CommandController](_.get.onPersonalTaskCommand(taskMessage))
           task <- TaskRepository.findById(TaskId(1L))
           taskAssertions = assert(task)(isSome(equalTo(
             BotTask(TaskId(1L), john.id, TaskText("Buy some milk"), john.id.some, CreatedAt(now.toEpochMilli))
           )))
+          taskCreatedAssertions = verifyMethodCall(botApiMock, Methods.sendMessage(
+            ChatIntId(johnChatId),
+            """Personal task "Buy some milk" has been created.""",
+            replyMarkup = ReplyKeyboardMarkup(
+              List(
+                List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
+                List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task")),
+                List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
+              ),
+              resizeKeyboard = true.some
+            )
+              .some
+          ))
           replyAssertions = assert(reply)(isSome(equalTo(Methods.sendMessage(
             ChatIntId(johnChatId),
             "Chat: Personal tasks\n1. Buy some milk\n\nSelect the task number to mark it as completed.",
@@ -54,7 +69,7 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
               inlineKeyboardButton("Chat list", Chats(PageNumber(0)))
             )).some
           ))))
-        } yield taskAssertions && replyAssertions
+        } yield taskAssertions && taskCreatedAssertions && replyAssertions
       }
     ),
 
@@ -74,7 +89,12 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
 
   private val botApiMock = mock[Api[Task]]
   when(botApiMock.execute[Message](*)).thenReturn(Task.succeed(mockMessage()))
-  when(botApiMock.execute[Either[Boolean, Message]](*)).thenReturn(Task.right(mockMessage()))
+
+  private def verifyMethodCall[Res](api: Api[Task], method: Method[Res]) = {
+    val captor = ArgCaptor[Method[Res]]
+    verify(api, atLeastOnce).execute(captor).asInstanceOf[Unit]
+    assert(captor.values.map(_.payload))(Assertion.exists(equalTo(method.payload)))
+  }
 
   private object TestEnvironment {
     private val botApi = ZLayer.succeed(botApiMock)
