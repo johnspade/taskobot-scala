@@ -27,11 +27,13 @@ import telegramium.bots.high.{Api, Methods}
 import telegramium.bots.{ChatIntId, InlineKeyboardMarkup, Message, User => TgUser}
 import zio.blocking.Blocking
 import zio.clock.Clock
+import zio.logging.Logging
+import zio.logging.slf4j.Slf4jLogger
 import zio.test.Assertion.{equalTo, hasField, isNone, isSome}
 import zio.test.TestAspect.{before, sequential}
 import zio.test._
 import zio.test.environment.TestEnvironment
-import zio.{Task, URLayer, ZIO, ZLayer, clock}
+import zio.{Task, ULayer, URLayer, ZIO, ZLayer, clock}
 
 object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with ArgumentMatchersSugar {
   override def spec: ZSpec[TestEnvironment, Throwable] = (suite("TaskControllerSpec")(
@@ -340,7 +342,8 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
     private val taskRepo = TaskRepository.live
     private val repositories = userRepo ++ taskRepo
     private val botService = repositories >>> BotService.live
-    private val taskController = (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> TaskController.live
+    private val logger: ULayer[Logging] = Slf4jLogger.make((_, s) => s)
+    private val taskController = (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories ++ logger) >>> TaskController.live
 
     val env: URLayer[Clock with Blocking, PostgresITEnv with TaskController with TaskRepository with UserRepository] =
       ZLayer.requires[Clock] ++ TestEnvironments.itLayer >+> taskController ++ repositories

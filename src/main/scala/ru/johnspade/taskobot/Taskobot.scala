@@ -32,6 +32,7 @@ import zio._
 import zio.clock.Clock
 import zio.interop.catz._
 import zio.interop.catz.implicits._
+import zio.logging.{Logger, Logging}
 
 object Taskobot {
   type Taskobot = Has[LiveTaskobot]
@@ -45,7 +46,8 @@ object Taskobot {
       with CommandController
       with TaskController
       with SettingsController
-      with UserMiddleware,
+      with UserMiddleware
+      with Logging,
     Taskobot
   ] =
     ZLayer.fromServicesM[
@@ -58,12 +60,13 @@ object Taskobot {
       TaskController.Service,
       SettingsController.Service,
       CallbackQueryUserMiddleware,
+      Logger[String],
       Any,
       Nothing,
       LiveTaskobot
-    ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware) =>
+    ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware, logger) =>
       Task.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
-        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware)(
+        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware, logger)(
           api, CE
         )
       }
@@ -77,7 +80,8 @@ object Taskobot {
     commandController: CommandController.Service,
     taskController: TaskController.Service,
     settingsController: SettingsController.Service,
-    userMiddleware: CallbackQueryUserMiddleware
+    userMiddleware: CallbackQueryUserMiddleware,
+    logger: Logger[String]
   )(
     implicit api: Api[Task],
     CE: ConcurrentEffect[Task]
@@ -118,16 +122,16 @@ object Taskobot {
       } yield method.some
 
     override def onMessageReply(msg: Message): Task[Option[Method[_]]] = {
-        def listPersonalTasks(user: User)(implicit language: LanguageId) =
-          botService.getTasks(user, user, PageNumber(0))
-            .map { case (page, messageEntities) =>
-              sendMessage(
-                ChatIntId(msg.chat.id),
-                messageEntities.map(_.text).mkString,
-                replyMarkup = Keyboards.tasks(page, user).some,
-                entities = TypedMessageEntity.toMessageEntities(messageEntities),
-              )
-            }
+      def listPersonalTasks(user: User)(implicit language: LanguageId) =
+        botService.getTasks(user, user, PageNumber(0))
+          .map { case (page, messageEntities) =>
+            sendMessage(
+              ChatIntId(msg.chat.id),
+              messageEntities.map(_.text).mkString,
+              replyMarkup = Keyboards.tasks(page, user).some,
+              entities = TypedMessageEntity.toMessageEntities(messageEntities),
+            )
+          }
 
       def handleReply() =
         for {
@@ -202,13 +206,17 @@ object Taskobot {
       }
         .toEitherT[Task]
 
-    override def onCallbackQueryReply(query: CallbackQuery): Task[Option[Method[_]]] = {
-      CallbackQueryHandler.handle(
-        query,
-        cbRoutes,
-        cbDataDecoder,
-        _ => ZIO.succeed(Option.empty[Method[_]])
-      )
-    }
+    override def onCallbackQueryReply(query: CallbackQuery): Task[Option[Method[_]]] =
+      for {
+        start <- clock.nanoTime
+        reply <- CallbackQueryHandler.handle(
+          query,
+          cbRoutes,
+          cbDataDecoder,
+          _ => ZIO.succeed(Option.empty[Method[_]])
+        )
+        finish <- clock.nanoTime
+        _ <- logger.debug(s"onCallbackQueryReply duration: ${(finish - start) / 1000000}")
+      } yield reply
   }
 }
