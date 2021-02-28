@@ -19,6 +19,7 @@ import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
 import telegramium.bots.high.Api
 import telegramium.bots.high.Methods.sendMessage
+import telegramium.bots.high.implicits._
 import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
 import telegramium.bots.{ChatIntId, ForceReply, Html, Message}
 import zio._
@@ -90,6 +91,7 @@ object CommandController {
               for {
                 now <- clock.instant
                 _ <- taskRepo.create(NewTask(user.id, TaskText(task), CreatedAt(now.toEpochMilli), user.id.some))
+                _ <- sendMessage(ChatIntId(message.chat.id), Messages.taskCreated(task), replyMarkup = Keyboards.menu().some).exec
                 method <- listPersonalTasks
               } yield method
             }

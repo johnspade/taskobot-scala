@@ -14,6 +14,8 @@ object Messages {
       "\n\n" +
       t"Forward messages here to create personal tasks."
 
+  def taskCreated(task: String)(implicit languageId: LanguageId): String = t"""Personal task "$task" has been created."""
+
   def chatsWithTasks()(implicit languageId: LanguageId): String = t"Chats with tasks"
 
   def personalTasks()(implicit languageId: LanguageId): String = t"Personal tasks"

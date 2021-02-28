@@ -24,6 +24,7 @@ import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
+import telegramium.bots.high.implicits._
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.{Api, WebhookBot}
 import telegramium.bots.{CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
@@ -140,6 +141,7 @@ object Taskobot {
             implicit0(languageId: LanguageId) = LanguageId(user.language.value)
             now <- clock.instant
             _ <- taskRepo.create(NewTask(user.id, TaskText(text), CreatedAt(now.toEpochMilli), user.id.some))
+            _ <- sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text), replyMarkup = Keyboards.menu().some).exec
             method <- listPersonalTasks(user)
           } yield method.some
         }
@@ -168,6 +170,7 @@ object Taskobot {
               forwardFromSenderName = senderName.map(SenderName(_))
             )
             _ <- taskRepo.create(newTask)
+            _ <- sendMessage(ChatIntId(msg.chat.id), Messages.taskCreated(text), replyMarkup = Keyboards.menu().some).exec
             method <- listPersonalTasks(user)
           } yield method.some
         }

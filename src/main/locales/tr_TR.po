@@ -17,12 +17,12 @@ msgstr ""
 msgid "Chat"
 msgstr "Sohbet"
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:100
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:102
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
 msgid "New personal task"
 msgstr "Yeni kişisel görev"
 
-#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:114
+#: src/main/scala/ru/johnspade/taskobot/CommandController.scala:116
 msgid ""
 "Type <code>@tasko_bot task</code> in private chat and select <b>Create task</"
 "b>"
@@ -67,30 +67,34 @@ msgid "Forward messages here to create personal tasks."
 msgstr "Forward messages here to create personal tasks."
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
+msgid "Personal task \"%(task)\" has been created."
+msgstr "\"%(task)\" isimli kişisel görev oluşturuldu."
+
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
 msgid "Chats with tasks"
 msgstr "Görevli sohbetler"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
 msgid "Personal tasks"
 msgstr "Kişisel görevler"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:21
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
 msgid "Previous page"
 msgstr "Önceki sayfa"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:23
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:25
 msgid "Next page"
 msgstr "Sonraki sayfa"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:27
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:29
 msgid "Current language: %(languageName)"
 msgstr "Şu anki dil: %(languageName)"
 
-#: src/main/scala/ru/johnspade/taskobot/Messages.scala:30
+#: src/main/scala/ru/johnspade/taskobot/Messages.scala:32
 msgid "Switch language"
 msgstr "Dili değiştirin"
 
-#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:92
+#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:93
 msgid "Create task"
 msgstr "Görev oluştur"
 
