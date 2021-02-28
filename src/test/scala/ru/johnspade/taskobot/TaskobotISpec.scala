@@ -4,7 +4,6 @@ import cats.syntax.option._
 import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import ru.johnspade.taskobot.Configuration.BotConfig
-import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.createMessage
@@ -349,7 +348,6 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     private val settingsController = (userRepo ++ botApi) >>> SettingsController.live
     private val userMiddleware = botService >>> UserMiddleware.live
     private val taskobot = (
-      ZLayer.requires[SessionPool] ++
         ZLayer.requires[Clock] ++
         botApi ++
         botConfig ++

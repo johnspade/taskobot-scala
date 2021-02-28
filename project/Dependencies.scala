@@ -10,7 +10,7 @@ object Dependencies {
     val logback = "1.2.3"
     val cats = "2.4.2"
     val pureconfig = "0.14.0"
-    val skunk = "0.0.24"
+    val doobie = "0.10.0"
     val flyway = "7.5.4"
     val enumeratum = "1.6.1"
     val supertagged = "2.0-RC2"
@@ -36,7 +36,9 @@ object Dependencies {
     "org.typelevel" %% "cats-core" % V.cats,
     "com.github.pureconfig" %% "pureconfig" % V.pureconfig,
     "com.github.pureconfig" %% "pureconfig-magnolia" % V.pureconfig,
-    "org.tpolecat" %% "skunk-core" % V.skunk,
+    "org.tpolecat" %% "doobie-core" % V.doobie,
+    "org.tpolecat" %% "doobie-hikari" % V.doobie,
+    "org.tpolecat" %% "doobie-postgres" % V.doobie,
     "org.flywaydb" % "flyway-core" % V.flyway,
     "com.beachape" %% "enumeratum" % V.enumeratum,
     "org.rudogma" %% "supertagged" % V.supertagged,
