@@ -1,19 +1,19 @@
 package ru.johnspade.taskobot
 
-import supertagged.TaggedType
+import ru.johnspade.taskobot.core.Tagged
 
 package object user {
   object tags {
-    object UserId extends TaggedType[Int]
+    object UserId extends Tagged[Int]
     type UserId = UserId.Type
 
-    object FirstName extends TaggedType[String]
+    object FirstName extends Tagged[String]
     type FirstName = FirstName.Type
 
-    object LastName extends TaggedType[String]
+    object LastName extends Tagged[String]
     type LastName = LastName.Type
 
-    object ChatId extends TaggedType[Long]
+    object ChatId extends Tagged[Long]
     type ChatId = ChatId.Type
   }
 }

@@ -1,16 +1,16 @@
 package ru.johnspade.taskobot.task
 
-import cats.effect.Resource
 import cats.implicits._
-import ru.johnspade.taskobot.SessionPool.SessionPool
+import doobie._
+import doobie.implicits._
+import doobie.postgres.implicits._
+import doobie.util.transactor.Transactor
+import ru.johnspade.taskobot.DbTransactor.DbTransactor
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.{Offset, PageSize}
 import ru.johnspade.taskobot.task.tags._
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.tags.{ChatId, FirstName, LastName, UserId}
-import skunk.codec.all._
-import skunk.implicits._
-import skunk.{Codec, _}
 import zio._
 import zio.interop.catz._
 import zio.macros.accessible
@@ -35,177 +35,132 @@ object TaskRepository {
     def clear(): Task[Unit]
   }
 
-  val live: URLayer[SessionPool, TaskRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
-    sessionPool =>
+  val live: URLayer[DbTransactor, TaskRepository] = ZLayer.fromService[Transactor[Task], Service] {
+    xa =>
       import TaskQueries._
 
       new Service {
         override def findById(id: TaskId): Task[Option[BotTask]] =
-          sessionPool.use {
-            _.prepare(selectById).use(_.option(id))
-          }
+          selectById(id)
+            .option
+            .transact(xa)
 
         override def findByIdWithCollaborator(id: TaskId, `for`: UserId): Task[Option[TaskWithCollaborator]] =
-          sessionPool.use {
-            _.prepare(selectByIdJoinCollaborator).use(_.option(`for` ~ `for` ~ id ~ `for` ~ `for`))
-          }
+          selectByIdJoinCollaborator(id, `for`)
+            .option
+            .transact(xa)
 
         override def create(task: NewTask): Task[BotTask] =
-          sessionPool.use {
-            _.prepare(insert).use(_.unique(task))
-          }
+          insert(task)
+            .unique
+            .transact(xa)
 
         override def setReceiver(id: TaskId, senderId: Option[UserId], receiverId: UserId): Task[Unit] =
-          sessionPool.use { pool =>
-            senderId
-              .map { sId =>
-                pool.prepare(updateReceiverId).use(_.execute(receiverId ~ id ~ sId))
-              }
-              .getOrElse {
-                pool.prepare(updateReceiverIdWithoutSenderCheck).use(_.execute(receiverId ~ id))
-              }
-          }
+          senderId.map(updateReceiverId(id, _, receiverId))
+            .getOrElse(updateReceiverIdWithoutSenderCheck(id, receiverId))
+            .run
             .void
+            .transact(xa)
 
         override def findShared(id1: UserId, id2: UserId)(offset: Offset, limit: PageSize): Task[List[BotTask]] =
-          sessionPool.use {
-            _.prepare(selectByUserId).use {
-              _.stream(id1 ~ id2 ~ id2 ~ id1 ~ offset ~ limit, limit)
-                .compile
-                .toList
-            }
-          }
+          selectByUserId(id1, id2, offset, limit)
+            .to[List]
+            .transact(xa)
 
         override def check(id: TaskId, doneAt: DoneAt, userId: UserId): Task[Unit] =
-          sessionPool.use {
-            _.prepare(setDone).use {
-              _.execute(doneAt ~ id ~ userId ~ userId)
-            }
-          }
+          setDone(id, doneAt, userId)
+            .run
             .void
+            .transact(xa)
 
         override def clear(): Task[Unit] =
-          sessionPool.use {
-            _.prepare(deleteAll).use {
-              _.execute(Void)
-            }
-          }
+          deleteAll
+            .run
             .void
+            .transact(xa)
       }
   }
 }
 
 private object TaskQueries {
-  val newTaskCodec: Codec[NewTask] =
-    (
-      UserId.lift(int4) ~
-        TaskText.lift(varchar(4096)) ~
-        CreatedAt.lift(int8) ~
-        UserId.lift(int4).opt ~
-        Done.lift(bool) ~
-        UserId.lift(int4).opt ~
-        SenderName.lift(varchar(255)).opt
-      ).imap {
-      case senderId ~ text ~ createdAt ~ receiver ~ done ~ forwardFromId ~ forwardFromSenderName =>
-        NewTask(senderId, text, createdAt, receiver, done, forwardFromId, forwardFromSenderName)
-    }(t => t.sender ~ t.text ~ t.createdAt ~ t.receiver ~ t.done ~ t.forwardFromId ~ t.forwardFromSenderName)
-
-  val botTaskCodec: Codec[BotTask] = (
-    TaskId.lift(int8) ~
-      UserId.lift(int4) ~
-      TaskText.lift(varchar(4096)) ~
-      UserId.lift(int4).opt ~
-      CreatedAt.lift(int8) ~
-      DoneAt.lift(int8).opt ~
-      Done.lift(bool) ~
-      UserId.lift(int4).opt ~
-      SenderName.lift(varchar(255)).opt
-    ).imap { case id ~ senderId ~ text ~ receiverId ~ createdAt ~ doneAt ~ done ~ forwardFromId ~ forwardFromSenderName =>
-    BotTask(id, senderId, text, receiverId, createdAt, doneAt, done, forwardFromId, forwardFromSenderName)
-  }(t => t.id ~ t.sender ~ t.text ~ t.receiver ~ t.createdAt ~ t.doneAt ~ t.done ~ t.forwardFromId ~ t.forwardFromSenderName)
-
-  val taskWithCollaboratorDecoder: Decoder[TaskWithCollaborator] = (
-    TaskId.lift(int8) ~
-      TaskText.lift(varchar(4096)) ~
-      UserId.lift(int4).opt ~
-      FirstName.lift(varchar(255)).opt ~
-      varchar(255).opt ~
-      ChatId.lift(int8).opt ~
-      LastName.lift(varchar(255)).opt
-    )
-    .asDecoder
-    .map { case id ~ text ~ userIdOpt ~ firstNameOpt ~ languageOpt ~ chatIdOpt ~ lastNameOpt =>
-      val collaborator = for {
-        userId <- userIdOpt
-        firstName <- firstNameOpt
-        language <- languageOpt
-      } yield User(userId, firstName, Language.withValue(language), chatIdOpt, lastNameOpt)
-      TaskWithCollaborator(id, text, collaborator)
+  private implicit val taskWithCollaboratorRead: Read[TaskWithCollaborator] =
+    Read[(Long, String, Option[Int], Option[String], Option[String], Option[Long], Option[String])].map {
+      case (taskId, text, userIdOpt, firstNameOpt, languageOpt, chatIdOpt, lastNameOpt) =>
+        val collaborator = for {
+          userId <- userIdOpt
+          firstName <- firstNameOpt
+          language <- languageOpt
+        } yield User(UserId(userId), FirstName(firstName), Language.withValue(language), chatIdOpt.map(ChatId(_)), lastNameOpt.map(LastName(_)))
+        TaskWithCollaborator(TaskId(taskId), TaskText(text), collaborator)
     }
 
-  val selectById: Query[TaskId, BotTask] =
+  def selectById(id: TaskId): Query0[BotTask] =
     sql"""
       select id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name
       from tasks
-      where id = ${TaskId.lift(int8)}
+      where id = $id
     """
-      .query(botTaskCodec)
+      .query[BotTask]
 
-  val selectByIdJoinCollaborator: Query[UserId ~ UserId ~ TaskId ~ UserId ~ UserId, TaskWithCollaborator] =
+  def selectByIdJoinCollaborator(id: TaskId, `for`: UserId): Query0[TaskWithCollaborator] =
     sql"""
       select t.id, t.text, u.id, u.first_name, u.language, u.chat_id, u.last_name
       from tasks t
       left join users u on
-        (u.id = t.sender_id and u.id <> ${UserId.lift(int4)}) or
-        (u.id = t.receiver_id and u.id <> ${UserId.lift(int4)}) or
+        (u.id = t.sender_id and u.id <> ${`for`}) or
+        (u.id = t.receiver_id and u.id <> ${`for`}) or
         (t.sender_id = t.receiver_id and u.id = t.sender_id)
-      where t.id = ${TaskId.lift(int8)} and (t.sender_id = ${UserId.lift(int4)} or t.receiver_id = ${UserId.lift(int4)})
+      where t.id = $id and (t.sender_id = ${`for`} or t.receiver_id = ${`for`})
     """
-      .query(taskWithCollaboratorDecoder)
+      .query[TaskWithCollaborator]
 
-  val insert: Query[NewTask, BotTask] =
+  def insert(task: NewTask): Query0[BotTask] = {
+    import task._
+
     sql"""
-      insert into tasks (sender_id, text, created_at, receiver_id, done, forward_from_id, forward_sender_name) values ($newTaskCodec)
+      insert into tasks (sender_id, text, created_at, receiver_id, done, forward_from_id, forward_sender_name)
+      values ($sender, $text, $createdAt, $receiver, $done, $forwardFromId, $forwardFromSenderName)
       returning id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name
     """
-      .query(botTaskCodec)
+      .query[BotTask]
+  }
 
-  val updateReceiverId: Command[UserId ~ TaskId ~ UserId] =
+  def updateReceiverId(id: TaskId, senderId: UserId, receiverId: UserId): Update0 =
     sql"""
       update tasks
-      set receiver_id = ${UserId.lift(int4)}
-      where id = ${TaskId.lift(int8)} and sender_id = ${UserId.lift(int4)} and receiver_id is null
+      set receiver_id = $receiverId
+      where id = $id and sender_id = $senderId and receiver_id is null
     """
-      .command
+      .update
 
-  val updateReceiverIdWithoutSenderCheck: Command[UserId ~ TaskId] =
+  def updateReceiverIdWithoutSenderCheck(id: TaskId, receiverId: UserId): Update0 =
     sql"""
       update tasks
-      set receiver_id = ${UserId.lift(int4)}
-      where id = ${TaskId.lift(int8)} and receiver_id is null
+      set receiver_id = $receiverId
+      where id = $id and receiver_id is null
     """
-      .command
+      .update
 
-  val selectByUserId: Query[UserId ~ UserId ~ UserId ~ UserId ~ Offset ~ PageSize, BotTask] =
+  def selectByUserId(id1: UserId, id2: UserId, offset: Offset, limit: PageSize): Query0[BotTask] =
     sql"""
       select id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name
       from tasks
       where receiver_id is not null and done <> true and
-      ((sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}) or
-       (sender_id = ${UserId.lift(int4)} and receiver_id = ${UserId.lift(int4)}))
+      ((sender_id = $id1 and receiver_id = $id2) or
+       (sender_id = $id2 and receiver_id = $id1))
       order by created_at desc
-      offset ${Offset.lift(int8)} limit ${PageSize.lift(int4)}
+      offset $offset limit $limit
     """
-      .query(botTaskCodec)
+      .query[BotTask]
 
-  val setDone: Command[DoneAt ~ TaskId ~ UserId ~ UserId] =
+  def setDone(id: TaskId, doneAt: DoneAt, userId: UserId): Update0 =
     sql"""
-      update tasks
-      set done = true, done_at = ${DoneAt.lift(int8)}
-      where id = ${TaskId.lift(int8)} and done = false and
-        (sender_id = ${UserId.lift(int4)} or receiver_id = ${UserId.lift(int4)})
-    """
-      .command
+        update tasks
+      set done = true, done_at = $doneAt
+      where id = $id and done = false and
+        (sender_id = $userId or receiver_id = $userId)
+      """
+      .update
 
-  val deleteAll: Command[Void] = sql"delete from tasks where true".command
+  val deleteAll: Update0 = sql"delete from tasks where true".update
 }

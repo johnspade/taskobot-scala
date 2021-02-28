@@ -1,25 +1,25 @@
 package ru.johnspade.taskobot
 
-import supertagged.TaggedType
+import ru.johnspade.taskobot.core.Tagged
 
 package object task {
   object tags {
-    object TaskId extends TaggedType[Long]
+    object TaskId extends Tagged[Long]
     type TaskId = TaskId.Type
 
-    object TaskText extends TaggedType[String]
+    object TaskText extends Tagged[String]
     type TaskText = TaskText.Type
 
-    object CreatedAt extends TaggedType[Long]
+    object CreatedAt extends Tagged[Long]
     type CreatedAt = CreatedAt.Type
 
-    object DoneAt extends TaggedType[Long]
+    object DoneAt extends Tagged[Long]
     type DoneAt = DoneAt.Type
 
-    object Done extends TaggedType[Boolean]
+    object Done extends Tagged[Boolean]
     type Done = Done.Type
 
-    object SenderName extends TaggedType[String]
+    object SenderName extends Tagged[String]
     type SenderName = SenderName.Type
   }
 }

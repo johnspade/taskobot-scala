@@ -12,7 +12,7 @@ object FlywayMigration {
       effectBlocking {
         Flyway
           .configure()
-          .dataSource(s"jdbc:postgresql://${cfg.host}:${cfg.port}/${cfg.database}", cfg.user, cfg.password)
+          .dataSource(cfg.url, cfg.user, cfg.password)
           .baselineOnMigrate(true)
           .load()
           .migrate()

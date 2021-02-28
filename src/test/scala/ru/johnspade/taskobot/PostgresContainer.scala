@@ -24,9 +24,7 @@ object PostgresContainer {
     ZLayer.fromService[PostgreSQLContainer, DbConfig] { container =>
       DbConfig(
         "org.postgresql.Driver",
-        container.host,
-        container.mappedPort(5432),
-        container.databaseName,
+        container.jdbcUrl,
         container.username,
         container.password
       )

@@ -4,7 +4,6 @@ import cats.syntax.option._
 import org.mockito.captor.ArgCaptor
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import ru.johnspade.taskobot.Configuration.BotConfig
-import ru.johnspade.taskobot.SessionPool.SessionPool
 import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
 import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.createMessage
@@ -25,13 +24,11 @@ import telegramium.bots.high.{Api, Methods}
 import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, ParseMode, ReplyKeyboardMarkup, User}
 import zio.blocking.Blocking
 import zio.clock.Clock
-import zio.logging.Logging
-import zio.logging.slf4j.Slf4jLogger
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test.TestAspect.sequential
 import zio.test._
 import zio.test.environment.TestEnvironment
-import zio.{Task, ULayer, URLayer, ZIO, ZLayer}
+import zio.{Task, URLayer, ZIO, ZLayer}
 
 object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with ArgumentMatchersSugar {
   override def spec: ZSpec[TestEnvironment, Throwable] = (suite("TaskobotISpec")(
@@ -347,12 +344,10 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     private val repositories = userRepo ++ taskRepo
     private val botService = repositories >>> BotService.live
     private val commandController = (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> CommandController.live
-    private val logger: ULayer[Logging] = Slf4jLogger.make((_, s) => s)
-    private val taskController = (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories ++ logger) >>> TaskController.live
+    private val taskController = (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> TaskController.live
     private val settingsController = (userRepo ++ botApi) >>> SettingsController.live
     private val userMiddleware = botService >>> UserMiddleware.live
     private val taskobot = (
-      ZLayer.requires[SessionPool] ++
         ZLayer.requires[Clock] ++
         botApi ++
         botConfig ++
@@ -361,8 +356,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
         commandController ++
         taskController ++
         settingsController ++
-        userMiddleware ++
-        logger
+        userMiddleware
       ) >>> Taskobot.live
     val env: URLayer[Clock with Blocking, Clock with PostgresITEnv with Taskobot] =
       ZLayer.requires[Clock] ++ TestEnvironments.itLayer >+> taskobot

@@ -1,14 +1,14 @@
 package ru.johnspade.taskobot.user
 
-import cats.effect.Resource
 import cats.implicits._
-import ru.johnspade.taskobot.SessionPool.SessionPool
+import doobie._
+import doobie.implicits._
+import doobie.postgres.implicits._
+import doobie.util.transactor.Transactor
+import ru.johnspade.taskobot.DbTransactor.DbTransactor
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.{Offset, PageSize}
-import ru.johnspade.taskobot.user.tags.{UserId, _}
-import skunk.codec.all._
-import skunk.implicits._
-import skunk.{Codec, Session, _}
+import ru.johnspade.taskobot.user.tags.{ChatId, FirstName, LastName, UserId}
 import zio._
 import zio.interop.catz._
 import zio.macros.accessible
@@ -29,81 +29,86 @@ object UserRepository {
     def clear(): Task[Unit]
   }
 
-  val live: URLayer[SessionPool, UserRepository] = ZLayer.fromService[Resource[Task, Session[Task]], Service] {
-    sessionPool =>
+  val live: URLayer[DbTransactor, UserRepository] = ZLayer.fromService[Transactor[Task], Service] {
+    xa =>
       import UserQueries._
 
       new Service {
         override def findById(id: UserId): Task[Option[User]] =
-          sessionPool.use {
-            _.prepare(selectById).use(_.option(id))
-          }
+          selectById(id)
+            .option
+            .transact(xa)
 
         override def createOrUpdate(user: User): Task[User] =
-          sessionPool.use {
-            _.prepare(upsert).use(_.unique(user))
-          }
+          upsert(user)
+            .unique
+            .transact(xa)
 
         override def createOrUpdateWithLanguage(user: User): Task[User] =
-          sessionPool.use {
-            _.prepare(upsertWithLanguage).use(_.unique(user))
-          }
+          upsertWithLanguage(user)
+            .unique
+            .transact(xa)
 
         override def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): Task[List[User]] =
-          sessionPool.use {
-            _.prepare(selectBySharedTasks).use {
-              _.stream(id ~ id ~ id ~ offset ~ limit, 512)
-                .compile
-                .toList
-            }
-          }
+          selectBySharedTasks(id, offset, limit)
+            .to[List]
+            .transact(xa)
 
         override def clear(): Task[Unit] =
-          sessionPool.use {
-            _.prepare(deleteAll).use {
-              _.execute(Void)
-            }
-          }
+          deleteAll
+            .run
             .void
+            .transact(xa)
       }
   }
 
   private object UserQueries {
-    val userCodec: Codec[User] = (
-      UserId.lift(int4) ~
-        FirstName.lift(varchar(255)) ~
-        varchar(255) ~
-        ChatId.lift(int8).opt ~
-        LastName.lift(varchar(255)).opt
-      ).imap {
-      case id ~ firstName ~ language ~ chatId ~ lastName =>
-        User(id, firstName, Language.withValue(language), chatId, lastName)
-    }(u => u.id ~ u.firstName ~ u.language.value ~ u.chatId ~ u.lastName)
+    private implicit val userRead: Read[User] =
+      Read[(Int, String, String, Option[Long], Option[String])].map {
+        case (userId, firstName, language, chatIdOpt, lastNameOpt) =>
+          User(UserId(userId), FirstName(firstName), Language.withValue(language), chatIdOpt.map(ChatId(_)), lastNameOpt.map(LastName(_)))
+      }
 
-    val selectById: Query[UserId, User] =
+    private implicit val userWrite: Write[User] =
+      Write[(Int, String, String, Option[Long], Option[String])].contramap { u =>
+        (u.id, u.firstName, u.language.value, u.chatId, u.lastName)
+      }
+
+    def selectById(id: UserId): Query0[User] =
       sql"""
         select id, first_name, language, chat_id, last_name
         from users
-        where id = ${UserId.lift(int4)}
-      """.query(userCodec)
+        where id = $id
+      """
+        .query[User]
 
-    val upsert: Query[User, User] =
+    def upsert(user: User): Query0[User] = {
+      import user._
+
       sql"""
-        insert into users (id, first_name, language, chat_id, last_name) values ($userCodec)
+        insert into users (id, first_name, language, chat_id, last_name)
+        values ($id, $firstName, ${language.value}, $chatId, $lastName)
         on conflict(id) do update set
         first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id
         returning id, first_name, language, chat_id, last_name
-      """.query(userCodec)
+      """
+        .query[User]
+    }
 
-    val upsertWithLanguage: Query[User, User] =
+    def upsertWithLanguage(user: User): Query0[User] = {
+      import user._
+
       sql"""
-        insert into users (id, first_name, language, chat_id, last_name) values ($userCodec)
+        insert into users (id, first_name, language, chat_id, last_name)
+        values ($id, $firstName, ${language.value}, $chatId, $lastName)
         on conflict(id) do update set
         first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id, language = excluded.language
         returning id, first_name, language, chat_id, last_name
-      """.query(userCodec)
+      """
+        .query[User]
+    }
 
-    val selectBySharedTasks: Query[UserId ~ UserId ~ UserId ~ Offset ~ PageSize, User] =
+    def selectBySharedTasks(id: UserId, offset: Offset, limit: PageSize): Query0[User] =
       sql"""
         select distinct u.id, u.first_name, u.language, u.chat_id, u.last_name
         from users as u
@@ -113,16 +118,17 @@ object UserRepository {
                                        t2.created_at,
                                        max(t2.created_at) over (partition by t2.collaborator) as max_created_at
                                 from (
-                                         select case when sender_id = ${UserId.lift(int4)} then receiver_id else sender_id end as collaborator,
+                                         select case when sender_id = $id then receiver_id else sender_id end as collaborator,
                                                 created_at
                                          from tasks t1
-                                         where (t1.receiver_id = ${UserId.lift(int4)} or t1.sender_id = ${UserId.lift(int4)})
+                                         where (t1.receiver_id = $id or t1.sender_id = $id)
                                            and t1.receiver_id is not null
                                            and t1.done <> true) t2) t3
                        where max_created_at = t3.created_at
-                       order by t3.created_at desc) c on u.id = c.collaborator offset ${Offset.lift(int8)} limit ${PageSize.lift(int4)};
-      """.query(userCodec)
+                       order by t3.created_at desc) c on u.id = c.collaborator offset $offset limit $limit;
+      """
+        .query[User]
 
-    val deleteAll: Command[Void] = sql"delete from users where true".command
+    val deleteAll: Update0 = sql"delete from users where true".update
   }
 }
