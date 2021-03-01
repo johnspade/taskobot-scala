@@ -89,7 +89,7 @@ object UserRepository {
         insert into users (id, first_name, language, chat_id, last_name)
         values ($id, $firstName, ${language.value}, $chatId, $lastName)
         on conflict(id) do update set
-        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id
+        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(users.chat_id, excluded.chat_id)
         returning id, first_name, language, chat_id, last_name
       """
         .query[User]
@@ -102,7 +102,7 @@ object UserRepository {
         insert into users (id, first_name, language, chat_id, last_name)
         values ($id, $firstName, ${language.value}, $chatId, $lastName)
         on conflict(id) do update set
-        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = excluded.chat_id, language = excluded.language
+        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(users.chat_id, excluded.chat_id), language = excluded.language
         returning id, first_name, language, chat_id, last_name
       """
         .query[User]

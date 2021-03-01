@@ -155,11 +155,11 @@ private object TaskQueries {
 
   def setDone(id: TaskId, doneAt: DoneAt, userId: UserId): Update0 =
     sql"""
-        update tasks
+      update tasks
       set done = true, done_at = $doneAt
       where id = $id and done = false and
-        (sender_id = $userId or receiver_id = $userId)
-      """
+      (sender_id = $userId or receiver_id = $userId)
+   """
       .update
 
   val deleteAll: Update0 = sql"delete from tasks where true".update
