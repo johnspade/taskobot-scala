@@ -2,16 +2,15 @@ package ru.johnspade.taskobot
 
 import cats.syntax.option._
 import io.scalaland.chimney.dsl._
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.{CreatedAt, TaskId, TaskText}
 import ru.johnspade.taskobot.task.{BotTask, NewTask, TaskRepository}
 import ru.johnspade.taskobot.user.tags.{FirstName, LastName, UserId}
 import ru.johnspade.taskobot.user.{User, UserRepository}
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import ru.makkarpov.scalingua.LanguageId
-import telegramium.bots.{Chat, Message}
 import zio.test.Assertion._
 import zio.test.TestAspect.sequential
 import zio.test._
@@ -52,13 +51,6 @@ object BotServiceSpec extends DefaultRunnableSpec {
         val alice = User(UserId(911), FirstName("Alice"), Language.English)
         val task1 = NewTask(UserId(322), TaskText("task1"), CreatedAt(0L), UserId(911).some)
         val task2 = NewTask(UserId(322), TaskText("task2"), CreatedAt(1L), UserId(911).some)
-        val message = Message(
-          messageId = 0,
-          date = 0,
-          chat = Chat(id = 0, `type` = "private"),
-          from = tgUser.some,
-          text = "".some
-        )
         implicit val languageId: LanguageId = ru.makkarpov.scalingua.Language.English.id
         val expectedTasks = List(
           task2.into[BotTask].withFieldConst(_.id, TaskId(2L)).transform,
@@ -66,8 +58,8 @@ object BotServiceSpec extends DefaultRunnableSpec {
         )
         val expectedMessageEntities = List(
           plain"Chat: ", bold"Alice", lineBreak,
-          plain"1. task2", italic" – Alice", lineBreak,
-          plain"2. task1", italic" – Alice", lineBreak,
+          plain"1. task2", italic" – Bob", lineBreak,
+          plain"2. task1", italic" – Bob", lineBreak,
           lineBreak, italic"Select the task number to mark it as completed."
         )
         for {

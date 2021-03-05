@@ -37,6 +37,9 @@ case object ChangeLanguage extends CbData
 @TypeId(5)
 final case class SetLanguage(language: Language) extends CbData
 
+@TypeId(6)
+case object Ignore extends CbData
+
 object CbData {
   val Separator: Char = '%'
 
@@ -54,6 +57,7 @@ object CbData {
   implicit val checkTaskRowCodec: RowCodec[CheckTask] = RowCodec.caseOrdered(CheckTask.apply _)(CheckTask.unapply)
   implicit val changeLanguageRowCodec: RowCodec[ChangeLanguage.type] = caseObjectRowCodec(ChangeLanguage)
   implicit val setLanguageRowCodec: RowCodec[SetLanguage] = RowCodec.caseOrdered(SetLanguage.apply _)(SetLanguage.unapply)
+  implicit val ignoreRowCodec: RowCodec[Ignore.type] = caseObjectRowCodec(Ignore)
 
   def decode(csv: String): ReadResult[CbData] = {
     def read(s: String) =

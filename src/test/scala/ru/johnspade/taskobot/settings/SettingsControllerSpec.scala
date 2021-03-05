@@ -8,7 +8,7 @@ import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
-import ru.johnspade.taskobot.core.{ChangeLanguage, SetLanguage}
+import ru.johnspade.taskobot.core.{ChangeLanguage, Ignore, SetLanguage}
 import ru.johnspade.taskobot.i18n.Language
 import ru.johnspade.taskobot.settings.SettingsController.SettingsController
 import ru.johnspade.taskobot.user.UserRepository
@@ -36,7 +36,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
             text = "Current language: English",
             replyMarkup = InlineKeyboardMarkups.singleColumn(
               List(
-                inlineKeyboardButton("English", SetLanguage(Language.English)),
+                inlineKeyboardButton("English", Ignore),
                 inlineKeyboardButton("Русский", SetLanguage(Language.Russian)),
                 inlineKeyboardButton("Turkish", SetLanguage(Language.Turkish)),
                 inlineKeyboardButton("Italian", SetLanguage(Language.Italian))
@@ -62,7 +62,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
             replyMarkup = InlineKeyboardMarkups.singleColumn(
               List(
                 inlineKeyboardButton("English", SetLanguage(Language.English)),
-                inlineKeyboardButton("Русский", SetLanguage(Language.Russian)),
+                inlineKeyboardButton("Русский", Ignore),
                 inlineKeyboardButton("Turkish", SetLanguage(Language.Turkish)),
                 inlineKeyboardButton("Italian", SetLanguage(Language.Italian))
               )

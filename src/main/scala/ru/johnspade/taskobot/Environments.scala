@@ -36,6 +36,7 @@ object Environments {
       commandController ++
       taskController ++
       settingsController ++
+      IgnoreController.live ++
       userMiddleware
     ) >>>
     Taskobot.live

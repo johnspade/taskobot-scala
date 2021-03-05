@@ -5,6 +5,7 @@ import cats.implicits._
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.CommandController.CommandController
 import ru.johnspade.taskobot.Configuration.BotConfig
+import ru.johnspade.taskobot.IgnoreController.IgnoreController
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.UserMiddleware.UserMiddleware
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
@@ -45,6 +46,7 @@ object Taskobot {
       with CommandController
       with TaskController
       with SettingsController
+      with IgnoreController
       with UserMiddleware,
     Taskobot
   ] =
@@ -57,13 +59,14 @@ object Taskobot {
       CommandController.Service,
       TaskController.Service,
       SettingsController.Service,
+      IgnoreController.Service,
       CallbackQueryUserMiddleware,
       Any,
       Nothing,
       LiveTaskobot
-    ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware) =>
+    ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, settingsController, ignoreController, userMiddleware) =>
       Task.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
-        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, userMiddleware)(
+        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, ignoreController, userMiddleware)(
           api, CE
         )
       }
@@ -77,6 +80,7 @@ object Taskobot {
     commandController: CommandController.Service,
     taskController: TaskController.Service,
     settingsController: SettingsController.Service,
+    ignoreController: IgnoreController.Service,
     userMiddleware: CallbackQueryUserMiddleware
   )(
     implicit api: Api[Task],
@@ -118,16 +122,16 @@ object Taskobot {
       } yield method.some
 
     override def onMessageReply(msg: Message): Task[Option[Method[_]]] = {
-        def listPersonalTasks(user: User)(implicit language: LanguageId) =
-          botService.getTasks(user, user, PageNumber(0))
-            .map { case (page, messageEntities) =>
-              sendMessage(
-                ChatIntId(msg.chat.id),
-                messageEntities.map(_.text).mkString,
-                replyMarkup = Keyboards.tasks(page, user).some,
-                entities = TypedMessageEntity.toMessageEntities(messageEntities),
-              )
-            }
+      def listPersonalTasks(user: User)(implicit language: LanguageId) =
+        botService.getTasks(user, user, PageNumber(0))
+          .map { case (page, messageEntities) =>
+            sendMessage(
+              ChatIntId(msg.chat.id),
+              messageEntities.map(_.text).mkString,
+              replyMarkup = Keyboards.tasks(page, user).some,
+              entities = TypedMessageEntity.toMessageEntities(messageEntities),
+            )
+          }
 
       def handleReply() =
         for {
@@ -193,7 +197,7 @@ object Taskobot {
         .getOrElse(handleText())
     }
 
-    private val cbRoutes = taskController.routes <+> settingsController.routes <+>
+    private val cbRoutes = taskController.routes <+> settingsController.routes <+> ignoreController.routes <+>
       userMiddleware(taskController.userRoutes <+> settingsController.userRoutes)
     private val cbDataDecoder: CallbackDataDecoder[Task, CbData] =
       CbData.decode(_).left.map {
