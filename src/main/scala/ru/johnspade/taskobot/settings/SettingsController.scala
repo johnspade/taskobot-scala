@@ -74,7 +74,7 @@ object SettingsController {
           ChatIntId(msg.chat.id).some,
           msg.messageId.some,
           text = Messages.currentLanguage(language),
-          replyMarkup = Keyboards.languages.some
+          replyMarkup = Keyboards.languages(language).some
         )
           .exec[Task]
       }

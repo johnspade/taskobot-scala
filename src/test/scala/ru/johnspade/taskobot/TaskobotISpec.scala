@@ -9,7 +9,7 @@ import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks}
+import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Ignore, Tasks}
 import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.tags.PageNumber
 import ru.johnspade.taskobot.task.tags.TaskId
@@ -278,6 +278,13 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
         checkTaskAssertions <- checkTask
       } yield forwardAssertions &&
         checkTaskAssertions
+    },
+
+    testM("Ignore should be ignored") {
+      for {
+        ignoreReply <- sendCallbackQuery(Ignore)
+        assertions = assert(ignoreReply)(equalTo(Methods.answerCallbackQuery("0").some))
+      } yield assertions
     }
   ) @@ sequential).provideCustomLayerShared(TestEnvironment.env)
 
@@ -348,7 +355,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
     private val settingsController = (userRepo ++ botApi) >>> SettingsController.live
     private val userMiddleware = botService >>> UserMiddleware.live
     private val taskobot = (
-        ZLayer.requires[Clock] ++
+      ZLayer.requires[Clock] ++
         botApi ++
         botConfig ++
         taskRepo ++
@@ -356,6 +363,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
         commandController ++
         taskController ++
         settingsController ++
+        IgnoreController.live ++
         userMiddleware
       ) >>> Taskobot.live
     val env: URLayer[Clock with Blocking, Clock with PostgresITEnv with Taskobot] =
