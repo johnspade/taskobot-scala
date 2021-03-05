@@ -56,8 +56,10 @@ object BotService {
                 task.forwardFromSenderName
                   .map(n => italic" – $n")
                   .getOrElse(plain"")
-              } else
-                italic" – ${collaborator.firstName}" // todo sender?
+              } else {
+                val sender = if (task.sender == `for`.id) `for`.firstName else collaborator.firstName
+                italic" – $sender"
+              }
               List(plain"${i + 1}. ${task.text}", senderName, lineBreak)
             }
           val footer = List(lineBreak, italic"Select the task number to mark it as completed.")
