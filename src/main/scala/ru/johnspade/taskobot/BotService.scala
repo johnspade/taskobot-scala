@@ -48,25 +48,52 @@ object BotService {
         .map { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
           val header = List(Plain(t"Chat" + ": "), Bold(chatName), lineBreak)
-          val taskList = page
+          val footer = List(lineBreak, italic"Select the task number to mark it as completed.")
+
+          val taskLines = page
             .items
             .zipWithIndex
-            .flatMap { case (task, i) =>
+            .map { case (task, i) =>
+              val taskText = s"${i + 1}. ${task.text}"
               val senderName = if (collaborator.id == `for`.id) {
                 task.forwardFromSenderName
-                  .map(n => italic" – $n")
-                  .getOrElse(plain"")
+                  .map(n => s" – $n")
+                  .getOrElse("")
               } else {
                 val sender = if (task.sender == `for`.id) `for`.firstName else collaborator.firstName
-                italic" – $sender"
+                s" – $sender"
               }
-              List(plain"${i + 1}. ${task.text}", senderName, lineBreak)
+              TaskLine(taskText, senderName)
             }
-          val footer = List(lineBreak, italic"Select the task number to mark it as completed.")
+
+          val taskList = limitTaskLines(taskLines, headerFooterLength = (header ++ footer).map(_.text).mkString.length)
+            .flatMap { line =>
+              List(Plain(line.text), Italic(line.senderName), lineBreak)
+            }
+
           val messageEntities = header ++ taskList ++ footer
 
           (page, messageEntities)
         }
+    }
+
+    private case class TaskLine(text: String, senderName: String)
+
+    private val LineBreakLength = "\n".length
+    private val LineBreaksCount = DefaultPageSize
+
+    private def limitTaskLines(lines: List[TaskLine], headerFooterLength: Int): List[TaskLine] = {
+      val messageLength = lines.map(l => (l.text + l.senderName).length + LineBreakLength).sum + headerFooterLength
+      if (messageLength > MessageLimit) {
+        val taskListLimit = MessageLimit - headerFooterLength - LineBreaksCount
+        val lineLimit = taskListLimit / DefaultPageSize
+        lines.map { line =>
+          val ellipsis = if ((line.text + line.senderName).length > lineLimit) "..." else ""
+          line.copy(text = line.text.take(lineLimit - line.senderName.length - ellipsis.length) + ellipsis)
+        }
+      }
+      else
+        lines
     }
   }
 }
