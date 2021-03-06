@@ -61,7 +61,7 @@ object CommandControllerSpec extends DefaultRunnableSpec with MockitoSugar with 
             "Chat: Personal tasks\n1. Buy some milk\n\nSelect the task number to mark it as completed.",
             entities = TypedMessageEntity.toMessageEntities(List(
               plain"Chat: ", bold"Personal tasks", lineBreak,
-              plain"1. Buy some milk", lineBreak,
+              plain"1. Buy some milk", italic"", lineBreak,
               lineBreak, italic"Select the task number to mark it as completed."
             )),
             replyMarkup = InlineKeyboardMarkups.singleColumn(List(

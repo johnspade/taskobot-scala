@@ -33,6 +33,7 @@ package object taskobot {
   }
 
   val DefaultPageSize: PageSize = PageSize(5)
+  val MessageLimit = 4096
 
   type CbDataRoutes[F[_]] = CallbackQueryRoutes[CbData, Option[Method[_]], F]
 
