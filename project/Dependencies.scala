@@ -2,21 +2,20 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium = "3.50.2"
+    val telegramium = "4.51.0"
     val tgbotUtils = "0.3.0"
     val zio = "1.0.4-2"
     val zioCats = "2.3.1.0"
-    val zioLogging = "0.5.6"
+    val zioLogging = "0.5.7"
     val logback = "1.2.3"
     val cats = "2.4.2"
-    val pureconfig = "0.14.0"
+    val pureconfig = "0.14.1"
     val doobie = "0.10.0"
-    val flyway = "7.5.4"
+    val flyway = "7.6.0"
     val enumeratum = "1.6.1"
     val supertagged = "2.0-RC2"
     val kantan = "0.6.1"
-    val magnolia = "0.17.0"
-    val http4s = "0.21.19"
+    val http4s = "0.21.20"
     val scalingua = "1.0"
     val postgresql = "42.2.19"
     val chimney = "0.6.1"
@@ -45,7 +44,6 @@ object Dependencies {
     "com.nrinaudo" %% "kantan.csv" % V.kantan,
     "com.nrinaudo" %% "kantan.csv-java8" % V.kantan,
     "com.nrinaudo" %% "kantan.csv-enumeratum" % V.kantan,
-    "com.propensive" %% "magnolia" % V.magnolia,
     "org.http4s" %% "http4s-blaze-client" % V.http4s,
     "ru.makkarpov" %% "scalingua" % V.scalingua,
     "org.postgresql" % "postgresql" % V.postgresql

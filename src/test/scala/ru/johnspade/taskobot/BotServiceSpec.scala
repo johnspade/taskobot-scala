@@ -30,19 +30,19 @@ object BotServiceSpec extends DefaultRunnableSpec with MockitoSugar {
     (suite("updateUser")(
       testM("should convert and create a Telegram user") {
         val tgUser = telegramium.bots.User(1337, isBot = false, "John")
-        val expectedUser = User(UserId(1337), FirstName("John"), Language.English)
+        val expectedUser = User(UserId(1337L), FirstName("John"), Language.English)
         for {
           user <- BotService.updateUser(tgUser)
-          savedUser <- UserRepository.findById(UserId(1337))
+          savedUser <- UserRepository.findById(UserId(1337L))
         } yield assert(user)(equalTo(expectedUser)) && assert(savedUser)(isSome(equalTo(expectedUser)))
       },
       testM("should convert and update a Telegram user") {
         val tgUser = telegramium.bots.User(1337, isBot = false, "John", "Spade".some)
-        val expectedUser = User(UserId(1337), FirstName("John"), Language.English, lastName = LastName("Spade").some)
+        val expectedUser = User(UserId(1337L), FirstName("John"), Language.English, lastName = LastName("Spade").some)
         for {
-          _ <- UserRepository.createOrUpdate(User(UserId(1337), FirstName("John"), Language.English))
+          _ <- UserRepository.createOrUpdate(User(UserId(1337L), FirstName("John"), Language.English))
           user <- BotService.updateUser(tgUser)
-          savedUser <- UserRepository.findById(UserId(1337))
+          savedUser <- UserRepository.findById(UserId(1337L))
         } yield assert(user)(equalTo(expectedUser)) && assert(savedUser)(isSome(equalTo(expectedUser)))
       }
     ) @@ sequential)
@@ -50,8 +50,8 @@ object BotServiceSpec extends DefaultRunnableSpec with MockitoSugar {
 
     suite("getTasks")(
       testM("should return tasks") {
-        val task1 = NewTask(UserId(322), TaskText("task1"), CreatedAt(0L), alice.id.some)
-        val task2 = NewTask(UserId(322), TaskText("task2"), CreatedAt(1L), alice.id.some)
+        val task1 = NewTask(UserId(322L), TaskText("task1"), CreatedAt(0L), alice.id.some)
+        val task2 = NewTask(UserId(322L), TaskText("task2"), CreatedAt(1L), alice.id.some)
         implicit val languageId: LanguageId = ru.makkarpov.scalingua.Language.English.id
         val expectedTasks = List(
           task2.into[BotTask].withFieldConst(_.id, TaskId(2L)).transform,
@@ -130,8 +130,8 @@ object BotServiceSpec extends DefaultRunnableSpec with MockitoSugar {
     )
   )
 
-  private val bob = User(UserId(322), FirstName("Bob"), Language.English)
-  private val alice = User(UserId(911), FirstName("Alice"), Language.English)
+  private val bob = User(UserId(322L), FirstName("Bob"), Language.English)
+  private val alice = User(UserId(911L), FirstName("Alice"), Language.English)
   private val longTaskText =
     "Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor ut, ultrices malesuada arcu."
 }
