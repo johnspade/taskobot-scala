@@ -46,7 +46,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             messageId = 0.some,
             text = "Chats with tasks",
             replyMarkup = InlineKeyboardMarkups.singleColumn(
-              List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(firstPage, UserId(n)))) ++
+              List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(firstPage, UserId(n.toLong)))) ++
                 List(InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade"))
             ).some
           ))
@@ -65,7 +65,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
             replyMarkup = InlineKeyboardMarkups.singleColumn(
               List.tabulate(5) { n =>
                 val id = n + 5
-                inlineKeyboardButton(id.toString, Tasks(firstPage, UserId(id)))
+                inlineKeyboardButton(id.toString, Tasks(firstPage, UserId(id.toLong)))
               } ++ List(
                 inlineKeyboardButton("Previous page", Chats(PageNumber(0))),
                 inlineKeyboardButton("Next page", Chats(PageNumber(2)))
@@ -248,7 +248,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
       testM("cannot confirm task with wrong senderId") {
         for {
           task <- createTask("Buy some bread")
-          bobId = UserId(0)
+          bobId = UserId(0L)
           reply <- confirmTask(ConfirmTask(task.id.some, bobId.some), TgUser(bobId, isBot = false, "Bob"))
           unconfirmedTask <- TaskRepository.findById(task.id)
           confirmTaskReplyAssertions = assert(reply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
@@ -299,7 +299,7 @@ object TaskControllerSpec extends DefaultRunnableSpec with MockitoSugar with Arg
     for {
       now <- clock.instant
       usersAndTasks = List.tabulate(count) { n =>
-        val user = User(UserId(n), FirstName(n.toString), Language.English)
+        val user = User(UserId(n.toLong), FirstName(n.toString), Language.English)
         user -> NewTask(john.id, TaskText(n.toString), CreatedAt(now.toEpochMilli), user.id.some)
       }
       _ <- ZIO.foreach_(usersAndTasks) { case (user, task) =>

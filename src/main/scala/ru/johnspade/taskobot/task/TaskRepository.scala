@@ -84,7 +84,7 @@ object TaskRepository {
 
 private object TaskQueries {
   private implicit val taskWithCollaboratorRead: Read[TaskWithCollaborator] =
-    Read[(Long, String, Option[Int], Option[String], Option[String], Option[Long], Option[String])].map {
+    Read[(Long, String, Option[Long], Option[String], Option[String], Option[Long], Option[String])].map {
       case (taskId, text, userIdOpt, firstNameOpt, languageOpt, chatIdOpt, lastNameOpt) =>
         val collaborator = for {
           userId <- userIdOpt

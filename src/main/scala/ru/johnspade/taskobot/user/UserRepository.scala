@@ -64,13 +64,13 @@ object UserRepository {
 
   private object UserQueries {
     private implicit val userRead: Read[User] =
-      Read[(Int, String, String, Option[Long], Option[String])].map {
+      Read[(Long, String, String, Option[Long], Option[String])].map {
         case (userId, firstName, language, chatIdOpt, lastNameOpt) =>
           User(UserId(userId), FirstName(firstName), Language.withValue(language), chatIdOpt.map(ChatId(_)), lastNameOpt.map(LastName(_)))
       }
 
     private implicit val userWrite: Write[User] =
-      Write[(Int, String, String, Option[Long], Option[String])].contramap { u =>
+      Write[(Long, String, String, Option[Long], Option[String])].contramap { u =>
         (u.id, u.firstName, u.language.value, u.chatId, u.lastName)
       }
 
