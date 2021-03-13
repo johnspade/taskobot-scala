@@ -1,4 +1,4 @@
-#  !Generated: 2021-03-10 01:55:08
+#  !Generated: 2021-03-11 21:10:23
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
 msgid "Chat"
