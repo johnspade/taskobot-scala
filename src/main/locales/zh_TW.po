@@ -66,7 +66,7 @@ msgstr "轉寄訊息到這裡來建立個人任務。"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:17
 msgid "Personal task \"%(task)\" has been created."
-msgstr "已建立 \"%(task)\" 個人任務。"
+msgstr "已建立 「%(task)」 個人任務。"
 
 #: src/main/scala/ru/johnspade/taskobot/Messages.scala:19
 msgid "Chats with tasks"
@@ -110,4 +110,4 @@ msgstr "此任務已標記為完成。"
 
 #: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:166
 msgid "Task \"%(taskText)\" has been marked as completed by %(completedBy)."
-msgstr "任務「\"%(taskText)」 已由 %(completedBy) 標記為完成。"
+msgstr "任務「%(taskText)」 已由 %(completedBy) 標記為完成。"
