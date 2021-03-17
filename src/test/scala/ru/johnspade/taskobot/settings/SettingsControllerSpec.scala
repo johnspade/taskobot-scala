@@ -39,7 +39,8 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
                 inlineKeyboardButton("English", Ignore),
                 inlineKeyboardButton("Русский", SetLanguage(Language.Russian)),
                 inlineKeyboardButton("Turkish", SetLanguage(Language.Turkish)),
-                inlineKeyboardButton("Italian", SetLanguage(Language.Italian))
+                inlineKeyboardButton("Italian", SetLanguage(Language.Italian)),
+                inlineKeyboardButton("Traditional Chinese", SetLanguage(Language.TraditionalChinese))
               )
             ).some
           ))
@@ -64,7 +65,8 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
                 inlineKeyboardButton("English", SetLanguage(Language.English)),
                 inlineKeyboardButton("Русский", Ignore),
                 inlineKeyboardButton("Turkish", SetLanguage(Language.Turkish)),
-                inlineKeyboardButton("Italian", SetLanguage(Language.Italian))
+                inlineKeyboardButton("Italian", SetLanguage(Language.Italian)),
+                inlineKeyboardButton("Traditional Chinese", SetLanguage(Language.TraditionalChinese))
               )
             ).some
           ))
