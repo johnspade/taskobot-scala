@@ -2,16 +2,16 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium = "4.51.0"
-    val tgbotUtils = "0.3.0"
-    val zio = "1.0.4-2"
+    val telegramium = "4.51.1"
+    val tgbotUtils = "0.4.0"
+    val zio = "1.0.5"
     val zioCats = "2.3.1.0"
     val zioLogging = "0.5.7"
     val logback = "1.2.3"
     val cats = "2.4.2"
     val pureconfig = "0.14.1"
-    val doobie = "0.10.0"
-    val flyway = "7.6.0"
+    val doobie = "0.12.1"
+    val flyway = "7.7.0"
     val enumeratum = "1.6.1"
     val supertagged = "2.0-RC2"
     val kantan = "0.6.1"

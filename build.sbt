@@ -24,5 +24,3 @@ enablePlugins(JavaAppPackaging)
 enablePlugins(Scalingua)
 templateTarget in Compile := file("src/main/locales/messages.pot")
 sourceDirectories in (Test, compileLocales) := Seq(file("src/main/locales"))
-
-resolvers += Resolver.bintrayRepo("johnspade", "maven")

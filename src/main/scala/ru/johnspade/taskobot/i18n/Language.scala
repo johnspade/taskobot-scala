@@ -11,6 +11,7 @@ object Language extends StringEnum[Language] {
   case object Russian extends Language("ru", "Русский")
   case object Turkish extends Language("tr", "Turkish")
   case object Italian extends Language("it", "Italian")
+  case object TraditionalChinese extends Language("zh_TW", "Traditional Chinese")
 
   override val values: IndexedSeq[Language] = findValues
 }
