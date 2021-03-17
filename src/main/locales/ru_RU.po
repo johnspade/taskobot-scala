@@ -18,8 +18,12 @@ msgstr ""
 msgid "Chat"
 msgstr "Чат"
 
+#: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
+msgid "Select the task number to mark it as completed."
+msgstr "Выбери номер задачи, чтобы отметить ее завершенной."
+
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:102
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
 msgid "New personal task"
 msgstr "Новая личная задача"
 
@@ -31,19 +35,24 @@ msgstr ""
 "В чате с собеседником напиши <code>@tasko_bot {задача}</code> и нажми "
 "<b>Создать задачу</b>"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
+#  !Generated: 2021-01-23 20:14:12
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:43
+msgid "Chat list"
+msgstr "Список чатов"
+
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
 msgid "Tasks"
 msgstr "Задачи"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
 msgid "New collaborative task"
 msgstr "Новая совместная задача"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:63
 msgid "Help"
 msgstr "Справка"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:63
 msgid "Settings"
 msgstr "Настройки"
 
@@ -95,7 +104,7 @@ msgstr "Текущий язык: %(languageName)"
 msgid "Switch language"
 msgstr "Изменить язык"
 
-#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:93
+#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:97
 msgid "Create task"
 msgstr "Создать задачу"
 
