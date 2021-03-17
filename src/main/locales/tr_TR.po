@@ -17,8 +17,12 @@ msgstr ""
 msgid "Chat"
 msgstr "Sohbet"
 
+#: src/main/scala/ru/johnspade/taskobot/BotService.scala:51
+msgid "Select the task number to mark it as completed."
+msgstr "Tamamlandı olarak işaretlemek için görev numarasını seçin."
+
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:102
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
 msgid "New personal task"
 msgstr "Yeni kişisel görev"
 
@@ -30,19 +34,24 @@ msgstr ""
 "Özel sohbette <code>@tasko_bot görev</code> yazabilir ve <b>Görev oluştur</"
 "b>'u seçebilirsiniz"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:60
+#  !Generated: 2021-02-08 00:34:29
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:43
+msgid "Chat list"
+msgstr "Sohbet listesi"
+
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
 msgid "Tasks"
 msgstr "Görevler"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:61
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
 msgid "New collaborative task"
 msgstr "Yeni birliği görev"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:63
 msgid "Help"
 msgstr "Yardım"
 
-#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:62
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:63
 msgid "Settings"
 msgstr "Ayarlar"
 
@@ -94,7 +103,7 @@ msgstr "Şu anki dil: %(languageName)"
 msgid "Switch language"
 msgstr "Dili değiştirin"
 
-#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:93
+#: src/main/scala/ru/johnspade/taskobot/Taskobot.scala:97
 msgid "Create task"
 msgstr "Görev oluştur"
 

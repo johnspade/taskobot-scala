@@ -48,7 +48,7 @@ object BotService {
         .map { page =>
           val chatName = if (collaborator.id == `for`.id) Messages.personalTasks() else collaborator.fullName
           val header = List(Plain(t"Chat" + ": "), Bold(chatName), lineBreak)
-          val footer = List(lineBreak, italic"Select the task number to mark it as completed.")
+          val footer = List(lineBreak, Italic(t"Select the task number to mark it as completed."))
 
           val taskLines = page
             .items
