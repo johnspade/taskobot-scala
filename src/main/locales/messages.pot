@@ -1,4 +1,4 @@
-#  !Generated: 2021-03-18 00:28:34
+#  !Generated: 2021-03-18 20:57:48
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
 msgid "Chat"
@@ -15,6 +15,10 @@ msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/CommandController.scala:116
 msgid "Type <code>@tasko_bot task</code> in private chat and select <b>Create task</b>"
+msgstr ""
+
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:26
+msgid "Buy me a coffee"
 msgstr ""
 
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:43
