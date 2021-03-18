@@ -35,6 +35,10 @@ msgstr ""
 "В чате с собеседником напиши <code>@tasko_bot {задача}</code> и нажми "
 "<b>Создать задачу</b>"
 
+#: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:26
+msgid "Buy me a coffee"
+msgstr "Поддержать"
+
 #  !Generated: 2021-01-23 20:14:12
 #: src/main/scala/ru/johnspade/taskobot/Keyboards.scala:43
 msgid "Chat list"
