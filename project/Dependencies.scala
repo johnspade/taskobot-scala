@@ -2,11 +2,11 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium = "4.51.1"
+    val telegramium = "4.52.0"
     val tgbotUtils = "0.4.0"
     val zio = "1.0.5"
     val zioCats = "2.3.1.0"
-    val zioLogging = "0.5.7"
+    val zioLogging = "0.5.8"
     val logback = "1.2.3"
     val cats = "2.4.2"
     val pureconfig = "0.14.1"
@@ -20,7 +20,7 @@ object Dependencies {
     val postgresql = "42.2.19"
     val chimney = "0.6.1"
     val testcontainers = "0.39.3"
-    val mockitoScala = "1.16.29"
+    val mockitoScala = "1.16.32"
   }
 
   val distributionDependencies = Seq(
