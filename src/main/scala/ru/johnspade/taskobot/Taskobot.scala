@@ -1,6 +1,5 @@
 package ru.johnspade.taskobot
 
-import cats.effect.ConcurrentEffect
 import cats.implicits._
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.CommandController.CommandController
@@ -50,7 +49,7 @@ object Taskobot {
       with UserMiddleware,
     Taskobot
   ] =
-    ZLayer.fromServicesM[
+    ZLayer.fromServices[
       Clock.Service,
       Api[Task],
       BotConfig,
@@ -61,15 +60,11 @@ object Taskobot {
       SettingsController.Service,
       IgnoreController.Service,
       CallbackQueryUserMiddleware,
-      Any,
-      Nothing,
       LiveTaskobot
     ] { (clock, api, botConfig, botService, taskRepo, commandController, taskController, settingsController, ignoreController, userMiddleware) =>
-      Task.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
-        new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, ignoreController, userMiddleware)(
-          api, CE
-        )
-      }
+      new LiveTaskobot(clock, botConfig, botService, taskRepo, commandController, taskController, settingsController, ignoreController, userMiddleware)(
+        api
+      )
     }
 
   final class LiveTaskobot(
@@ -83,9 +78,8 @@ object Taskobot {
     ignoreController: IgnoreController.Service,
     userMiddleware: CallbackQueryUserMiddleware
   )(
-    implicit api: Api[Task],
-    CE: ConcurrentEffect[Task]
-  ) extends WebhookBot[Task](api, botConfig.port, url = s"${botConfig.url}/${botConfig.token}", path = botConfig.token, host = "0.0.0.0") {
+    implicit api: Api[Task]
+  ) extends WebhookBot[Task](api, url = s"${botConfig.url}/${botConfig.token}", path = botConfig.token) {
 
     private val botId = botConfig.token.split(":").head.toInt
 

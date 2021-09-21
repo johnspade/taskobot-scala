@@ -2,7 +2,7 @@ import Dependencies._
 
 name := "tasko_bot"
 
-scalaVersion := "2.13.5"
+scalaVersion := "2.13.6"
 
 scalacOptions ++= Seq(
   "-language:higherKinds",
@@ -17,8 +17,8 @@ addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 
 enablePlugins(Scalingua, JavaAppPackaging, DockerPlugin, AshScriptPlugin)
 
-templateTarget in Compile := file("src/main/locales/messages.pot")
-sourceDirectories in (Test, compileLocales) := Seq(file("src/main/locales"))
+Compile / templateTarget := file("src/main/locales/messages.pot")
+Test / compileLocales / sourceDirectories := Seq(file("src/main/locales"))
 
 ThisBuild / dynverSeparator := "-"
 dockerBaseImage := "adoptopenjdk/openjdk11:jre-11.0.10_9-alpine"

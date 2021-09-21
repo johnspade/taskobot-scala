@@ -40,4 +40,12 @@ package object taskobot {
   type CbDataUserRoutes[F[_]] = CallbackQueryContextRoutes[CbData, User, Option[Method[_]], F]
 
   type CallbackQueryUserMiddleware = CallbackQueryContextMiddleware[CbData, User, Option[Method[_]], Task]
+
+  object Dispatchers {
+    import zio.interop.catz._
+    import zio.interop.catz.implicits._
+
+    implicit val defaultDispatcher: cats.effect.std.Dispatcher[Task] =
+      zio.Runtime.default.unsafeRun(cats.effect.std.Dispatcher[Task].allocated)._1
+  }
 }

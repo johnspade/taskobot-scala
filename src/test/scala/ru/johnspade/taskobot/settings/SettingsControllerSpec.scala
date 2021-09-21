@@ -18,6 +18,7 @@ import telegramium.bots.high._
 import telegramium.bots.high.keyboards.{InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.{ChatIntId, Message, ReplyKeyboardMarkup}
 import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.test.Assertion.{equalTo, hasField, isSome}
 import zio.test._
 import zio.test.environment.TestEnvironment
@@ -130,7 +131,7 @@ object SettingsControllerSpec extends DefaultRunnableSpec with MockitoSugar with
     private val userRepo = UserRepository.live
     private val settingsController = botApi ++ userRepo >>> SettingsController.live
 
-    val env: URLayer[Blocking, SettingsController with UserRepository] =
+    val env: URLayer[Blocking with Clock, SettingsController with UserRepository] =
       TestEnvironments.itLayer >>> settingsController ++ userRepo
   }
 }

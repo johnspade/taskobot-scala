@@ -1,6 +1,5 @@
 package ru.johnspade.taskobot.task
 
-import cats.effect.ConcurrentEffect
 import cats.implicits._
 import ru.johnspade.taskobot.BotService.BotService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
@@ -36,20 +35,16 @@ object TaskController {
   }
 
   val live: URLayer[UserRepository with TaskRepository with BotService with TelegramBotApi with Clock, TaskController] =
-    ZLayer.fromServicesM[
+    ZLayer.fromServices[
       UserRepository.Service,
       TaskRepository.Service,
       BotService.Service,
       Api[Task],
       Clock.Service,
-      Any,
-      Nothing,
       TaskController.Service
     ] {
       (userRepo, taskRepo, botService, api, clock) =>
-        ZIO.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
-          new LiveTaskController(userRepo, taskRepo, botService, clock)(api, CE)
-        }
+        new LiveTaskController(userRepo, taskRepo, botService, clock)(api)
     }
 
   final class LiveTaskController(
@@ -58,8 +53,7 @@ object TaskController {
     botService: BotService.Service,
     clock: Clock.Service
   )(
-    implicit api: Api[Task],
-    CE: ConcurrentEffect[Task]
+    implicit api: Api[Task]
   ) extends Service {
     override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of {
 

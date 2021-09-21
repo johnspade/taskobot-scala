@@ -14,13 +14,13 @@ object Environments {
   type AppEnvironment = Blocking with Clock with Configuration with Taskobot
 
   private val dbConfig = Configuration.liveDbConfig
-  val dbTransactor: URLayer[Blocking, DbTransactor] =
-    ZLayer.requires[Blocking] ++ Configuration.liveDbConfig >>> DbTransactor.live
+  val dbTransactor: URLayer[Blocking with Clock, DbTransactor] =
+    ZLayer.requires[Blocking] ++ ZLayer.requires[Clock] ++ Configuration.liveDbConfig >>> DbTransactor.live
   private val userRepo = dbTransactor >>> UserRepository.live
   private val taskRepo = dbTransactor >>> TaskRepository.live
   private val repositories = userRepo ++ taskRepo
   private val botConfig = Configuration.liveBotConfig
-  private val botApi = botConfig >>> TelegramBotApi.live
+  private val botApi = ZLayer.requires[Blocking] ++ ZLayer.requires[Clock] ++ botConfig >>> TelegramBotApi.live
   private val botService = repositories >>> BotService.live
   private val commandController =
     (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> CommandController.live

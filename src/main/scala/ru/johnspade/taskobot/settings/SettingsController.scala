@@ -1,6 +1,5 @@
 package ru.johnspade.taskobot.settings
 
-import cats.effect.ConcurrentEffect
 import cats.syntax.option._
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.TelegramOps.toUser
@@ -29,23 +28,18 @@ object SettingsController {
     def userRoutes: CbDataUserRoutes[Task]
   }
 
-  val live: URLayer[UserRepository with TelegramBotApi, SettingsController] = ZLayer.fromServicesM[
+  val live: URLayer[UserRepository with TelegramBotApi, SettingsController] = ZLayer.fromServices[
     UserRepository.Service,
     Api[Task],
-    Any,
-    Nothing,
     Service
   ] { (userRepo, api) =>
-    ZIO.concurrentEffect.map { implicit CE: ConcurrentEffect[Task] =>
-      new LiveSettingsController(userRepo)(api, CE)
-    }
+    new LiveSettingsController(userRepo)(api)
   }
 
   final class LiveSettingsController(
     userRepo: UserRepository.Service
   )(
-    implicit api: Api[Task],
-    CE: ConcurrentEffect[Task]
+    implicit api: Api[Task]
   ) extends Service {
     override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
 
