@@ -143,7 +143,7 @@ object TaskController {
                 message <- cb.message
               } yield
                 checkTask(task) *>
-                  listTasksAndNotify(task, message).fork
+                  listTasksAndNotify(task, message)
             }
               .as(answerCallbackQuery(cb.id, answerText.some).some)
           }
