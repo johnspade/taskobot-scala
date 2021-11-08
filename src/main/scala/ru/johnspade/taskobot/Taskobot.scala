@@ -21,13 +21,14 @@ import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.tags.{ChatId, UserId}
 import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryHandler, DecodeError, ParseError}
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import ru.makkarpov.scalingua.I18n._
 import ru.makkarpov.scalingua.LanguageId
 import telegramium.bots.client.Method
 import telegramium.bots.high.implicits._
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.{Api, WebhookBot}
-import telegramium.bots.{CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Markdown2, Message}
+import telegramium.bots.{CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Message}
 import zio._
 import zio.clock.Clock
 import zio.interop.catz._
@@ -86,10 +87,11 @@ object Taskobot {
     override def onInlineQueryReply(query: InlineQuery): Task[Option[Method[_]]] = {
       implicit val language: LanguageId = query.from.languageCode.flatMap(LanguageId.get).getOrElse(LanguageId("en-US"))
       val text = query.query
+      val taskTextEntity = Bold(text)
       val article = InlineQueryResultArticle(
         id = "1",
         title = t"Create task",
-        inputMessageContent = InputTextMessageContent(s"*$text*", Markdown2.some),
+        inputMessageContent = InputTextMessageContent(taskTextEntity.text, entities = TypedMessageEntity.toMessageEntities(List(taskTextEntity))),
         replyMarkup = InlineKeyboardMarkups.singleButton(
           inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = UserId(query.from.id).some))
         )
