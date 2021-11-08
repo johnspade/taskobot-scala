@@ -41,7 +41,7 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
               "0", cacheTime = 0.some,
               results = List(
                 InlineQueryResultArticle(
-                  "1", "Create task", InputTextMessageContent("*Buy some milk*", Markdown2.some),
+                  "1", "Create task", InputTextMessageContent("Buy some milk", entities = TypedMessageEntity.toMessageEntities(List(Bold("Buy some milk")))),
                   InlineKeyboardMarkups.singleButton(
                     inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = john.id.some))
                   )
