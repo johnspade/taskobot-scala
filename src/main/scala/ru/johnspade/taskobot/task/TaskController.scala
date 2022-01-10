@@ -63,7 +63,6 @@ object TaskController {
             _ <- taskRepo.setReceiver(task.id, senderIdOpt, from.id)
             _ <- editMessageReplyMarkup(inlineMessageId = cb.inlineMessageId, replyMarkup = Option.empty)
               .exec
-              .fork
           } yield answerCallbackQuery(cb.id).some
 
         def mustBeConfirmedByReceiver(from: User): UIO[Option[Method[_]]] = {

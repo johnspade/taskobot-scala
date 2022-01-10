@@ -1,4 +1,4 @@
-#  !Generated: 2021-11-08 23:25:00
+#  !Generated: 2022-01-10 23:39:18
 
 #: src/main/scala/ru/johnspade/taskobot/BotService.scala:50
 msgid "Chat"
@@ -89,15 +89,15 @@ msgstr ""
 msgid "Language has been changed"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:71
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:70
 msgid "The task must be confirmed by the receiver"
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:137
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:136
 msgid "Task has been marked as completed."
 msgstr ""
 
-#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:160
+#: src/main/scala/ru/johnspade/taskobot/task/TaskController.scala:159
 msgid "Task \"%(taskText)\" has been marked as completed by %(completedBy)."
 msgstr ""
 

@@ -2,25 +2,25 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium = "7.54.0"
+    val telegramium = "7.56.0"
     val tgbotUtils = "0.5.0"
-    val zio = "1.0.11"
+    val zio = "1.0.12"
     val zioCats = "3.1.1.0"
-    val zioLogging = "0.5.11"
-    val logback = "1.2.5"
+    val zioLogging = "0.5.14"
+    val logback = "1.2.7"
     val cats = "2.6.1"
-    val pureconfig = "0.16.0"
+    val pureconfig = "0.17.0"
     val doobie = "1.0.0-RC1"
-    val flyway = "7.15.0"
+    val flyway = "8.0.5"
     val enumeratum = "1.7.0"
     val supertagged = "2.0-RC2"
-    val kantan = "0.6.1"
-    val http4s = "0.23.3"
+    val kantan = "0.6.2"
+    val http4s = "0.23.6"
     val scalingua = "1.0"
-    val postgresql = "42.2.23"
+    val postgresql = "42.3.1"
     val chimney = "0.6.1"
-    val testcontainers = "0.39.7"
-    val mockitoScala = "1.16.39"
+    val testcontainers = "0.39.12"
+    val mockitoScala = "1.16.46"
   }
 
   val distributionDependencies = Seq(

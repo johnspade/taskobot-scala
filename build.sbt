@@ -2,7 +2,7 @@ import Dependencies._
 
 name := "tasko_bot"
 
-scalaVersion := "2.13.6"
+scalaVersion := "2.13.7"
 
 scalacOptions ++= Seq(
   "-language:higherKinds",

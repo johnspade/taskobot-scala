@@ -21,7 +21,7 @@ import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
 import telegramium.bots.client.Method
 import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.high.{Api, Methods}
-import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Markdown2, Message, ParseMode, ReplyKeyboardMarkup, User}
+import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Message, ParseMode, ReplyKeyboardMarkup, User}
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.test.Assertion.{equalTo, isSome}
