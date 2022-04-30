@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot.settings
 
 import cats.syntax.option.*
-import com.dimafeng.testcontainers.MockServerContainer
+import org.mockserver.client.MockServerClient
 import ru.johnspade.taskobot.{KeyboardServiceLive, TestBotApi, TestDatabase}
 import ru.johnspade.taskobot.TestHelpers.callbackQuery
 import ru.johnspade.taskobot.TestUsers.{john, johnTg}
@@ -68,10 +68,9 @@ object SettingsControllerSpec extends ZIOSpecDefault:
     }
 
   private val env =
-    ZLayer.make[MockServerContainer with SettingsController with UserRepository](
+    ZLayer.make[MockServerClient with SettingsController with UserRepository](
       TestDatabase.layer,
-      TestBotApi.mockServerContainer,
-      TestBotApi.api,
+      TestBotApi.testApiLayer,
       UserRepositoryLive.layer,
       MsgConfig.live,
       MessageServiceLive.layer,

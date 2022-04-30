@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option.*
-import com.dimafeng.testcontainers.MockServerContainer
+import org.mockserver.client.MockServerClient
 import ru.johnspade.taskobot.CommandController
 import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
 import ru.johnspade.taskobot.TestHelpers.createMessage
@@ -91,10 +91,9 @@ object CommandControllerSpec extends ZIOSpecDefault:
     .provideCustomShared(env)
 
   private val env =
-    ZLayer.make[MockServerContainer with CommandController with TaskRepository](
+    ZLayer.make[MockServerClient with CommandController with TaskRepository](
       TestDatabase.layer,
-      TestBotApi.mockServerContainer,
-      TestBotApi.api,
+      TestBotApi.testApiLayer,
       UserRepositoryLive.layer,
       TaskRepositoryLive.layer,
       MsgConfig.live,

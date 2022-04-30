@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option.*
-import com.dimafeng.testcontainers.MockServerContainer
+import org.mockserver.client.MockServerClient
 import ru.johnspade.taskobot.BotConfig
 import ru.johnspade.taskobot.Taskobot
 import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
@@ -343,10 +343,9 @@ object TaskobotISpec extends ZIOSpecDefault:
       )
     }
 
-  private val env = ZLayer.make[MockServerContainer with Taskobot](
+  private val env = ZLayer.make[MockServerClient with Taskobot](
     TestDatabase.layer,
-    TestBotApi.mockServerContainer,
-    TestBotApi.api,
+    TestBotApi.testApiLayer,
     UserRepositoryLive.layer,
     TaskRepositoryLive.layer,
     MsgConfig.live,

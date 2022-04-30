@@ -2,6 +2,7 @@ package ru.johnspade.taskobot.task
 
 import cats.syntax.option.*
 import com.dimafeng.testcontainers.MockServerContainer
+import org.mockserver.client.MockServerClient
 import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
 import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
 import ru.johnspade.taskobot.core.TelegramOps.{inlineKeyboardButton, toUser}
@@ -199,10 +200,9 @@ object TaskControllerSpec extends ZIOSpecDefault:
         .map(_.flatten)
     }
 
-  private val env = ZLayer.make[MockServerContainer with TaskController with UserRepository with TaskRepository](
+  private val env = ZLayer.make[MockServerClient with TaskController with UserRepository with TaskRepository](
     TestDatabase.layer,
-    TestBotApi.mockServerContainer,
-    TestBotApi.api,
+    TestBotApi.testApiLayer,
     UserRepositoryLive.layer,
     TaskRepositoryLive.layer,
     MsgConfig.live,

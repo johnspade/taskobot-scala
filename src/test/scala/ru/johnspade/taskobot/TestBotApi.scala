@@ -24,7 +24,7 @@ import telegramium.bots.high.keyboards.*
 import telegramium.bots.high.Methods
 
 object TestBotApi:
-  val mockServerContainer: ULayer[MockServerContainer] =
+  private val mockServerContainer: ULayer[MockServerContainer] =
     ZLayer.scoped {
       ZIO.acquireRelease {
         ZIO.attemptBlocking {
@@ -35,7 +35,14 @@ object TestBotApi:
       }(container => ZIO.attemptBlocking(container.stop()).orDie)
     }
 
-  val api: URLayer[MockServerContainer, TelegramBotApi] = ZLayer.scoped {
+  private val mockServerClient: URLayer[MockServerContainer, MockServerClient] =
+    ZLayer(
+      ZIO
+        .service[MockServerContainer]
+        .flatMap(mockServer => ZIO.attemptBlocking(new MockServerClient("localhost", mockServer.serverPort)).orDie)
+    )
+
+  private val api: URLayer[MockServerContainer, TelegramBotApi] = ZLayer.scoped {
     (for
       mockServer <- ZIO.service[MockServerContainer]
       httpClient <- BlazeClientBuilder[Task].resource.toScopedZIO
@@ -43,12 +50,19 @@ object TestBotApi:
     yield botApi).orDie
   }
 
-  def createMock[Res](method: Method[Res], responseBody: String): ZIO[MockServerContainer, Throwable, Unit] =
+  val testApiLayer: ULayer[MockServerContainer with MockServerClient with TelegramBotApi] =
+    ZLayer.make[MockServerContainer with MockServerClient with TelegramBotApi](
+      mockServerContainer,
+      mockServerClient,
+      api
+    )
+
+  def createMock[Res](method: Method[Res], responseBody: String): RIO[MockServerClient, Unit] =
     ZIO
-      .service[MockServerContainer]
-      .flatMap { mockServer =>
+      .service[MockServerClient]
+      .flatMap { client =>
         ZIO.attemptBlocking(
-          new MockServerClient("localhost", mockServer.serverPort)
+          client
             .when(
               request("/" + method.payload.name)
                 .withMethod("POST")
