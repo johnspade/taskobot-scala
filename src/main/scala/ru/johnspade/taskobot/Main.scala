@@ -1,20 +1,38 @@
 package ru.johnspade.taskobot
 
-import ru.johnspade.taskobot.Environments.{AppEnvironment, appEnvironment}
-import ru.johnspade.taskobot.Taskobot.Taskobot
-import zio._
-import zio.interop.catz._
+import ru.johnspade.taskobot.DbConfig
+import ru.johnspade.taskobot.Taskobot
+import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
+import ru.johnspade.taskobot.settings.SettingsControllerLive
+import ru.johnspade.taskobot.task.{TaskControllerLive, TaskRepositoryLive}
+import ru.johnspade.taskobot.user.UserRepositoryLive
+import zio.*
+import zio.interop.catz.*
 
-object Main extends zio.App {
-  val program: ZIO[AppEnvironment, Throwable, Unit] =
-    for {
+object Main extends ZIOAppDefault:
+  private val program =
+    for
       _ <- FlywayMigration.migrate
-      implicit0(rts: Runtime[AppEnvironment]) <- ZIO.runtime[AppEnvironment]
-      _ <- ZIO.accessM[Taskobot](_.get.start(8080, "0.0.0.0").useForever)
-    } yield ()
+      _ <- ZIO.serviceWithZIO[Taskobot](_.start(8080, "0.0.0.0").useForever)
+    yield ()
 
-  def run(args: List[String]): URIO[ZEnv, ExitCode] =
+  def run: ZIO[Environment with ZIOAppArgs with Scope, Any, Any] =
     program
-      .provideSomeLayer(appEnvironment)
-      .exitCode
-}
+      .provide(
+        DbConfig.live,
+        BotConfig.live,
+        MsgConfig.live,
+        DbTransactor.live,
+        MessageServiceLive.layer,
+        KeyboardServiceLive.layer,
+        UserRepositoryLive.layer,
+        TaskRepositoryLive.layer,
+        TelegramBotApi.live,
+        BotServiceLive.layer,
+        CommandControllerLive.layer,
+        TaskControllerLive.layer,
+        SettingsControllerLive.layer,
+        IgnoreControllerLive.layer,
+        UserMiddleware.live,
+        Taskobot.live
+      )

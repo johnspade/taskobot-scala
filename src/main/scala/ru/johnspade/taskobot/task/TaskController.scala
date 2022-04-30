@@ -1,180 +1,168 @@
 package ru.johnspade.taskobot.task
 
-import cats.implicits._
-import ru.johnspade.taskobot.BotService.BotService
+import cats.implicits.*
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.{Chats, CheckTask, ConfirmTask, Page, Tasks}
-import ru.johnspade.taskobot.i18n.messages
-import ru.johnspade.taskobot.task.TaskRepository.TaskRepository
-import ru.johnspade.taskobot.task.tags.DoneAt
-import ru.johnspade.taskobot.user.UserRepository.UserRepository
-import ru.johnspade.taskobot.user.tags.UserId
+import ru.johnspade.taskobot.messages.{Language, MessageService}
 import ru.johnspade.taskobot.user.{User, UserRepository}
-import ru.johnspade.taskobot.{BotService, CbDataRoutes, CbDataUserRoutes, DefaultPageSize, Errors, Keyboards, Messages}
-import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl._
+import ru.johnspade.taskobot.{BotService, CbDataRoutes, CbDataUserRoutes, DefaultPageSize, Errors, KeyboardService}
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
 import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
-import ru.makkarpov.scalingua.I18n._
-import ru.makkarpov.scalingua.LanguageId
+import ru.johnspade.taskobot.messages.MsgId
 import telegramium.bots.client.Method
 import telegramium.bots.high.Methods.{answerCallbackQuery, editMessageReplyMarkup, editMessageText, sendMessage}
-import telegramium.bots.high._
-import telegramium.bots.high.implicits._
+import telegramium.bots.high.*
+import telegramium.bots.high.implicits.*
 import telegramium.bots.{ChatIntId, Message}
-import zio._
-import zio.clock.Clock
-import zio.interop.catz._
+import zio.*
+import zio.interop.catz.*
 
-object TaskController {
-  type TaskController = Has[Service]
+trait TaskController:
+  def routes: CbDataRoutes[Task]
 
-  trait Service {
-    def routes: CbDataRoutes[Task]
+  def userRoutes: CbDataUserRoutes[Task]
 
-    def userRoutes: CbDataUserRoutes[Task]
+final class TaskControllerLive(
+    userRepo: UserRepository,
+    taskRepo: TaskRepository,
+    botService: BotService,
+    msgService: MessageService,
+    kbService: KeyboardService
+)(implicit
+    api: Api[Task]
+) extends TaskController:
+  override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of { case ConfirmTask(taskIdOpt, senderIdOpt) in cb =>
+    def confirm(task: BotTask, from: User): Task[Option[Method[_]]] =
+      for
+        _ <- taskRepo.setReceiver(task.id, senderIdOpt, from.id)
+        _ <- editMessageReplyMarkup(inlineMessageId = cb.inlineMessageId, replyMarkup = Option.empty).exec
+      yield answerCallbackQuery(cb.id).some
+
+    def mustBeConfirmedByReceiver(from: User): UIO[Option[Method[_]]] = {
+      ZIO.succeed(
+        answerCallbackQuery(
+          cb.id,
+          msgService.getMessage(MsgId.`tasks-must-be-confirmed`, from.language).some
+        ).some
+      )
+    }
+
+    for
+      id        <- ZIO.fromOption(taskIdOpt).orElseFail(new RuntimeException(Errors.Default))
+      taskOpt   <- taskRepo.findById(id)
+      task      <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
+      user      <- botService.updateUser(cb.from)
+      answerOpt <- if (task.sender == cb.from.id) mustBeConfirmedByReceiver(user) else confirm(task, user)
+    yield answerOpt
+
   }
 
-  val live: URLayer[UserRepository with TaskRepository with BotService with TelegramBotApi with Clock, TaskController] =
-    ZLayer.fromServices[
-      UserRepository.Service,
-      TaskRepository.Service,
-      BotService.Service,
-      Api[Task],
-      Clock.Service,
-      TaskController.Service
-    ] {
-      (userRepo, taskRepo, botService, api, clock) =>
-        new LiveTaskController(userRepo, taskRepo, botService, clock)(api)
-    }
+  override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
 
-  final class LiveTaskController(
-    userRepo: UserRepository.Service,
-    taskRepo: TaskRepository.Service,
-    botService: BotService.Service,
-    clock: Clock.Service
-  )(
-    implicit api: Api[Task]
-  ) extends Service {
-    override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of {
+    case Chats(pageNumber) in cb as user =>
+      for
+        page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
+        _ <- ZIO.foreachDiscard(cb.message) { msg =>
+          editMessageText(
+            ChatIntId(msg.chat.id).some,
+            msg.messageId.some,
+            text = msgService.chatsWithTasks(user.language),
+            replyMarkup = kbService.chats(page, user).some
+          )
+            .exec[Task]
+        }
+        ack = answerCallbackQuery(cb.id).some
+      yield ack
 
-      case ConfirmTask(taskIdOpt, senderIdOpt) in cb =>
-        def confirm(task: BotTask, from: User): Task[Option[Method[_]]] =
-          for {
-            _ <- taskRepo.setReceiver(task.id, senderIdOpt, from.id)
-            _ <- editMessageReplyMarkup(inlineMessageId = cb.inlineMessageId, replyMarkup = Option.empty)
-              .exec
-          } yield answerCallbackQuery(cb.id).some
+    case Tasks(pageNumber, collaboratorId) in cb as user =>
+      for
+        userOpt            <- userRepo.findById(collaboratorId)
+        collaborator       <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
+        message            <- ZIO.fromOption(cb.message).orElseFail(new RuntimeException(Errors.Default))
+        pageAndMsgEntities <- botService.getTasks(user, collaborator, pageNumber)
+        _ <- listTasks(message, pageAndMsgEntities._2, pageAndMsgEntities._1, collaborator, user.language)
+      yield answerCallbackQuery(cb.id).some
 
-        def mustBeConfirmedByReceiver(from: User): UIO[Option[Method[_]]] = {
-          implicit val languageId: LanguageId = LanguageId(from.language.value)
-          ZIO.succeed(answerCallbackQuery(cb.id, t"The task must be confirmed by the receiver".some).some)
+    case CheckTask(pageNumber, id) in cb as user =>
+      def checkTask(task: TaskWithCollaborator) =
+        for
+          now <- Clock.instant
+          _   <- taskRepo.check(task.id, now.toEpochMilli, user.id)
+        yield ()
+
+      def listTasksAndNotify(task: TaskWithCollaborator, message: Message) =
+        task.collaborator
+          .map { collaborator =>
+            for
+              pageAndMsgEntities <- botService.getTasks(user, collaborator, pageNumber)
+              _ <- listTasks(message, pageAndMsgEntities._2, pageAndMsgEntities._1, collaborator, user.language)
+              _ <- notify(task, user, collaborator).when(user.id != collaborator.id)
+            yield ()
+          }
+          .getOrElse(Task.unit)
+
+      taskRepo
+        .findByIdWithCollaborator(id, user.id)
+        .flatMap { taskOpt =>
+          val answerText =
+            (for
+              _ <- taskOpt.toRight(Errors.NotFound)
+              _ <- cb.message.toRight(Errors.Default)
+            yield msgService.getMessage(MsgId.`tasks-completed`, user.language)).merge
+
+          ZIO
+            .collectAllDiscard {
+              for
+                task    <- taskOpt
+                message <- cb.message
+              yield checkTask(task) *>
+                listTasksAndNotify(task, message)
+            }
+            .as(answerCallbackQuery(cb.id, answerText.some).some)
         }
 
-        for {
-          id <- ZIO.fromOption(taskIdOpt).orElseFail(new RuntimeException(Errors.Default))
-          taskOpt <- taskRepo.findById(id)
-          task <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
-          user <- botService.updateUser(cb.from)
-          answerOpt <- if (task.sender == UserId(cb.from.id)) mustBeConfirmedByReceiver(user) else confirm(task, user)
-        } yield answerOpt
+  }
 
-    }
-
-    override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
-
-      case Chats(pageNumber) in cb as user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.value)
-        for {
-          page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
-          _ <- ZIO.foreach_(cb.message) { msg =>
-            editMessageText(
-              ChatIntId(msg.chat.id).some,
-              msg.messageId.some,
-              text = Messages.chatsWithTasks(),
-              replyMarkup = Keyboards.chats(page, user).some
-            )
-              .exec[Task]
-          }
-          ack = answerCallbackQuery(cb.id).some
-        } yield ack
-
-      case Tasks(pageNumber, collaboratorId) in cb as user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.value)
-        for {
-          userOpt <- userRepo.findById(collaboratorId)
-          collaborator <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
-          message <- ZIO.fromOption(cb.message).orElseFail(new RuntimeException(Errors.Default))
-          (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber)
-          _ <- listTasks(message, messageEntities, page, collaborator)
-        } yield answerCallbackQuery(cb.id).some
-
-      case CheckTask(pageNumber, id) in cb as user =>
-        implicit val languageId: LanguageId = LanguageId(user.language.value)
-
-        def checkTask(task: TaskWithCollaborator) =
-          for {
-            now <- clock.instant
-            _ <- taskRepo.check(task.id, DoneAt(now.toEpochMilli), user.id)
-          } yield ()
-
-        def listTasksAndNotify(task: TaskWithCollaborator, message: Message) =
-          task.collaborator.map { collaborator =>
-            for {
-              (page, messageEntities) <- botService.getTasks(user, collaborator, pageNumber)
-              _ <- listTasks(message, messageEntities, page, collaborator)
-              _ <- notify(task, user, collaborator).when(user.id != collaborator.id)
-            } yield ()
-          }
-            .getOrElse(Task.unit)
-
-        taskRepo.findByIdWithCollaborator(id, user.id)
-          .flatMap { taskOpt =>
-            val answerText =
-              (for {
-                _ <- taskOpt.toRight(Errors.NotFound)
-                _ <- cb.message.toRight(Errors.Default)
-              } yield t"Task has been marked as completed.")
-                .merge
-
-            ZIO.collectAll_ {
-              for {
-                task <- taskOpt
-                message <- cb.message
-              } yield
-                checkTask(task) *>
-                  listTasksAndNotify(task, message)
-            }
-              .as(answerCallbackQuery(cb.id, answerText.some).some)
-          }
-
-    }
-
-    private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
-      collaborator.chatId.map { chatId =>
-        implicit val languageId: LanguageId = LanguageId(collaborator.language.value)
-        val taskText = task.text
+  private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
+    collaborator.chatId
+      .map { chatId =>
+        val taskText    = task.text
         val completedBy = from.fullName
         sendMessage(
           ChatIntId(chatId),
-          t"""Task "$taskText" has been marked as completed by $completedBy."""
-        )
-          .exec
-          .void
+          msgService.getMessage(MsgId.`tasks-completed-by`, from.language, taskText, completedBy)
+        ).exec.void
       }
-        .getOrElse(Task.unit)
+      .getOrElse(Task.unit)
 
-    private def listTasks(message: Message, messageEntities: List[TypedMessageEntity], page: Page[BotTask], collaborator: User)(
-      implicit languageId: LanguageId
-    ) =
-      editMessageText(
-        ChatIntId(message.chat.id).some,
-        message.messageId.some,
-        text = messageEntities.map(_.text).mkString,
-        entities = TypedMessageEntity.toMessageEntities(messageEntities),
-        replyMarkup = Keyboards.tasks(page, collaborator).some
-      )
-        .exec
-        .void
+  private def listTasks(
+      message: Message,
+      messageEntities: List[TypedMessageEntity],
+      page: Page[BotTask],
+      collaborator: User,
+      language: Language
+  ) =
+    editMessageText(
+      ChatIntId(message.chat.id).some,
+      message.messageId.some,
+      text = messageEntities.map(_.text).mkString,
+      entities = TypedMessageEntity.toMessageEntities(messageEntities),
+      replyMarkup = kbService.tasks(page, collaborator, language).some
+    ).exec.void
 
-  }
-}
+object TaskControllerLive:
+  val layer: URLayer[
+    UserRepository with TaskRepository with BotService with MessageService with KeyboardService with TelegramBotApi,
+    TaskController
+  ] =
+    ZLayer(
+      for
+        userRepo   <- ZIO.service[UserRepository]
+        taskRepo   <- ZIO.service[TaskRepository]
+        botService <- ZIO.service[BotService]
+        msgService <- ZIO.service[MessageService]
+        kbService  <- ZIO.service[KeyboardService]
+        api        <- ZIO.service[TelegramBotApi]
+      yield TaskControllerLive(userRepo, taskRepo, botService, msgService, kbService)(api)
+    )

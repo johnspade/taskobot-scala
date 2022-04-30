@@ -1,22 +1,19 @@
 package ru.johnspade.taskobot
 
 import org.flywaydb.core.Flyway
-import ru.johnspade.taskobot.Configuration.DbConfig
-import zio.blocking._
-import zio.{Has, RIO, ZIO}
+import ru.johnspade.taskobot.DbConfig
+import zio.*
 
 object FlywayMigration {
-  val migrate: RIO[Has[DbConfig] with Blocking, Any] =
-    ZIO.accessM { env =>
-      val cfg = env.get[DbConfig]
-      effectBlocking {
+  val migrate: RIO[DbConfig, Unit] =
+    ZIO.serviceWithZIO[DbConfig] { cfg =>
+      ZIO.attemptBlocking {
         Flyway
           .configure()
           .dataSource(cfg.url, cfg.user, cfg.password)
           .baselineOnMigrate(true)
           .load()
           .migrate()
-      }
-        .unit
+      }.unit
     }
 }

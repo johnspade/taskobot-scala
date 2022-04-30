@@ -6,75 +6,70 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
-import ru.johnspade.taskobot.i18n.Language
-import ru.johnspade.taskobot.tags.{Offset, PageSize}
-import ru.johnspade.taskobot.user.tags.{ChatId, FirstName, LastName, UserId}
+import ru.johnspade.taskobot.messages.Language
 import zio._
 import zio.interop.catz._
-import zio.macros.accessible
+import ru.johnspade.taskobot.user.UserRepositoryLive.UserQueries.*
 
-@accessible
-object UserRepository {
-  type UserRepository = Has[Service]
+trait UserRepository:
+  def findById(id: Long): Task[Option[User]]
 
-  trait Service {
-    def findById(id: UserId): Task[Option[User]]
+  def createOrUpdate(user: User): Task[User]
 
-    def createOrUpdate(user: User): Task[User]
+  def createOrUpdateWithLanguage(user: User): Task[User]
 
-    def createOrUpdateWithLanguage(user: User): Task[User]
+  def findUsersWithSharedTasks(id: Long)(offset: Long, limit: Int): Task[List[User]]
 
-    def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): Task[List[User]]
+  def clear(): Task[Unit]
 
-    def clear(): Task[Unit]
-  }
+object UserRepository:
+  def findById(id: Long): ZIO[UserRepository, Throwable, Option[User]] =
+    ZIO.serviceWithZIO(_.findById(id))
 
-  val live: URLayer[DbTransactor, UserRepository] = ZLayer.fromService[Transactor[Task], Service] {
-    xa =>
-      import UserQueries._
+  def createOrUpdate(user: User): ZIO[UserRepository, Throwable, User] =
+    ZIO.serviceWithZIO(_.createOrUpdate(user))
 
-      new Service {
-        override def findById(id: UserId): Task[Option[User]] =
-          selectById(id)
-            .option
-            .transact(xa)
+  def createOrUpdateWithLanguage(user: User): ZIO[UserRepository, Throwable, User] =
+    ZIO.serviceWithZIO(_.createOrUpdateWithLanguage(user))
 
-        override def createOrUpdate(user: User): Task[User] =
-          upsert(user)
-            .unique
-            .transact(xa)
+  def findUsersWithSharedTasks(id: Long)(offset: Long, limit: Int): ZIO[UserRepository, Throwable, List[User]] =
+    ZIO.serviceWithZIO(_.findUsersWithSharedTasks(id)(offset, limit))
 
-        override def createOrUpdateWithLanguage(user: User): Task[User] =
-          upsertWithLanguage(user)
-            .unique
-            .transact(xa)
+  def clear(): ZIO[UserRepository, Throwable, Unit] =
+    ZIO.serviceWithZIO(_.clear())
 
-        override def findUsersWithSharedTasks(id: UserId)(offset: Offset, limit: PageSize): Task[List[User]] =
-          selectBySharedTasks(id, offset, limit)
-            .to[List]
-            .transact(xa)
+class UserRepositoryLive(xa: Transactor[Task]) extends UserRepository:
+  override def findById(id: Long): Task[Option[User]] =
+    selectById(id).option
+      .transact(xa)
 
-        override def clear(): Task[Unit] =
-          deleteAll
-            .run
-            .void
-            .transact(xa)
-      }
-  }
+  override def createOrUpdate(user: User): Task[User] =
+    upsert(user).unique
+      .transact(xa)
 
-  private object UserQueries {
-    private implicit val userRead: Read[User] =
-      Read[(Long, String, String, Option[Long], Option[String])].map {
-        case (userId, firstName, language, chatIdOpt, lastNameOpt) =>
-          User(UserId(userId), FirstName(firstName), Language.withValue(language), chatIdOpt.map(ChatId(_)), lastNameOpt.map(LastName(_)))
-      }
+  override def createOrUpdateWithLanguage(user: User): Task[User] =
+    upsertWithLanguage(user).unique
+      .transact(xa)
 
-    private implicit val userWrite: Write[User] =
-      Write[(Long, String, String, Option[Long], Option[String])].contramap { u =>
-        (u.id, u.firstName, u.language.value, u.chatId, u.lastName)
-      }
+  override def findUsersWithSharedTasks(id: Long)(offset: Long, limit: Int): Task[List[User]] =
+    selectBySharedTasks(id, offset, limit)
+      .to[List]
+      .transact(xa)
 
-    def selectById(id: UserId): Query0[User] =
+  override def clear(): Task[Unit] =
+    deleteAll.run.void
+      .transact(xa)
+
+object UserRepositoryLive:
+  val layer: URLayer[DbTransactor, UserRepository] =
+    ZLayer(
+      ZIO
+        .service[DbTransactor]
+        .map(new UserRepositoryLive(_))
+    )
+
+  object UserQueries {
+    def selectById(id: Long): Query0[User] =
       sql"""
         select id, first_name, language, chat_id, last_name
         from users
@@ -108,7 +103,7 @@ object UserRepository {
         .query[User]
     }
 
-    def selectBySharedTasks(id: UserId, offset: Offset, limit: PageSize): Query0[User] =
+    def selectBySharedTasks(id: Long, offset: Long, limit: Int): Query0[User] =
       sql"""
         select distinct u.id, u.first_name, u.language, u.chat_id, u.last_name
         from users as u
@@ -131,4 +126,3 @@ object UserRepository {
 
     val deleteAll: Update0 = sql"delete from users where true".update
   }
-}

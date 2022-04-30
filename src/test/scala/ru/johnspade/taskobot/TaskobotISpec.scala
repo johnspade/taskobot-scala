@@ -1,226 +1,233 @@
 package ru.johnspade.taskobot
 
-import cats.syntax.option._
-import org.mockito.captor.ArgCaptor
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
-import ru.johnspade.taskobot.Configuration.BotConfig
-import ru.johnspade.taskobot.Taskobot.{LiveTaskobot, Taskobot}
-import ru.johnspade.taskobot.TestEnvironments.PostgresITEnv
+import cats.syntax.option.*
+import com.dimafeng.testcontainers.MockServerContainer
+import ru.johnspade.taskobot.BotConfig
+import ru.johnspade.taskobot.Taskobot
+import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
 import ru.johnspade.taskobot.TestHelpers.createMessage
-import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
+import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Ignore, Tasks}
-import ru.johnspade.taskobot.settings.SettingsController
-import ru.johnspade.taskobot.tags.PageNumber
-import ru.johnspade.taskobot.task.tags.TaskId
-import ru.johnspade.taskobot.task.{TaskController, TaskRepository}
-import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
+import ru.johnspade.taskobot.settings.{SettingsController, SettingsControllerLive}
+import ru.johnspade.taskobot.task.{TaskController, TaskControllerLive, TaskRepository, TaskRepositoryLive}
+import ru.johnspade.taskobot.user.{UserRepository, UserRepositoryLive}
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity._
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.client.Method
 import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups, KeyboardButtons}
 import telegramium.bots.high.{Api, Methods}
-import telegramium.bots.{CallbackQuery, Chat, ChatIntId, ChosenInlineResult, ForceReply, Html, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, KeyboardMarkup, Message, ParseMode, ReplyKeyboardMarkup, User}
-import zio.blocking.Blocking
-import zio.clock.Clock
+import telegramium.bots.*
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test.TestAspect.sequential
-import zio.test._
-import zio.test.environment.TestEnvironment
-import zio.{Task, URLayer, ZIO, ZLayer}
+import zio.test.*
+import zio.*
 
-object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with ArgumentMatchersSugar {
-  override def spec: ZSpec[TestEnvironment, Throwable] = (suite("TaskobotISpec")(
-    testM("collaborative tasks") {
+object TaskobotISpec extends ZIOSpecDefault:
+  override def spec: ZSpec[TestEnvironment with Scope, Any] = (suite("TaskobotISpec")(
+    test("collaborative tasks") {
       val typeTask =
-        for {
-          inlineQueryReply <- withTaskobotService(_.onInlineQueryReply(InlineQuery("0", johnTg, query = "Buy some milk", offset = "0")))
-          assertions = assert(inlineQueryReply)(isSome(equalTo {
-            Methods.answerInlineQuery(
-              "0", cacheTime = 0.some,
-              results = List(
-                InlineQueryResultArticle(
-                  "1", "Create task", InputTextMessageContent("Buy some milk", entities = TypedMessageEntity.toMessageEntities(List(Bold("Buy some milk")))),
-                  InlineKeyboardMarkups.singleButton(
-                    inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = john.id.some))
+        for
+          inlineQueryReply <- withTaskobotService(
+            _.onInlineQueryReply(InlineQuery("0", johnTg, query = "Buy some milk", offset = "0"))
+          )
+          assertions = assertTrue(
+            inlineQueryReply.contains(
+              Methods.answerInlineQuery(
+                "0",
+                cacheTime = 0.some,
+                results = List(
+                  InlineQueryResultArticle(
+                    "1",
+                    "Create task",
+                    InputTextMessageContent(
+                      "Buy some milk",
+                      entities = TypedMessageEntity.toMessageEntities(List(Bold("Buy some milk")))
+                    ),
+                    InlineKeyboardMarkups
+                      .singleButton(
+                        inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = john.id.some))
+                      )
+                      .some,
+                    description = "Buy some milk".some
                   )
-                    .some,
-                  description = "Buy some milk".some
                 )
               )
             )
-          }))
-        } yield assertions
+          )
+        yield assertions
 
       val createTask =
-        for {
+        for
           chosenInlineResultReply <-
-            withTaskobotService(_.onChosenInlineResultReply(ChosenInlineResult("0", johnTg, query = "Buy some milk", inlineMessageId = "0".some)))
+            withTaskobotService(
+              _.onChosenInlineResultReply(
+                ChosenInlineResult("0", johnTg, query = "Buy some milk", inlineMessageId = "0".some)
+              )
+            )
           expectedEditMessageReplyMarkupReq = Methods.editMessageReplyMarkup(
             inlineMessageId = "0".some,
-            replyMarkup = InlineKeyboardMarkups.singleButton(
-              inlineKeyboardButton("Confirm task", ConfirmTask(TaskId(1L).some, john.id.some))
-            ).some
+            replyMarkup = InlineKeyboardMarkups
+              .singleButton(
+                inlineKeyboardButton("Confirm task", ConfirmTask(1L.some, john.id.some))
+              )
+              .some
           )
-        } yield assert(chosenInlineResultReply.get.payload)(equalTo(expectedEditMessageReplyMarkupReq.payload))
+        yield assertTrue(chosenInlineResultReply.get.payload == expectedEditMessageReplyMarkupReq.payload)
 
-      val confirmTask =
-        for {
-          confirmTaskReply <- sendCallbackQuery(ConfirmTask(TaskId(1L).some, john.id.some), kaitrinTg, inlineMessageId = "0".some)
-          removeMarkupAssertions = verifyMethodCall(botApiMock, Methods.editMessageReplyMarkup(inlineMessageId = "0".some, replyMarkup = None))
-          confirmTaskReplyAssertions = assert(confirmTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
-        } yield removeMarkupAssertions && confirmTaskReplyAssertions
+      val confirmTask = sendCallbackQuery(
+        ConfirmTask(1L.some, john.id.some),
+        kaitrinTg,
+        inlineMessageId = "0".some
+      )
+        .map(confirmTaskReply => assertTrue(confirmTaskReply.contains(Methods.answerCallbackQuery("0"))))
 
       val listChats =
-        for {
+        for
           listReply <- sendMessage("/list", isCommand = true, chatId = kaitrinChatId)
-          assertions = assert(listReply)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(kaitrinChatId),
-            "Chats with tasks",
-            replyMarkup =
-              InlineKeyboardMarkups.singleColumn(List(
-                inlineKeyboardButton("Kaitrin", Tasks(firstPage, kaitrin.id)),
-                InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
-              )).some
-          ))))
-        } yield assertions
+          assertions = assertTrue(
+            listReply.contains(
+              Methods.sendMessage(
+                ChatIntId(kaitrinChatId),
+                "Chats with tasks",
+                replyMarkup = InlineKeyboardMarkups
+                  .singleColumn(
+                    List(
+                      inlineKeyboardButton("Kaitrin", Tasks(firstPage, kaitrin.id)),
+                      InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
+                    )
+                  )
+                  .some
+              )
+            )
+          )
+        yield assertions
 
-      val listTasks =
-        for {
-          tasksReply <- sendCallbackQuery(Tasks(firstPage, john.id), kaitrinTg, chatId = kaitrinChatId)
-          listTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
-            ChatIntId(kaitrinChatId).some,
-            messageId = 0.some,
-            text = "Chat: John\n1. Buy some milk – John\n\nSelect the task number to mark it as completed.",
-            entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"John", lineBreak,
-              plain"1. Buy some milk", italic" – John", lineBreak,
-              lineBreak, italic"Select the task number to mark it as completed."
-            )),
-            replyMarkup = InlineKeyboardMarkups.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(firstPage, TaskId(1L))),
-              inlineKeyboardButton("Chat list", Chats(firstPage))
-            )).some
-          ))
-          tasksReplyAssertions = assert(tasksReply)(isSome(equalTo(Methods.answerCallbackQuery("0"))))
-        } yield listTasksAssertions && tasksReplyAssertions
+      val listTasks = sendCallbackQuery(Tasks(firstPage, john.id), kaitrinTg, chatId = kaitrinChatId).map(tasksReply =>
+        assertTrue(tasksReply.contains(Methods.answerCallbackQuery("0")))
+      )
 
       val checkTask =
-        for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(firstPage, TaskId(1L)), kaitrinTg, chatId = kaitrinChatId)
-          _ <- ZIO.effect(Thread.sleep(1000))
-          noTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
-            ChatIntId(kaitrinChatId).some,
-            messageId = 0.some,
-            text = "Chat: John\n\nSelect the task number to mark it as completed.",
-            entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"John", lineBreak,
-              lineBreak, italic"Select the task number to mark it as completed."
-            )),
-            replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
-          ))
-          checkTaskReplyAssertions = assert(checkTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))))
-          notificationAssertions = verifySendMessage("Task \"Buy some milk\" has been marked as completed by Kaitrin.", chatId = kaitrinChatId)
-        } yield noTasksAssertions && checkTaskReplyAssertions && notificationAssertions
+        sendCallbackQuery(CheckTask(firstPage, 1L), kaitrinTg, chatId = kaitrinChatId).map(checkTaskReply =>
+          assertTrue(
+            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+          )
+        )
 
-      for {
-        typeTaskAssertions <- typeTask
-        createTaskAssertions <- createTask
+      for
+        _                     <- createMock(Mocks.addConfirmButton, Mocks.messageResponse)
+        _                     <- createMock(Mocks.removeReplyMarkup, Mocks.messageResponse)
+        _                     <- createMock(Mocks.editMessageTextList, Mocks.messageResponse)
+        _                     <- createMock(Mocks.editMessageTextCheckTask(kaitrinChatId), Mocks.messageResponse)
+        _                     <- createMock(Mocks.taskCompletedMessage, Mocks.messageResponse)
+        typeTaskAssertions    <- typeTask
+        createTaskAssertions  <- createTask
         confirmTaskAssertions <- confirmTask
-        listChatsAssertions <- listChats
-        listTasksAssertions <- listTasks
-        checkTaskAssertions <- checkTask
-      } yield typeTaskAssertions &&
+        listChatsAssertions   <- listChats
+        listTasksAssertions   <- listTasks
+        checkTaskAssertions   <- checkTask
+      yield typeTaskAssertions &&
         createTaskAssertions &&
         confirmTaskAssertions &&
         listChatsAssertions &&
         listTasksAssertions &&
         checkTaskAssertions
     },
-
-    testM("personal tasks") {
+    test("personal tasks") {
       val start =
-        for {
+        for
           startMessage <- sendMessage("/start", isCommand = true)
-          assertions = assert(startMessage)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(johnChatId),
-            "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
-              "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
-              "Type /list in the bot chat to see your tasks.\n\nSwitch language: /settings\n" +
-              "Support a creator: https://buymeacoff.ee/johnspade ☕\n\n" +
-              "Forward messages here to create personal tasks.",
-            Html.some,
-            replyMarkup = expectedMenu,
-            disableWebPagePreview = true.some
-          ))))
-        } yield assertions
+          assertions = assertTrue(
+            startMessage.contains(
+              Methods.sendMessage(
+                ChatIntId(johnChatId),
+                "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
+                  "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
+                  "Type /list in the bot chat to see your tasks.\n\nSwitch language: /settings\n" +
+                  "Support a creator: https://buymeacoff.ee/johnspade ☕\n\n" +
+                  "Forward messages here to create personal tasks.",
+                Html.some,
+                replyMarkup = expectedMenu,
+                disableWebPagePreview = true.some
+              )
+            )
+          )
+        yield assertions
 
       val create =
-        for {
+        for
           createReply <- sendMessage("/create", isCommand = true)
-          assertions = assert(createReply)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(johnChatId),
-            "/create: New personal task",
-            replyMarkup = ForceReply(forceReply = true).some
-          ))))
-        } yield assertions
-
-      val sendTask =
-        for {
-          personalTaskReply <- sendMessage(
-            "Buy groceries",
-            replyToMessage = mockMessage().copy(text = "/create: New personal task".some).some
+          assertions = assertTrue(
+            createReply.contains(
+              Methods.sendMessage(
+                ChatIntId(johnChatId),
+                "/create: New personal task",
+                replyMarkup = ForceReply(forceReply = true).some
+              )
+            )
           )
-          taskCreatedAssertions = verifyMethodCall[Message](botApiMock, Methods.sendMessage(
-            ChatIntId(johnChatId),
-            """Personal task "Buy groceries" has been created.""",
-            replyMarkup = expectedMenu
-          ))
-          replyAssertions = assert(personalTaskReply)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(johnChatId),
-            "Chat: Personal tasks\n1. Buy groceries\n\nSelect the task number to mark it as completed.",
-            entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"Personal tasks", lineBreak,
-              plain"1. Buy groceries", italic"", lineBreak,
-              lineBreak, italic"Select the task number to mark it as completed."
-            )),
-            replyMarkup = InlineKeyboardMarkups.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(firstPage, TaskId(2L))),
-              inlineKeyboardButton("Chat list", Chats(firstPage))
-            )).some
-          ))))
-        } yield taskCreatedAssertions && replyAssertions
+        yield assertions
 
-      val checkTask =
-        for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(firstPage, TaskId(2L)))
-          _ <- ZIO.effect(Thread.sleep(1000))
-          listTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
-            ChatIntId(johnChatId).some,
-            messageId = 0.some,
-            text = "Chat: Personal tasks\n\nSelect the task number to mark it as completed.",
-            entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"Personal tasks", lineBreak,
-              lineBreak, italic"Select the task number to mark it as completed."
-            )),
-            replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
-          ))
-          checkTaskReplyAssertions = assert(checkTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))))
-        } yield listTasksAssertions && checkTaskReplyAssertions
+      val sendTask = sendMessage(
+        "Buy groceries",
+        replyToMessage = mockMessage().copy(text = "/create: New personal task".some).some
+      )
+        .map { personalTaskReply =>
+          assertTrue(
+            personalTaskReply.contains(
+              Methods.sendMessage(
+                ChatIntId(johnChatId),
+                "Chat: Personal tasks\n1. Buy groceries\n\nSelect the task number to mark it as completed.",
+                entities = TypedMessageEntity.toMessageEntities(
+                  List(
+                    plain"Chat: ",
+                    bold"Personal tasks",
+                    lineBreak,
+                    plain"1. Buy groceries",
+                    italic"",
+                    lineBreak,
+                    lineBreak,
+                    italic"Select the task number to mark it as completed."
+                  )
+                ),
+                replyMarkup = InlineKeyboardMarkups
+                  .singleColumn(
+                    List(
+                      inlineKeyboardButton("1", CheckTask(firstPage, 2L)),
+                      inlineKeyboardButton("Chat list", Chats(firstPage))
+                    )
+                  )
+                  .some
+              )
+            )
+          )
+        }
 
-      for {
-        startAssertions <- start
-        createAssertions <- create
-        sendTaskAssertions <- sendTask
+      val checkTask = sendCallbackQuery(CheckTask(firstPage, 2L))
+        .map { checkTaskReply =>
+          assertTrue(
+            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+          )
+        }
+
+      for
+        _ <- createMock(
+          Mocks.taskCreatedMessage("""Personal task "Buy groceries" has been created."""),
+          Mocks.messageResponse
+        )
+        _                   <- createMock(Mocks.editMessageTextPersonalTasks, Mocks.messageResponse)
+        startAssertions     <- start
+        createAssertions    <- create
+        sendTaskAssertions  <- sendTask
         checkTaskAssertions <- checkTask
-      } yield startAssertions &&
+      yield startAssertions &&
         createAssertions &&
         sendTaskAssertions &&
         checkTaskAssertions
     },
-
-    testM("forwards") {
+    test("forwards") {
       val forward = {
         val forwardedMessage = Message(
           messageId = 0,
@@ -233,62 +240,66 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
           forwardFrom = johnTg.some,
           forwardSenderName = "John".some
         )
-        for {
-          forwardReply <- withTaskobotService(_.onMessageReply(forwardedMessage))
-          taskCreatedAssertions = verifyMethodCall(botApiMock, Methods.sendMessage(
-            ChatIntId(johnChatId),
-            """Personal task "Watch Firefly" has been created.""",
-            replyMarkup = expectedMenu
-          ))
-          replyAssertions = assert(forwardReply)(isSome(equalTo(Methods.sendMessage(
-            ChatIntId(johnChatId),
-            "Chat: Personal tasks\n1. Watch Firefly – John\n\nSelect the task number to mark it as completed.",
-            entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"Personal tasks", lineBreak,
-              plain"1. Watch Firefly", italic" – John", lineBreak,
-              lineBreak, italic"Select the task number to mark it as completed."
-            )),
-            replyMarkup = InlineKeyboardMarkups.singleColumn(List(
-              inlineKeyboardButton("1", CheckTask(firstPage, TaskId(3L))),
-              inlineKeyboardButton("Chat list", Chats(firstPage))
-            )).some
-          ))))
-        } yield taskCreatedAssertions && replyAssertions
+        withTaskobotService(_.onMessageReply(forwardedMessage))
+          .map { forwardReply =>
+            assertTrue(
+              forwardReply.contains(
+                Methods.sendMessage(
+                  ChatIntId(johnChatId),
+                  "Chat: Personal tasks\n1. Watch Firefly – John\n\nSelect the task number to mark it as completed.",
+                  entities = TypedMessageEntity.toMessageEntities(
+                    List(
+                      plain"Chat: ",
+                      bold"Personal tasks",
+                      lineBreak,
+                      plain"1. Watch Firefly",
+                      italic" – John",
+                      lineBreak,
+                      lineBreak,
+                      italic"Select the task number to mark it as completed."
+                    )
+                  ),
+                  replyMarkup = InlineKeyboardMarkups
+                    .singleColumn(
+                      List(
+                        inlineKeyboardButton("1", CheckTask(firstPage, 3L)),
+                        inlineKeyboardButton("Chat list", Chats(firstPage))
+                      )
+                    )
+                    .some
+                )
+              )
+            )
+          }
       }
 
-      val checkTask =
-        for {
-          checkTaskReply <- sendCallbackQuery(CheckTask(firstPage, TaskId(3L)))
-          listTasksAssertions = verifyMethodCall(botApiMock, Methods.editMessageText(
-            ChatIntId(johnChatId).some,
-            messageId = 0.some,
-            text = "Chat: Personal tasks\n\nSelect the task number to mark it as completed.",
-            entities = TypedMessageEntity.toMessageEntities(List(
-              plain"Chat: ", bold"Personal tasks", lineBreak,
-              lineBreak, italic"Select the task number to mark it as completed."
-            )),
-            replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(firstPage))).some
-          ))
-          replyAssertions = assert(checkTaskReply)(isSome(equalTo(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))))
-        } yield listTasksAssertions && replyAssertions
+      val checkTask = sendCallbackQuery(CheckTask(firstPage, 3L))
+        .map { checkTaskReply =>
+          assertTrue(
+            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+          )
+        }
 
-
-      for {
-        forwardAssertions <- forward
+      for
+        _ <- createMock(
+          Mocks.taskCreatedMessage("""Personal task "Watch Firefly" has been created."""),
+          Mocks.messageResponse
+        )
+        _                   <- createMock(Mocks.editMessageTextPersonalTasks, Mocks.messageResponse)
+        forwardAssertions   <- forward
         checkTaskAssertions <- checkTask
-      } yield forwardAssertions &&
+      yield forwardAssertions &&
         checkTaskAssertions
     },
-
-    testM("Ignore should be ignored") {
-      for {
+    test("Ignore should be ignored") {
+      for
         ignoreReply <- sendCallbackQuery(Ignore)
-        assertions = assert(ignoreReply)(equalTo(Methods.answerCallbackQuery("0").some))
-      } yield assertions
+        assertions = assertTrue(ignoreReply == Methods.answerCallbackQuery("0").some)
+      yield assertions
     }
-  ) @@ sequential).provideCustomLayerShared(TestEnvironment.env)
+  ) @@ sequential).provideCustomShared(env)
 
-  private val firstPage = PageNumber(0)
+  private val firstPage = 0
 
   private val expectedMenu = ReplyKeyboardMarkup(
     List(
@@ -297,76 +308,56 @@ object TaskobotISpec extends DefaultRunnableSpec with MockitoSugar with Argument
       List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
     ),
     resizeKeyboard = true.some
-  )
-    .some
+  ).some
 
   private def mockMessage(chatId: Int = 0) =
     Message(0, date = 0, chat = Chat(chatId, `type` = ""), from = User(id = 123, isBot = true, "Taskobot").some)
 
-  private val botApiMock = mock[Api[Task]]
-  when(botApiMock.execute[Any](*)).thenAnswer { (t: Method[Any]) =>
-    if (t.payload.name == "sendMessage") Task.succeed(mockMessage())
-    else Task.right(mockMessage())
-  }
+  private def withTaskobotService(f: Taskobot => Task[Option[Method[_]]]) =
+    ZIO.serviceWithZIO[Taskobot](f)
 
-  private def withTaskobotService(f: LiveTaskobot => Task[Option[Method[_]]]) =
-    ZIO.service[LiveTaskobot].flatMap(f)
-
-  private def sendMessage(text: String, isCommand: Boolean = false, chatId: Int = johnChatId, replyToMessage: Option[Message] = None) =
+  private def sendMessage(
+      text: String,
+      isCommand: Boolean = false,
+      chatId: Int = johnChatId,
+      replyToMessage: Option[Message] = None
+  ) =
     withTaskobotService(_.onMessageReply(createMessage(text, isCommand, chatId, replyToMessage)))
 
-  private def sendCallbackQuery(data: CbData, from: User = johnTg, inlineMessageId: Option[String] = None, chatId: Int = 0) =
+  private def sendCallbackQuery(
+      data: CbData,
+      from: User = johnTg,
+      inlineMessageId: Option[String] = None,
+      chatId: Int = 0
+  ) =
     withTaskobotService {
       _.onCallbackQueryReply(
-        CallbackQuery("0", from, chatInstance = "", data = data.toCsv.some, message = mockMessage(chatId).some, inlineMessageId = inlineMessageId)
+        CallbackQuery(
+          "0",
+          from,
+          chatInstance = "",
+          data = data.toCsv.some,
+          message = mockMessage(chatId).some,
+          inlineMessageId = inlineMessageId
+        )
       )
     }
 
-  private def verifySendMessage(
-    text: String,
-    markup: Option[KeyboardMarkup] = None,
-    parseMode: Option[ParseMode] = None,
-    disableWebPagePreview: Option[Boolean] = None,
-    chatId: Int = 0
-  ) =
-    verifyMethodCall(botApiMock, Methods.sendMessage(
-      ChatIntId(chatId),
-      text,
-      replyMarkup = markup,
-      parseMode = parseMode,
-      disableWebPagePreview = disableWebPagePreview
-    ))
-
-  private def verifyMethodCall[Res](api: Api[Task], method: Method[Res]) = {
-    val captor = ArgCaptor[Method[Res]]
-    verify(api, atLeastOnce).execute(captor).asInstanceOf[Unit]
-    assert(captor.values.map(_.payload))(Assertion.exists(equalTo(method.payload)))
-  }
-
-  private object TestEnvironment {
-    private val botApi = ZLayer.succeed(botApiMock)
-    private val botConfig = ZLayer.succeed(BotConfig(0, "https://example.com", "123"))
-    private val userRepo = UserRepository.live
-    private val taskRepo = TaskRepository.live
-    private val repositories = userRepo ++ taskRepo
-    private val botService = repositories >>> BotService.live
-    private val commandController = (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> CommandController.live
-    private val taskController = (ZLayer.requires[Clock] ++ botApi ++ botService ++ repositories) >>> TaskController.live
-    private val settingsController = (userRepo ++ botApi) >>> SettingsController.live
-    private val userMiddleware = botService >>> UserMiddleware.live
-    private val taskobot = (
-      ZLayer.requires[Clock] ++
-        botApi ++
-        botConfig ++
-        taskRepo ++
-        botService ++
-        commandController ++
-        taskController ++
-        settingsController ++
-        IgnoreController.live ++
-        userMiddleware
-      ) >>> Taskobot.live
-    val env: URLayer[Clock with Blocking, Clock with PostgresITEnv with Taskobot] =
-      ZLayer.requires[Clock] ++ TestEnvironments.itLayer >+> taskobot
-  }
-}
+  private val env = ZLayer.make[MockServerContainer with Taskobot](
+    TestDatabase.layer,
+    TestBotApi.mockServerContainer,
+    TestBotApi.api,
+    UserRepositoryLive.layer,
+    TaskRepositoryLive.layer,
+    MsgConfig.live,
+    MessageServiceLive.layer,
+    KeyboardServiceLive.layer,
+    BotServiceLive.layer,
+    CommandControllerLive.layer,
+    TaskControllerLive.layer,
+    SettingsControllerLive.layer,
+    IgnoreControllerLive.layer,
+    UserMiddleware.live,
+    BotConfig.live,
+    Taskobot.live
+  )

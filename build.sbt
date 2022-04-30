@@ -2,24 +2,18 @@ import Dependencies._
 
 name := "tasko_bot"
 
-scalaVersion := "2.13.7"
+scalaVersion := "3.1.2"
 
 scalacOptions ++= Seq(
-  "-language:higherKinds",
-  "-Ymacro-annotations"
+  "-language:higherKinds"
 )
 
 libraryDependencies ++= distributionDependencies ++ testDependencies.map(_ % Test)
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
-addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
-
-enablePlugins(Scalingua, JavaAppPackaging, DockerPlugin, AshScriptPlugin)
-
-Compile / templateTarget := file("src/main/locales/messages.pot")
-Test / compileLocales / sourceDirectories := Seq(file("src/main/locales"))
+enablePlugins(JavaAppPackaging, DockerPlugin, AshScriptPlugin)
 
 ThisBuild / dynverSeparator := "-"
-dockerBaseImage := "adoptopenjdk/openjdk11:jre-11.0.10_9-alpine"
+dockerBaseImage             := "adoptopenjdk/openjdk11:jre-11.0.10_9-alpine"
 dockerExposedPorts ++= Seq(8080)

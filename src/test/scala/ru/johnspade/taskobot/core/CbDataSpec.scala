@@ -1,29 +1,34 @@
 package ru.johnspade.taskobot.core
 
-import cats.syntax.option._
-import ru.johnspade.taskobot.i18n.Language
-import ru.johnspade.taskobot.tags.PageNumber
-import ru.johnspade.taskobot.task.tags.TaskId
-import ru.johnspade.taskobot.user.tags.UserId
+import cats.syntax.option.*
+import ru.johnspade.taskobot.messages.Language
+import zio.Scope
 import zio.test.Assertion.{equalTo, isRight}
-import zio.test._
-import zio.test.environment.TestEnvironment
+import zio.test.*
 
-object CbDataSpec extends DefaultRunnableSpec {
-  override def spec: ZSpec[TestEnvironment, Nothing] = suite("decode")(
+object CbDataSpec extends ZIOSpecDefault:
+  override def spec: ZSpec[TestEnvironment with Scope, Any] = decodeSuite + encodeSuite
+
+  private val decodeSuite = suite("decode")(
     test("should decode CSV as a case class") {
-      assert(CbData.decode("0%911%1337"))(isRight(equalTo(ConfirmTask(TaskId(911L).some, UserId(1337L).some)))) &&
-        assert(CbData.decode("1%1"))(isRight(equalTo(Chats(PageNumber(1))))) &&
-        assert(CbData.decode("2%1%1337"))(isRight(equalTo(Tasks(PageNumber(1), UserId(1337L))))) &&
-        assert(CbData.decode("3%2%911"))(isRight(equalTo(CheckTask(PageNumber(2), TaskId(911L))))) &&
-        assert(CbData.decode("5%ru"))(isRight(equalTo(SetLanguage(Language.Russian))))
-    },
-
-    test("should be compatible with old formats") {
-      assert(CbData.decode("0%%%911"))(isRight(equalTo(ConfirmTask(TaskId(911L).some, None)))) &&
-        assert(CbData.decode("1%0%%"))(isRight(equalTo(Chats(PageNumber(0))))) &&
-        assert(CbData.decode("2%1%1337%"))(isRight(equalTo(Tasks(PageNumber(1), UserId(1337L))))) &&
-        assert(CbData.decode("3%2%1337%911"))(isRight(equalTo(CheckTask(PageNumber(2), TaskId(911L)))))
+      assert(CbData.decode("0%911%1337"))(isRight(equalTo(ConfirmTask(911L.some, 1337L.some)))) &&
+      assert(CbData.decode("1%1"))(isRight(equalTo(Chats(1)))) &&
+      assert(CbData.decode("2%1%1337"))(isRight(equalTo(Tasks(1, 1337L)))) &&
+      assert(CbData.decode("3%2%911"))(isRight(equalTo(CheckTask(2, 911L)))) &&
+      assert(CbData.decode("4"))(isRight(equalTo(ChangeLanguage))) &&
+      assert(CbData.decode("5%ru"))(isRight(equalTo(SetLanguage(Language.Russian)))) &&
+      assert(CbData.decode("6"))(isRight(equalTo(Ignore)))
     }
   )
-}
+
+  private val encodeSuite = suite("encode")(
+    test("should encode a case class as CSV") {
+      assertTrue(ConfirmTask(911L.some, 1337L.some).toCsv == "0%911%1337") &&
+      assertTrue(Chats(1).toCsv == "1%1") &&
+      assertTrue(Tasks(1, 1337L).toCsv == "2%1%1337") &&
+      assertTrue(CheckTask(2, 911L).toCsv == "3%2%911") &&
+      assertTrue(ChangeLanguage.toCsv == "4") &&
+      assertTrue(SetLanguage(Language.Russian).toCsv == "5%ru") &&
+      assertTrue(Ignore.toCsv == "6")
+    }
+  )

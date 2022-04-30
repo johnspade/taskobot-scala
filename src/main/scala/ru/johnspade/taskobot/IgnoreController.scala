@@ -6,23 +6,15 @@ import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl._
 import ru.johnspade.tgbot.callbackqueries.CallbackQueryRoutes
 import telegramium.bots.high.Methods.answerCallbackQuery
 import zio.interop.catz._
-import zio.{Has, Task, ULayer, ZLayer}
+import zio.{Task, ULayer, ZLayer}
 
-object IgnoreController {
-  type IgnoreController = Has[Service]
+trait IgnoreController:
+  def routes: CbDataRoutes[Task]
 
-  trait Service {
-    def routes: CbDataRoutes[Task]
+final class IgnoreControllerLive extends IgnoreController:
+  override def routes: CbDataRoutes[Task] = CallbackQueryRoutes.of { case Ignore in cb =>
+    Task.succeed(answerCallbackQuery(cb.id).some)
   }
 
-  val live: ULayer[IgnoreController] = ZLayer.succeed {
-    new Service {
-      override def routes: CbDataRoutes[Task] = CallbackQueryRoutes.of {
-
-        case Ignore in cb =>
-          Task.succeed(answerCallbackQuery(cb.id).some)
-
-      }
-    }
-  }
-}
+object IgnoreControllerLive:
+  val layer: ULayer[IgnoreController] = ZLayer.succeed(new IgnoreControllerLive)
