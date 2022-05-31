@@ -3,14 +3,14 @@ package ru.johnspade.taskobot.core
 import ru.johnspade.taskobot.core.CbData.*
 import ru.johnspade.tgbot.callbackdata.annotated.TypeId
 import ru.johnspade.taskobot.messages.Language
-import ru.johnspade.zcsv.printer.CsvPrinter
-import ru.johnspade.zcsv.parser.*
+import ru.johnspade.csv3s.printer.CsvPrinter
+import ru.johnspade.csv3s.parser.*
 import ru.johnspade.tgbot.callbackdata.annotated.MagnoliaRowEncoder
-import ru.johnspade.zcsv.codecs.instances.given
+import ru.johnspade.csv3s.codecs.instances.given
 import ru.johnspade.tgbot.callbackdata.annotated.MagnoliaRowDecoder
 import ru.johnspade.tgbot.callbackqueries.{DecodeFailure, ParseError, DecodeError}
-import ru.johnspade.zcsv.codecs.{RowDecoder, RowEncoder, StringDecoder, StringEncoder}
-import ru.johnspade.zcsv.core.CSV
+import ru.johnspade.csv3s.codecs.{RowDecoder, RowEncoder, StringDecoder, StringEncoder}
+import ru.johnspade.csv3s.core.CSV
 
 sealed abstract class CbData extends Product with Serializable:
   import CbData.{encoder, csvPrinter}
@@ -47,7 +47,7 @@ object CbData:
   given decoder: RowDecoder[CbData] = MagnoliaRowDecoder.derived
   private val Separator: Char       = '%'
   private val csvParser             = new CsvParser(Separator)
-  val csvPrinter: CsvPrinter = CsvPrinter.generic(Separator.toString, "\n", "\"", "\"", Set("\r")) // todo constructor
+  val csvPrinter: CsvPrinter        = CsvPrinter.withSeparator(Separator)
 
   def decode(csv: String): Either[DecodeFailure, CbData] =
     parseRow(csv, csvParser).left
