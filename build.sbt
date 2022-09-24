@@ -8,6 +8,8 @@ scalacOptions ++= Seq(
   "-language:higherKinds"
 )
 
+resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+
 libraryDependencies ++= distributionDependencies ++ testDependencies.map(_ % Test)
 
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

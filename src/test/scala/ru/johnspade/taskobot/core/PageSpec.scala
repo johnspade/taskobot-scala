@@ -9,7 +9,7 @@ object PageSpec extends ZIOSpecDefault:
   private val makeRequest: (Long, Int) => Id[List[Int]] =
     (offset, pageSize) => items.slice(offset.toInt, offset.toInt + pageSize)
 
-  override def spec: ZSpec[TestEnvironment, Nothing] = suite("PageSpec")(
+  override def spec: Spec[TestEnvironment, Nothing] = suite("PageSpec")(
     test("single page") {
       val page = Page.request(number = 0, size = 5, f = makeRequest)
       assertTrue(page == Page(List(1, 2, 3, 4, 5), 0, hasPrevious = false, hasNext = false))

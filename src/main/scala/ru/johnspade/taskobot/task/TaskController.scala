@@ -100,7 +100,7 @@ final class TaskControllerLive(
               _ <- notify(task, user, collaborator).when(user.id != collaborator.id)
             yield ()
           }
-          .getOrElse(Task.unit)
+          .getOrElse(ZIO.unit)
 
       taskRepo
         .findByIdWithCollaborator(id, user.id)
@@ -134,7 +134,7 @@ final class TaskControllerLive(
           msgService.getMessage(MsgId.`tasks-completed-by`, from.language, taskText, completedBy)
         ).exec.void
       }
-      .getOrElse(Task.unit)
+      .getOrElse(ZIO.unit)
 
   private def listTasks(
       message: Message,

@@ -18,7 +18,7 @@ import zio.test.*
 import zio.*
 
 object SettingsControllerSpec extends ZIOSpecDefault:
-  def spec: ZSpec[TestEnvironment with Scope, Any] = suite("SettingsControllerSpec")(
+  def spec: Spec[TestEnvironment with Scope, Any] = suite("SettingsControllerSpec")(
     suite("ChangeLanguage")(
       test("should list languages") {
         for

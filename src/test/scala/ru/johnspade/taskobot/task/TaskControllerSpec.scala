@@ -26,7 +26,7 @@ import zio.test.*
 import zio.*
 
 object TaskControllerSpec extends ZIOSpecDefault:
-  override def spec: ZSpec[TestEnvironment, Throwable] = (suite("TaskControllerSpec")(
+  override def spec: Spec[TestEnvironment, Throwable] = (suite("TaskControllerSpec")(
     suite("Chats")(
       test("should list chats as a single page") {
         for

@@ -76,7 +76,7 @@ final class Taskobot(
         .some,
       description = text.some
     )
-    Task.succeed {
+    ZIO.succeed {
       answerInlineQuery(query.id, List(article), cacheTime = 0.some).some
     }
   }

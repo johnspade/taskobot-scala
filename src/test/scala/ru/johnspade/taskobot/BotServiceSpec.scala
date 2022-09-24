@@ -21,7 +21,7 @@ object BotServiceSpec extends ZIOSpecDefault:
     BotServiceLive.layer
   )
 
-  override def spec: ZSpec[TestEnvironment with Scope, Any] = suite("BotServiceSpec")(
+  override def spec: Spec[TestEnvironment with Scope, Any] = suite("BotServiceSpec")(
     (suite("updateUser")(
       test("should convert and create a Telegram user") {
         val tgUser       = telegramium.bots.User(1337, isBot = false, "John")

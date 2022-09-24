@@ -1,5 +1,7 @@
 package ru.johnspade.taskobot
 
+import java.time.Instant
+
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
 import ru.johnspade.taskobot.CommandController
@@ -22,7 +24,7 @@ import zio.test.*
 import zio.*
 
 object CommandControllerSpec extends ZIOSpecDefault:
-  def spec: ZSpec[TestEnvironment with Scope, Any] = suite("CommandControllerSpec")(
+  def spec: Spec[TestEnvironment with Scope, Any] = suite("CommandControllerSpec")(
     suite("/create")(
       test("should create a task passed as an argument") {
         val taskMessage = createMessage("/create Buy some milk")
@@ -31,7 +33,7 @@ object CommandControllerSpec extends ZIOSpecDefault:
             Mocks.taskCreatedMessage("Personal task \"Buy some milk\" has been created."),
             Mocks.messageResponse
           )
-          _     <- TestClock.setTime(Duration.Zero)
+          _     <- TestClock.setTime(Instant.EPOCH)
           now   <- Clock.instant
           reply <- ZIO.serviceWithZIO[CommandController](_.onPersonalTaskCommand(taskMessage))
           task  <- TaskRepository.findById(1L)

@@ -7,7 +7,7 @@ import zio.test.Assertion.{equalTo, isRight}
 import zio.test.*
 
 object CbDataSpec extends ZIOSpecDefault:
-  override def spec: ZSpec[TestEnvironment with Scope, Any] = decodeSuite + encodeSuite
+  override def spec: Spec[TestEnvironment with Scope, Any] = decodeSuite + encodeSuite
 
   private val decodeSuite = suite("decode")(
     test("should decode CSV as a case class") {

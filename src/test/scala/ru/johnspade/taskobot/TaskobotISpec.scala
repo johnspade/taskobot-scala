@@ -26,7 +26,7 @@ import zio.test.*
 import zio.*
 
 object TaskobotISpec extends ZIOSpecDefault:
-  override def spec: ZSpec[TestEnvironment with Scope, Any] = (suite("TaskobotISpec")(
+  override def spec: Spec[TestEnvironment with Scope, Any] = (suite("TaskobotISpec")(
     test("collaborative tasks") {
       val typeTask =
         for

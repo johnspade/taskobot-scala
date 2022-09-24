@@ -4,9 +4,9 @@ object Dependencies {
   object V {
     val telegramium      = "7.56.0"
     val tgbotUtils       = "0.6.0"
-    val zio              = "2.0.0-RC5"
-    val zioCats          = "3.3.0-RC5"
-    val zioLogging       = "0.5.14"
+    val zio              = "2.0.1"
+    val zioCats          = "3.3.0+10-274fad37-SNAPSHOT"
+    val zioLogging       = "2.1.1"
     val logback          = "1.2.7"
     val cats             = "2.6.1"
     val pureconfig       = "0.17.1"
