@@ -13,7 +13,8 @@ object Main extends ZIOAppDefault:
   private val program =
     for
       _ <- FlywayMigration.migrate
-      _ <- ZIO.serviceWithZIO[Taskobot](_.start(8080, "0.0.0.0").useForever)
+      botConfig <- ZIO.service[BotConfig]
+      _ <- ZIO.serviceWithZIO[Taskobot](_.start(botConfig.port, "0.0.0.0").useForever)
     yield ()
 
   def run: ZIO[Environment with ZIOAppArgs with Scope, Any, Any] =

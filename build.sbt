@@ -19,3 +19,4 @@ enablePlugins(JavaAppPackaging, DockerPlugin, AshScriptPlugin)
 ThisBuild / dynverSeparator := "-"
 dockerBaseImage             := "adoptopenjdk/openjdk11:jre-11.0.10_9-alpine"
 dockerExposedPorts ++= Seq(8080)
+dockerAliases += dockerAlias.value.withTag(Option("latest"))
