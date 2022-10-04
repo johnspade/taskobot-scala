@@ -12,7 +12,6 @@ services:
       - ${DB_PORT:-5432}:5432
   bot:
     image: tasko_bot:latest
-    restart: always
     depends_on: 
       - db
     ports:
