@@ -16,7 +16,7 @@ object MessageServiceLiveSpec extends ZIOSpecDefault:
         lang  <- Language.values.toList
         msgId <- MsgId.values.toList
       yield ZIO.serviceWith[MessageService] { msgService =>
-        test("construct message") {
+        test(s"construct the '$msgId' message: $lang") {
         msgId match
           case MsgId.`tasks-personal-created` =>
             val message = msgService.taskCreated("test-task", lang)
