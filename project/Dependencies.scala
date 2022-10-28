@@ -2,7 +2,7 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium      = "7.62.0"
+    val telegramium      = "7.62.1"
     val tgbotUtils       = "0.6.0"
     val zio              = "2.0.1"
     val zioCats          = "3.3.0+10-274fad37-SNAPSHOT"
