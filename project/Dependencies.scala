@@ -2,10 +2,10 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium      = "7.62.1"
+    val telegramium      = "7.66.0-DIRTY-SNAPSHOT"
     val tgbotUtils       = "0.6.0"
-    val zio              = "2.0.1"
-    val zioCats          = "3.3.0+10-274fad37-SNAPSHOT"
+    val zio              = "2.0.9"
+    val zioCats          = "23.0.0.2"
     val zioLogging       = "2.1.1"
     val logback          = "1.2.7"
     val cats             = "2.6.1"
@@ -24,7 +24,6 @@ object Dependencies {
     "io.github.apimorphism" %% "telegramium-high"    % V.telegramium,
     "ru.johnspade"          %% "tgbot-utils"         % V.tgbotUtils,
     "dev.zio"               %% "zio"                 % V.zio,
-    "dev.zio"               %% "zio-macros"          % V.zio,
     "dev.zio"               %% "zio-interop-cats"    % V.zioCats,
     "dev.zio"               %% "zio-logging-slf4j"   % V.zioLogging,
     "ch.qos.logback"         % "logback-classic"     % V.logback,

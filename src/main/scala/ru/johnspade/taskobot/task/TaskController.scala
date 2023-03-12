@@ -65,9 +65,9 @@ final class TaskControllerLive(
         page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
         _ <- ZIO.foreachDiscard(cb.message) { msg =>
           editMessageText(
+            msgService.chatsWithTasks(user.language),
             ChatIntId(msg.chat.id).some,
             msg.messageId.some,
-            text = msgService.chatsWithTasks(user.language),
             replyMarkup = kbService.chats(page, user).some
           )
             .exec[Task]
@@ -144,9 +144,9 @@ final class TaskControllerLive(
       language: Language
   ) =
     editMessageText(
+      messageEntities.map(_.text).mkString,
       ChatIntId(message.chat.id).some,
       message.messageId.some,
-      text = messageEntities.map(_.text).mkString,
       entities = TypedMessageEntity.toMessageEntities(messageEntities),
       replyMarkup = kbService.tasks(page, collaborator, language).some
     ).exec.void

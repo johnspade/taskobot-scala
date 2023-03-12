@@ -91,9 +91,9 @@ object TestBotApi:
 
     val listLanguages: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
+        "Current language: English",
         ChatIntId(johnChatId).some,
         messageId = 0.some,
-        text = "Current language: English",
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List(
@@ -110,9 +110,9 @@ object TestBotApi:
 
     val listLanguagesRussian: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
+        "Текущий язык: Русский",
         ChatIntId(johnChatId).some,
         messageId = 0.some,
-        text = "Текущий язык: Русский",
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List(
@@ -170,9 +170,9 @@ object TestBotApi:
 
     val editMessageTextList: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
+        "Chat: John\n1. Buy some milk – John\n\nSelect the task number to mark it as completed.",
         ChatIntId(kaitrinChatId).some,
         messageId = 0.some,
-        text = "Chat: John\n1. Buy some milk – John\n\nSelect the task number to mark it as completed.",
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
@@ -197,9 +197,9 @@ object TestBotApi:
 
     def editMessageTextCheckTask(chatId: Int): Method[Either[Boolean, Message]] =
       Methods.editMessageText(
+        "Chat: John\n\nSelect the task number to mark it as completed.",
         ChatIntId(chatId).some,
         messageId = 0.some,
-        text = "Chat: John\n\nSelect the task number to mark it as completed.",
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
@@ -217,9 +217,9 @@ object TestBotApi:
 
     val editMessageTextPersonalTasks: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
+        "Chat: Personal tasks\n\nSelect the task number to mark it as completed.",
         ChatIntId(johnChatId).some,
         messageId = 0.some,
-        text = "Chat: Personal tasks\n\nSelect the task number to mark it as completed.",
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
@@ -339,9 +339,9 @@ object TestBotApi:
 
     val editMessageTextTasksKaitrin: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
+        "Chat: Kaitrin\n\nSelect the task number to mark it as completed.",
         ChatIntId(0).some,
         messageId = 0.some,
-        text = "Chat: Kaitrin\n\nSelect the task number to mark it as completed.",
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",

@@ -148,7 +148,7 @@ object TaskobotISpec extends ZIOSpecDefault:
                   "Type /list in the bot chat to see your tasks.\n\nSwitch language: /settings\n" +
                   "Support a creator: https://buymeacoff.ee/johnspade ☕\n\n" +
                   "Forward messages here to create personal tasks.",
-                Html.some,
+                parseMode = Html.some,
                 replyMarkup = expectedMenu,
                 disableWebPagePreview = true.some
               )

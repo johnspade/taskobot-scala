@@ -100,7 +100,7 @@ final class CommandControllerLive(
         sendMessage(
           ChatIntId(message.chat.id),
           msgService.getMessage(MsgId.`help-task-new`, user.language),
-          Html.some,
+          parseMode = Html.some,
           replyMarkup =
             InlineKeyboardMarkups.singleButton(InlineKeyboardButtons.switchInlineQuery("\uD83D\uDE80", "")).some
         ).some
@@ -131,7 +131,7 @@ final class CommandControllerLive(
         sendMessage(
           ChatIntId(message.chat.id),
           msgService.help(user.language),
-          Html.some,
+          parseMode = Html.some,
           disableWebPagePreview = true.some,
           replyMarkup = kbService.menu(user.language).some
         ).some

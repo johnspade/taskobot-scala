@@ -47,9 +47,9 @@ final class SettingsControllerLive(
   private def listLanguages(cb: CallbackQuery, language: Language): Task[Unit] = {
     ZIO.foreachDiscard(cb.message) { msg =>
       editMessageText(
+        msgService.currentLanguage(language),
         ChatIntId(msg.chat.id).some,
         msg.messageId.some,
-        text = msgService.currentLanguage(language),
         replyMarkup = kbService.languages(language).some
       )
         .exec[Task]
