@@ -2,25 +2,22 @@ package ru.johnspade.taskobot
 
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
-import ru.johnspade.taskobot.BotConfig
-import ru.johnspade.taskobot.Taskobot
 import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Ignore, Tasks}
 import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
-import ru.johnspade.taskobot.settings.{SettingsController, SettingsControllerLive}
-import ru.johnspade.taskobot.task.{TaskController, TaskControllerLive, TaskRepository, TaskRepositoryLive}
-import ru.johnspade.taskobot.user.{UserRepository, UserRepositoryLive}
+import ru.johnspade.taskobot.settings.SettingsControllerLive
+import ru.johnspade.taskobot.task.{TaskControllerLive, TaskRepositoryLive}
+import ru.johnspade.taskobot.user.UserRepositoryLive
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.client.Method
 import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups, KeyboardButtons}
-import telegramium.bots.high.{Api, Methods}
+import telegramium.bots.high.Methods
 import telegramium.bots.*
-import zio.test.Assertion.{equalTo, isSome}
 import zio.test.TestAspect.sequential
 import zio.test.*
 import zio.*

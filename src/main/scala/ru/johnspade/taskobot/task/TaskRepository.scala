@@ -3,10 +3,7 @@ package ru.johnspade.taskobot.task
 import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
-import doobie.postgres.implicits.*
-import doobie.util.transactor.Transactor
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
-import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.user.User
 import zio.*
 import zio.interop.catz.*

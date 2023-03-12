@@ -4,7 +4,6 @@ import java.time.Instant
 
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
-import ru.johnspade.taskobot.CommandController
 import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.*
@@ -12,14 +11,13 @@ import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.{ChangeLanguage, Chats, CheckTask}
 import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
 import ru.johnspade.taskobot.task.{BotTask, TaskRepository, TaskRepositoryLive}
-import ru.johnspade.taskobot.user.{UserRepository, UserRepositoryLive}
+import ru.johnspade.taskobot.user.UserRepositoryLive
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.Methods
 import telegramium.bots.ChatIntId
-import zio.Duration
 import zio.test.*
 import zio.*
 

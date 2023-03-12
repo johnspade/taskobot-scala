@@ -2,7 +2,6 @@ package ru.johnspade.taskobot
 
 import com.dimafeng.testcontainers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
-import ru.johnspade.taskobot.DbConfig
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
 import zio.*
 

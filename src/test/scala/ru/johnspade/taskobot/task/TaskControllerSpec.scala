@@ -1,25 +1,18 @@
 package ru.johnspade.taskobot.task
 
 import cats.syntax.option.*
-import com.dimafeng.testcontainers.MockServerContainer
 import org.mockserver.client.MockServerClient
-import ru.johnspade.taskobot.TestHelpers.{callbackQuery, mockMessage}
-import ru.johnspade.taskobot.TestUsers.{john, johnChatId, johnTg, kaitrin, kaitrinChatId, kaitrinTg}
-import ru.johnspade.taskobot.core.TelegramOps.{inlineKeyboardButton, toUser}
+import ru.johnspade.taskobot.TestHelpers.callbackQuery
+import ru.johnspade.taskobot.TestUsers.{john, johnTg, kaitrin, kaitrinTg}
+import ru.johnspade.taskobot.core.TelegramOps.toUser
 import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks}
 import ru.johnspade.taskobot.messages.{Language, MessageServiceLive, MsgConfig}
-import ru.johnspade.taskobot.task.TaskController
 import ru.johnspade.taskobot.user.{User, UserRepository, UserRepositoryLive}
-import ru.johnspade.taskobot.{BotService, BotServiceLive, KeyboardServiceLive, TestBotApi, TestDatabase}
+import ru.johnspade.taskobot.{BotServiceLive, KeyboardServiceLive, TestBotApi, TestDatabase}
 import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
-import telegramium.bots.client.Method
-import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
-import telegramium.bots.high.{Api, Methods}
-import telegramium.bots.{ChatIntId, InlineKeyboardMarkup, Message, User as TgUser}
+import telegramium.bots.high.Methods
+import telegramium.bots.{User as TgUser}
 import zio.test.Assertion.{equalTo, hasField, isNone, isSome}
 import zio.test.TestAspect.{before, sequential}
 import zio.test.*

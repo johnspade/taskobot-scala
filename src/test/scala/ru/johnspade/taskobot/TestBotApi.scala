@@ -8,7 +8,7 @@ import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.{HttpRequest, JsonBody}
 import zio.interop.catz.*
-import telegramium.bots.high.{Api, BotApi}
+import telegramium.bots.high.BotApi
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.TestUsers.{johnChatId, kaitrin, kaitrinChatId}
 import ru.johnspade.taskobot.core.{Chats, CheckTask, ConfirmTask, Ignore, SetLanguage, Tasks}

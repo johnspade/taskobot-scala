@@ -1,7 +1,6 @@
 package ru.johnspade.taskobot
 
 import org.flywaydb.core.Flyway
-import ru.johnspade.taskobot.DbConfig
 import zio.*
 
 object FlywayMigration {

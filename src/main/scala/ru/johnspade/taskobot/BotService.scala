@@ -2,7 +2,7 @@ package ru.johnspade.taskobot
 
 import ru.johnspade.taskobot.core.Page
 import ru.johnspade.taskobot.core.TelegramOps.toUser
-import ru.johnspade.taskobot.messages.{Language, MessageService}
+import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
 import ru.johnspade.taskobot.user.{User, UserRepository}
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity

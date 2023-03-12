@@ -10,7 +10,6 @@ import ru.johnspade.csv3s.codecs.instances.given
 import ru.johnspade.tgbot.callbackdata.annotated.MagnoliaRowDecoder
 import ru.johnspade.tgbot.callbackqueries.{DecodeFailure, ParseError, DecodeError}
 import ru.johnspade.csv3s.codecs.{RowDecoder, RowEncoder, StringDecoder, StringEncoder}
-import ru.johnspade.csv3s.core.CSV
 
 sealed abstract class CbData extends Product with Serializable:
   import CbData.{encoder, csvPrinter}

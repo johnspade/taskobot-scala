@@ -7,7 +7,6 @@ import ru.johnspade.taskobot.user.{User, UserRepository, UserRepositoryLive}
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import zio.*
-import zio.test.Assertion.*
 import zio.test.TestAspect.sequential
 import zio.test.*
 

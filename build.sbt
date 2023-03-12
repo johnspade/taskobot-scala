@@ -7,7 +7,6 @@ scalaVersion := "3.3.0-RC3"
 scalacOptions ++= Seq(
   "-language:higherKinds",
   "-Wunused:imports",
-  "-Wunused:params",
   "-Wunused:locals",
   "-Wunused:privates"
 )

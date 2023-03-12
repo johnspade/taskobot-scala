@@ -1,7 +1,6 @@
 package ru.johnspade.taskobot
 
 import cats.data.{Kleisli, OptionT}
-import ru.johnspade.taskobot.BotService
 import ru.johnspade.taskobot.core.CbData
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}

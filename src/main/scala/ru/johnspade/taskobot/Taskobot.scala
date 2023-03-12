@@ -1,18 +1,12 @@
 package ru.johnspade.taskobot
 
 import cats.implicits.*
-import ru.johnspade.taskobot.BotService
-import ru.johnspade.taskobot.BotConfig
-import ru.johnspade.taskobot.IgnoreController
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.UserMiddleware
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{CbData, ConfirmTask}
+import ru.johnspade.taskobot.core.ConfirmTask
 import ru.johnspade.taskobot.settings.SettingsController
-import ru.johnspade.taskobot.task.TaskController
 import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
-import ru.johnspade.taskobot.user.User
-import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryHandler, DecodeError, ParseError}
+import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryHandler}
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import ru.johnspade.taskobot.messages.MsgId
@@ -28,7 +22,6 @@ import ru.johnspade.taskobot.core.CbData
 import ru.johnspade.taskobot.messages.{Language, MessageService}
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextMiddleware, CallbackQueryContextRoutes, CallbackQueryRoutes}
-import telegramium.bots.client.Method
 import zio.Task
 
 val DefaultPageSize: Int = 5

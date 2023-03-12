@@ -3,10 +3,8 @@ package ru.johnspade.taskobot
 import com.zaxxer.hikari.HikariConfig
 import doobie.hikari.HikariTransactor
 import doobie.util.transactor.Transactor
-import ru.johnspade.taskobot.DbConfig
-import zio._
-import zio.interop.catz._
-import zio.interop.catz.implicits._
+import zio.*
+import zio.interop.catz.*
 
 import scala.concurrent.ExecutionContext
 

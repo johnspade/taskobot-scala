@@ -1,7 +1,6 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option.*
-import ru.johnspade.taskobot.BotService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.{ChangeLanguage, Page}

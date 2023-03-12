@@ -8,9 +8,7 @@ import ru.johnspade.taskobot.TestUsers.{john, johnTg}
 import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
 import ru.johnspade.taskobot.core.{ChangeLanguage, SetLanguage}
 import ru.johnspade.taskobot.messages.{Language, MessageServiceLive, MsgConfig}
-import ru.johnspade.taskobot.settings.SettingsController
 import ru.johnspade.taskobot.user.{UserRepository, UserRepositoryLive}
-import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
 import telegramium.bots.high.*
 import zio.test.Assertion.{equalTo, hasField}

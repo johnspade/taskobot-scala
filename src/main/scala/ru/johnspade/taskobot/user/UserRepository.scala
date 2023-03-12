@@ -1,14 +1,12 @@
 package ru.johnspade.taskobot.user
 
-import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.postgres.implicits._
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
 import doobie.util.transactor.Transactor
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
-import ru.johnspade.taskobot.messages.Language
-import zio._
-import zio.interop.catz._
+import zio.*
+import zio.interop.catz.*
 import ru.johnspade.taskobot.user.UserRepositoryLive.UserQueries.*
 
 trait UserRepository:
