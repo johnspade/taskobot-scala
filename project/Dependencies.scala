@@ -2,11 +2,12 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium      = "7.66.0-DIRTY-SNAPSHOT"
+    val telegramium      = "7.66.0"
     val tgbotUtils       = "0.6.0"
     val zio              = "2.0.9"
     val zioCats          = "23.0.0.2"
     val zioLogging       = "2.1.1"
+    val zioJson          = "0.4.2"
     val logback          = "1.2.7"
     val cats             = "2.6.1"
     val pureconfig       = "0.17.1"
@@ -26,6 +27,7 @@ object Dependencies {
     "dev.zio"               %% "zio"                 % V.zio,
     "dev.zio"               %% "zio-interop-cats"    % V.zioCats,
     "dev.zio"               %% "zio-logging-slf4j"   % V.zioLogging,
+    "dev.zio"               %% "zio-json"            % V.zioJson,
     "ch.qos.logback"         % "logback-classic"     % V.logback,
     "org.typelevel"         %% "cats-core"           % V.cats,
     "com.github.pureconfig" %% "pureconfig-core"     % V.pureconfig,
