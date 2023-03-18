@@ -5,9 +5,11 @@ import doobie.*
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
+import ru.johnspade.taskobot.user.UserRepositoryLive.UserQueries.*
 import zio.*
 import zio.interop.catz.*
-import ru.johnspade.taskobot.user.UserRepositoryLive.UserQueries.*
+
+import java.time.ZoneId
 
 trait UserRepository:
   def findById(id: Long): Task[Option[User]]
@@ -36,7 +38,7 @@ object UserRepository:
   def clear(): ZIO[UserRepository, Throwable, Unit] =
     ZIO.serviceWithZIO(_.clear())
 
-class UserRepositoryLive(xa: Transactor[Task]) extends UserRepository:
+class UserRepositoryLive(xa: Transactor[zio.Task]) extends UserRepository:
   override def findById(id: Long): Task[Option[User]] =
     selectById(id).option
       .transact(xa)
@@ -67,9 +69,11 @@ object UserRepositoryLive:
     )
 
   object UserQueries {
+    private given Meta[ZoneId] = Meta[String].imap(ZoneId.of)(_.getId)
+
     def selectById(id: Long): Query0[User] =
       sql"""
-        select id, first_name, language, chat_id, last_name
+        select id, first_name, language, chat_id, last_name, timezone
         from users
         where id = $id
       """
@@ -79,11 +83,11 @@ object UserRepositoryLive:
       import user._
 
       sql"""
-        insert into users (id, first_name, language, chat_id, last_name)
-        values ($id, $firstName, ${language.value}, $chatId, $lastName)
+        insert into users (id, first_name, language, chat_id, last_name, timezone)
+        values ($id, $firstName, ${language.value}, $chatId, $lastName, $timezone)
         on conflict(id) do update set
-        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(users.chat_id, excluded.chat_id)
-        returning id, first_name, language, chat_id, last_name
+        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(excluded.chat_id, users.chat_id), timezone = coalesce(excluded.timezone, users.timezone)
+        returning id, first_name, language, chat_id, last_name, timezone
       """
         .query[User]
     }
@@ -92,18 +96,18 @@ object UserRepositoryLive:
       import user._
 
       sql"""
-        insert into users (id, first_name, language, chat_id, last_name)
-        values ($id, $firstName, ${language.value}, $chatId, $lastName)
+        insert into users (id, first_name, language, chat_id, last_name, timezone)
+        values ($id, $firstName, ${language.value}, $chatId, $lastName, $timezone)
         on conflict(id) do update set
-        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(users.chat_id, excluded.chat_id), language = excluded.language
-        returning id, first_name, language, chat_id, last_name
+        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(excluded.chat_id, users.chat_id), language = excluded.language, timezone = coalesce(excluded.timezone, users.timezone)
+        returning id, first_name, language, chat_id, last_name, timezone
       """
         .query[User]
     }
 
     def selectBySharedTasks(id: Long, offset: Long, limit: Int): Query0[User] =
       sql"""
-        select distinct u.id, u.first_name, u.language, u.chat_id, u.last_name
+        select distinct u.id, u.first_name, u.language, u.chat_id, u.last_name, u.timezone
         from users as u
                  join (select t3.collaborator, t3.created_at
                        from (
