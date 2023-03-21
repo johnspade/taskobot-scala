@@ -2,21 +2,35 @@ package ru.johnspade.taskobot.task
 
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
+import ru.johnspade.taskobot.BotServiceLive
+import ru.johnspade.taskobot.KeyboardServiceLive
+import ru.johnspade.taskobot.TestBotApi
+import ru.johnspade.taskobot.TestBotApi.Mocks
+import ru.johnspade.taskobot.TestBotApi.createMock
+import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestHelpers.callbackQuery
-import ru.johnspade.taskobot.TestUsers.{john, johnTg, kaitrin, kaitrinTg}
+import ru.johnspade.taskobot.TestUsers.*
+import ru.johnspade.taskobot.UTC
+import ru.johnspade.taskobot.core.CbData
+import ru.johnspade.taskobot.core.Chats
+import ru.johnspade.taskobot.core.CheckTask
+import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.toUser
-import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Tasks}
-import ru.johnspade.taskobot.messages.{Language, MessageServiceLive, MsgConfig}
-import ru.johnspade.taskobot.user.{User, UserRepository, UserRepositoryLive}
-import ru.johnspade.taskobot.{BotServiceLive, KeyboardServiceLive, TestBotApi, TestDatabase}
-import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
-import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.messages.MessageServiceLive
+import ru.johnspade.taskobot.messages.MsgConfig
+import ru.johnspade.taskobot.user.User
+import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.taskobot.user.UserRepositoryLive
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryData
+import ru.johnspade.tgbot.callbackqueries.ContextCallbackQuery
 import telegramium.bots.high.Methods
 import telegramium.bots.{User as TgUser}
-import zio.test.Assertion.{equalTo, hasField, isNone, isSome}
-import zio.test.TestAspect.{before, sequential}
-import zio.test.*
 import zio.*
+import zio.test.Assertion.*
+import zio.test.TestAspect.*
+import zio.test.*
 
 object TaskControllerSpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment, Throwable] = (suite("TaskControllerSpec")(
@@ -63,7 +77,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
           checkedTaskAssertions = assert(checkedTask.get)(hasField("done", _.done, equalTo(true))) &&
             assert(checkedTask.get)(hasField("doneAt", _.doneAt, isSome))
           replyAssertions = assertTrue(
-            reply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+            reply.contains(Methods.answerCallbackQuery("0", "Task has been marked completed.".some))
           )
         yield replyAssertions && checkedTaskAssertions
       },
@@ -77,7 +91,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
           checkedTaskAssertions = assert(checkedTask.get)(hasField("done", _.done, equalTo(true))) &&
             assert(checkedTask.get)(hasField("doneAt", _.doneAt, isSome))
           replyAssertions = assertTrue(
-            reply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+            reply.contains(Methods.answerCallbackQuery("0", "Task has been marked completed.".some))
           )
         yield replyAssertions && checkedTaskAssertions
       },
@@ -147,7 +161,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
     for
       now <- Clock.instant
       task <- TaskRepository.create(
-        NewTask(john.id, text, now.toEpochMilli, receiver)
+        NewTask(john.id, text, now, receiver, timezone = UTC)
       )
     yield task
 
@@ -156,7 +170,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
       now <- Clock.instant
       usersAndTasks = List.tabulate(count) { n =>
         val user = User(n.toLong, n.toString, Language.English)
-        user -> NewTask(john.id, n.toString, now.toEpochMilli, user.id.some)
+        user -> NewTask(john.id, n.toString, now, user.id.some, timezone = UTC)
       }
       _ <- ZIO.foreachDiscard(usersAndTasks) { case (user, task) =>
         UserRepository.createOrUpdate(user) *> TaskRepository.create(task)
@@ -167,7 +181,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
     for
       now <- Clock.instant
       tasks = List.tabulate(11) { n =>
-        NewTask(john.id, n.toString, now.toEpochMilli, kaitrin.id.some)
+        NewTask(john.id, n.toString, now, kaitrin.id.some, timezone = UTC)
       }
       _ <- ZIO.foreachDiscard(tasks)(TaskRepository.create)
     yield ()

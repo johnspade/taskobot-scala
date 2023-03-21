@@ -3,6 +3,7 @@ package ru.johnspade.taskobot.user
 import ru.johnspade.taskobot.messages.Language
 
 import java.time.ZoneId
+import ru.johnspade.taskobot.UTC
 
 final case class User(
     id: Long,
@@ -14,5 +15,5 @@ final case class User(
 ) {
   def fullName: String = firstName + lastName.fold("")(n => s" $n")
 
-  val timezoneOrDefault: ZoneId = timezone.getOrElse(ZoneId.of("UTC"))
+  val timezoneOrDefault: ZoneId = timezone.getOrElse(UTC)
 }

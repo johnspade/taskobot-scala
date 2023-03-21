@@ -3,10 +3,10 @@ import sbt.librarymanagement.syntax._
 object Dependencies {
   object V {
     val telegramium      = "7.66.0"
-    val tgbotUtils       = "0.6.0"
+    val tgbotUtils       = "0.7.0"
     val zio              = "2.0.9"
     val zioCats          = "23.0.0.2"
-    val zioLogging       = "2.1.1"
+    val zioLogging       = "2.1.11"
     val zioJson          = "0.4.2"
     val logback          = "1.2.7"
     val cats             = "2.6.1"

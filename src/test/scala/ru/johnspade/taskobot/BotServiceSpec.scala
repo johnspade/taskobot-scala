@@ -1,9 +1,16 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option.*
-import ru.johnspade.taskobot.messages.{Language, MessageServiceLive, MsgConfig}
-import ru.johnspade.taskobot.task.{BotTask, NewTask, TaskRepository, TaskRepositoryLive}
-import ru.johnspade.taskobot.user.{User, UserRepository, UserRepositoryLive}
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.messages.MessageServiceLive
+import ru.johnspade.taskobot.messages.MsgConfig
+import ru.johnspade.taskobot.task.BotTask
+import ru.johnspade.taskobot.task.NewTask
+import ru.johnspade.taskobot.task.TaskRepository
+import ru.johnspade.taskobot.task.TaskRepositoryLive
+import ru.johnspade.taskobot.user.User
+import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.taskobot.user.UserRepositoryLive
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import zio.*
@@ -43,12 +50,6 @@ object BotServiceSpec extends ZIOSpecDefault:
       .provideCustomShared(testEnv),
     suite("getTasks")(
       test("should return tasks") {
-        val task1 = NewTask(322L, "task1", 0L, alice.id.some)
-        val task2 = NewTask(322L, "task2", 1L, alice.id.some)
-        val expectedTasks = List(
-          BotTask(2L, task2.sender, task2.text, task2.receiver, task2.createdAt),
-          BotTask(1L, task1.sender, task1.text, task1.receiver, task1.createdAt)
-        )
         val expectedMessageEntities = List(
           plain"Chat: ",
           bold"Alice",
@@ -58,11 +59,16 @@ object BotServiceSpec extends ZIOSpecDefault:
           lineBreak,
           plain"2. task1",
           italic" – Bob",
-          lineBreak,
-          lineBreak,
-          italic"Select the task number to mark it as completed."
+          lineBreak
         )
         for
+          now <- Clock.instant
+          task1 = NewTask(322L, "task1", now, alice.id.some, timezone = UTC)
+          task2 = NewTask(322L, "task2", now.plusSeconds(1), alice.id.some, timezone = UTC)
+          expectedTasks = List(
+            BotTask(2L, task2.sender, task2.text, task2.receiver, task2.createdAt, timezone = Some(UTC)),
+            BotTask(1L, task1.sender, task1.text, task1.receiver, task1.createdAt, timezone = Some(UTC))
+          )
           _                      <- UserRepository.createOrUpdate(bob)
           _                      <- UserRepository.createOrUpdate(alice)
           _                      <- TaskRepository.create(task1)
@@ -74,10 +80,17 @@ object BotServiceSpec extends ZIOSpecDefault:
       }
         .provideCustomShared(testEnv),
       test("should cut long tasks") {
-        val tasks = List.tabulate(5) { _ =>
-          NewTask(sender = bob.id, text = longTaskText, createdAt = 0L, receiver = alice.id.some)
-        }
         for
+          now <- Clock.instant
+          tasks = List.tabulate(5) { _ =>
+            NewTask(
+              sender = bob.id,
+              text = longTaskText,
+              createdAt = now,
+              receiver = alice.id.some,
+              timezone = UTC
+            )
+          }
           _      <- UserRepository.createOrUpdate(bob)
           _      <- UserRepository.createOrUpdate(alice)
           _      <- ZIO.foreachDiscard(tasks)(TaskRepository.create)
@@ -87,34 +100,33 @@ object BotServiceSpec extends ZIOSpecDefault:
               plain"Chat: ",
               bold"Alice",
               lineBreak,
-              plain"1. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor u...",
+              plain"1. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor ut, ultric...",
               italic" – Bob",
               lineBreak,
-              plain"2. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor u...",
+              plain"2. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor ut, ultric...",
               italic" – Bob",
               lineBreak,
-              plain"3. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor u...",
+              plain"3. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor ut, ultric...",
               italic" – Bob",
               lineBreak,
-              plain"4. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor u...",
+              plain"4. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor ut, ultric...",
               italic" – Bob",
               lineBreak,
-              plain"5. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor u...",
+              plain"5. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eget tortor ut, ultric...",
               italic" – Bob",
-              lineBreak,
-              lineBreak,
-              italic"Select the task number to mark it as completed."
+              lineBreak
             )
           )
           lengthAssertions = assertTrue(result._2.map(_.text).iterator.mkString("").length <= MessageLimit)
         yield entitiesAssertions && lengthAssertions
       }.provideCustomShared(testEnv),
       test("should not cut long tasks if message limits are not exceeded") {
-        val tasks = NewTask(bob.id, longTaskText, 0L, alice.id.some) ::
-          List.tabulate(4) { _ =>
-            NewTask(bob.id, "Fix bugs", 0L, alice.id.some)
-          }
         for
+          now <- Clock.instant
+          tasks = NewTask(bob.id, longTaskText, now, alice.id.some, timezone = UTC) ::
+            List.tabulate(4) { _ =>
+              NewTask(bob.id, "Fix bugs", now, alice.id.some, timezone = UTC)
+            }
           _      <- UserRepository.createOrUpdate(bob)
           _      <- UserRepository.createOrUpdate(alice)
           _      <- ZIO.foreachDiscard(tasks)(TaskRepository.create)
@@ -138,9 +150,7 @@ object BotServiceSpec extends ZIOSpecDefault:
               lineBreak,
               plain"5. Fix bugs",
               italic" – Bob",
-              lineBreak,
-              lineBreak,
-              italic"Select the task number to mark it as completed."
+              lineBreak
             )
           )
         yield assertions

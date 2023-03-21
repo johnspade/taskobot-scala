@@ -2,25 +2,39 @@ package ru.johnspade.taskobot
 
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
-import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
+import ru.johnspade.taskobot.TestBotApi.Mocks
+import ru.johnspade.taskobot.TestBotApi.createMock
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.*
+import ru.johnspade.taskobot.core.CbData
+import ru.johnspade.taskobot.core.Chats
+import ru.johnspade.taskobot.core.CheckTask
+import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.Ignore
+import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{CbData, Chats, CheckTask, ConfirmTask, Ignore, Tasks}
-import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
+import ru.johnspade.taskobot.datetime.DateTimeControllerLive
+import ru.johnspade.taskobot.messages.MessageServiceLive
+import ru.johnspade.taskobot.messages.MsgConfig
 import ru.johnspade.taskobot.settings.SettingsControllerLive
-import ru.johnspade.taskobot.task.{TaskControllerLive, TaskRepositoryLive}
+import ru.johnspade.taskobot.task.TaskControllerLive
+import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
-import telegramium.bots.client.Method
-import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups, KeyboardButtons}
-import telegramium.bots.high.Methods
 import telegramium.bots.*
+import telegramium.bots.client.Method
+import telegramium.bots.high.Methods
+import telegramium.bots.high.keyboards.InlineKeyboardButtons
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.keyboards.KeyboardButtons
+import zio.*
 import zio.test.TestAspect.sequential
 import zio.test.*
-import zio.*
+import ru.johnspade.taskobot.datetime.TimePickerServiceLive
+import ru.johnspade.taskobot.datetime.DatePickerServiceLive
+import ru.johnspade.taskobot.core.TaskDetails
 
 object TaskobotISpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment with Scope, Any] = (suite("TaskobotISpec")(
@@ -109,7 +123,7 @@ object TaskobotISpec extends ZIOSpecDefault:
       val checkTask =
         sendCallbackQuery(CheckTask(firstPage, 1L), kaitrinTg, chatId = kaitrinChatId).map(checkTaskReply =>
           assertTrue(
-            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked completed.".some))
           )
         )
 
@@ -140,7 +154,7 @@ object TaskobotISpec extends ZIOSpecDefault:
             startMessage.contains(
               Methods.sendMessage(
                 ChatIntId(johnChatId),
-                "Taskobot is a task collaboration bot. You can type <code>@tasko_bot task</code> in private chat and " +
+                "Taskobot is a task collaboration bot. Type <code>@tasko_bot task</code> in any private chat and " +
                   "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
                   "Type /list in the bot chat to see your tasks.\n\nSwitch language: /settings\n" +
                   "Support a creator: https://buymeacoff.ee/johnspade ☕\n\n" +
@@ -176,7 +190,7 @@ object TaskobotISpec extends ZIOSpecDefault:
             personalTaskReply.contains(
               Methods.sendMessage(
                 ChatIntId(johnChatId),
-                "Chat: Personal tasks\n1. Buy groceries\n\nSelect the task number to mark it as completed.",
+                "Chat: Personal tasks\n1. Buy groceries\n",
                 entities = TypedMessageEntity.toMessageEntities(
                   List(
                     plain"Chat: ",
@@ -184,15 +198,13 @@ object TaskobotISpec extends ZIOSpecDefault:
                     lineBreak,
                     plain"1. Buy groceries",
                     italic"",
-                    lineBreak,
-                    lineBreak,
-                    italic"Select the task number to mark it as completed."
+                    lineBreak
                   )
                 ),
                 replyMarkup = InlineKeyboardMarkups
                   .singleColumn(
                     List(
-                      inlineKeyboardButton("1", CheckTask(firstPage, 2L)),
+                      inlineKeyboardButton("1", TaskDetails(2L, firstPage)),
                       inlineKeyboardButton("Chat list", Chats(firstPage))
                     )
                   )
@@ -205,7 +217,7 @@ object TaskobotISpec extends ZIOSpecDefault:
       val checkTask = sendCallbackQuery(CheckTask(firstPage, 2L))
         .map { checkTaskReply =>
           assertTrue(
-            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked completed.".some))
           )
         }
 
@@ -243,7 +255,7 @@ object TaskobotISpec extends ZIOSpecDefault:
               forwardReply.contains(
                 Methods.sendMessage(
                   ChatIntId(johnChatId),
-                  "Chat: Personal tasks\n1. Watch Firefly – John\n\nSelect the task number to mark it as completed.",
+                  "Chat: Personal tasks\n1. Watch Firefly – John\n",
                   entities = TypedMessageEntity.toMessageEntities(
                     List(
                       plain"Chat: ",
@@ -251,15 +263,13 @@ object TaskobotISpec extends ZIOSpecDefault:
                       lineBreak,
                       plain"1. Watch Firefly",
                       italic" – John",
-                      lineBreak,
-                      lineBreak,
-                      italic"Select the task number to mark it as completed."
+                      lineBreak
                     )
                   ),
                   replyMarkup = InlineKeyboardMarkups
                     .singleColumn(
                       List(
-                        inlineKeyboardButton("1", CheckTask(firstPage, 3L)),
+                        inlineKeyboardButton("1", TaskDetails(3L, firstPage)),
                         inlineKeyboardButton("Chat list", Chats(firstPage))
                       )
                     )
@@ -273,7 +283,7 @@ object TaskobotISpec extends ZIOSpecDefault:
       val checkTask = sendCallbackQuery(CheckTask(firstPage, 3L))
         .map { checkTaskReply =>
           assertTrue(
-            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked as completed.".some))
+            checkTaskReply.contains(Methods.answerCallbackQuery("0", "Task has been marked completed.".some))
           )
         }
 
@@ -301,8 +311,11 @@ object TaskobotISpec extends ZIOSpecDefault:
   private val expectedMenu = ReplyKeyboardMarkup(
     List(
       List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
-      List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task")),
-      List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
+      List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
+      List(
+        KeyboardButtons.text("⚙️ Settings"),
+        KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo("https://timezones.johnspade.ru")))
+      )
     ),
     resizeKeyboard = true.some
   ).some
@@ -352,6 +365,9 @@ object TaskobotISpec extends ZIOSpecDefault:
     CommandControllerLive.layer,
     TaskControllerLive.layer,
     SettingsControllerLive.layer,
+    DatePickerServiceLive.layer,
+    TimePickerServiceLive.layer,
+    DateTimeControllerLive.layer,
     IgnoreControllerLive.layer,
     UserMiddleware.live,
     BotConfig.live,

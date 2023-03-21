@@ -2,30 +2,49 @@ package ru.johnspade.taskobot
 
 import cats.implicits.*
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.CbData
 import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.datetime.DateTimeController
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.messages.MessageService
+import ru.johnspade.taskobot.messages.MsgId
 import ru.johnspade.taskobot.settings.SettingsController
-import ru.johnspade.taskobot.task.{NewTask, TaskController, TaskRepository}
-import ru.johnspade.tgbot.callbackqueries.{CallbackDataDecoder, CallbackQueryHandler}
+import ru.johnspade.taskobot.task.NewTask
+import ru.johnspade.taskobot.task.TaskController
+import ru.johnspade.taskobot.task.TaskRepository
+import ru.johnspade.taskobot.user.User
+import ru.johnspade.tgbot.callbackqueries.CallbackDataDecoder
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextMiddleware
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextRoutes
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryHandler
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryRoutes
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
-import ru.johnspade.taskobot.messages.MsgId
+import telegramium.bots.CallbackQuery
+import telegramium.bots.ChatIntId
+import telegramium.bots.ChosenInlineResult
+import telegramium.bots.InlineQuery
+import telegramium.bots.InlineQueryResultArticle
+import telegramium.bots.InputTextMessageContent
+import telegramium.bots.Message
 import telegramium.bots.client.Method
+import telegramium.bots.high.Api
+import telegramium.bots.high.WebhookBot
 import telegramium.bots.high.implicits.*
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import telegramium.bots.high.{Api, WebhookBot}
-import telegramium.bots.{CallbackQuery, ChatIntId, ChosenInlineResult, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Message}
+import zio.Task
 import zio.*
 import zio.interop.catz.*
 import zio.interop.catz.implicits.*
-import ru.johnspade.taskobot.core.CbData
-import ru.johnspade.taskobot.messages.{Language, MessageService}
-import ru.johnspade.taskobot.user.User
-import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextMiddleware, CallbackQueryContextRoutes, CallbackQueryRoutes}
-import zio.Task
+import zio.json.*
+
+import java.time.ZoneId
 
 val DefaultPageSize: Int = 5
 val MessageLimit         = 4096
+
+val UTC = ZoneId.of("UTC")
 
 type CbDataRoutes[F[_]] = CallbackQueryRoutes[CbData, Option[Method[_]], F]
 
@@ -40,13 +59,13 @@ final class Taskobot(
     commandController: CommandController,
     taskController: TaskController,
     settingsController: SettingsController,
+    dateTimeController: DateTimeController,
     ignoreController: IgnoreController,
     userMiddleware: CallbackQueryUserMiddleware,
     msgService: MessageService,
     kbService: KeyboardService
-)(implicit
-    api: Api[Task]
-) extends WebhookBot[Task](api, url = s"${botConfig.url}/${botConfig.token}", path = botConfig.token) {
+)(using api: Api[Task])
+    extends WebhookBot[Task](api, url = s"${botConfig.url}/${botConfig.token}", path = botConfig.token) {
 
   private val botId = botConfig.token.split(":").head.toInt
 
@@ -78,7 +97,7 @@ final class Taskobot(
     for
       user <- botService.updateUser(inlineResult.from)
       now  <- Clock.instant
-      task <- taskRepo.create(NewTask(user.id, inlineResult.query, now.toEpochMilli, None))
+      task <- taskRepo.create(NewTask(user.id, inlineResult.query, now, None, timezone = user.timezoneOrDefault))
       method = editMessageReplyMarkup(
         inlineMessageId = inlineResult.inlineMessageId,
         replyMarkup = InlineKeyboardMarkups
@@ -112,7 +131,7 @@ final class Taskobot(
         for
           user <- botService.updateUser(from, msg.chat.id.some)
           now  <- Clock.instant
-          _    <- taskRepo.create(NewTask(user.id, text, now.toEpochMilli, user.id.some))
+          _    <- taskRepo.create(NewTask(user.id, text, now, user.id.some, timezone = user.timezoneOrDefault))
           _ <- sendMessage(
             ChatIntId(msg.chat.id),
             msgService.taskCreated(text, user.language),
@@ -139,8 +158,9 @@ final class Taskobot(
           newTask = NewTask(
             user.id,
             text,
-            now.toEpochMilli,
+            now,
             user.id.some,
+            timezone = user.timezoneOrDefault,
             forwardFromId = msg.forwardFrom.map(user => user.id),
             forwardFromSenderName = senderName
           )
@@ -155,8 +175,8 @@ final class Taskobot(
       }
 
     def handleText() =
-      ZIO
-        .foreach(msg.text) {
+      msg.text
+        .map {
           case t if t.startsWith("/start")                       => commandController.onStartCommand(msg)
           case t if t.startsWith("/create") || t.startsWith("➕") => commandController.onPersonalTaskCommand(msg)
           case t if t.startsWith("\uD83D\uDE80")                 => commandController.onCollaborativeTaskCommand(msg)
@@ -166,15 +186,35 @@ final class Taskobot(
           case t if t.startsWith("/help") || t.startsWith("❓")            => commandController.onHelpCommand(msg)
           case _                                                          => ZIO.none
         }
-        .map(_.flatten)
+
+    def handleWebAppData() = {
+      for
+        from <- msg.from
+        json <- msg.webAppData.map(_.data)
+      yield {
+        (for
+          data     <- ZIO.fromEither(json.fromJson[TimezonesWebAppData]).mapError(e => new RuntimeException(e))
+          timezone <- ZIO.attempt(ZoneId.of(data.timezone))
+          user     <- botService.updateUser(from, msg.chat.id.some, Some(timezone))
+          response <- commandController.onSettingsCommand(msg)
+        yield response)
+          .catchAll { error =>
+            ZIO.logErrorCause("Error while saving user's time zone", Cause.fail(error)) *> ZIO.none
+          }
+      }
+    }
 
     handleReply()
       .orElse(handleForward())
-      .getOrElse(handleText())
+      .orElse(handleText())
+      .orElse(handleWebAppData())
+      .getOrElse(ZIO.none)
+      .tapDefect(d => ZIO.logError(d.prettyPrint))
   }
 
-  private val cbRoutes = taskController.routes <+> settingsController.routes <+> ignoreController.routes <+>
-    userMiddleware(taskController.userRoutes <+> settingsController.userRoutes)
+  private val cbRoutes =
+    taskController.routes <+> settingsController.routes <+> ignoreController.routes <+>
+      userMiddleware(taskController.userRoutes <+> settingsController.userRoutes <+> dateTimeController.routes)
   private val cbDataDecoder: CallbackDataDecoder[Task, CbData] =
     CbData
       .decode(_)
@@ -198,6 +238,7 @@ object Taskobot:
       with CommandController
       with TaskController
       with SettingsController
+      with DateTimeController
       with IgnoreController
       with CallbackQueryUserMiddleware
       with MessageService
@@ -213,6 +254,7 @@ object Taskobot:
         commandController  <- ZIO.service[CommandController]
         taskController     <- ZIO.service[TaskController]
         settingsController <- ZIO.service[SettingsController]
+        dateTimeController <- ZIO.service[DateTimeController]
         ignoreController   <- ZIO.service[IgnoreController]
         userMiddleware     <- ZIO.service[CallbackQueryUserMiddleware]
         msgService         <- ZIO.service[MessageService]
@@ -224,9 +266,10 @@ object Taskobot:
         commandController,
         taskController,
         settingsController,
+        dateTimeController,
         ignoreController,
         userMiddleware,
         msgService,
         keyboardService
-      )(api)
+      )(using api)
     )

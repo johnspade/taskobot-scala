@@ -8,7 +8,7 @@ import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{ChangeLanguage, Chats, CheckTask}
+import ru.johnspade.taskobot.core.{ChangeLanguage, Chats, TaskDetails}
 import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
 import ru.johnspade.taskobot.task.{BotTask, TaskRepository, TaskRepositoryLive}
 import ru.johnspade.taskobot.user.UserRepositoryLive
@@ -35,30 +35,26 @@ object CommandControllerSpec extends ZIOSpecDefault:
           now   <- Clock.instant
           reply <- ZIO.serviceWithZIO[CommandController](_.onPersonalTaskCommand(taskMessage))
           task  <- TaskRepository.findById(1L)
-          taskAssertions = assertTrue(
-            task.contains(BotTask(1L, john.id, "Buy some milk", john.id.some, now.toEpochMilli))
-          )
+          expectedTask   = BotTask(1L, john.id, "Buy some milk", john.id.some, now, timezone = Some(UTC))
+          taskAssertions = assertTrue(task.contains(expectedTask))
           replyAssertions = assertTrue(
             reply.contains(
               Methods.sendMessage(
                 ChatIntId(johnChatId),
-                "Chat: Personal tasks\n1. Buy some milk\n\nSelect the task number to mark it as completed.",
+                "Chat: Personal tasks\n1. Buy some milk\n",
                 entities = TypedMessageEntity.toMessageEntities(
                   List(
                     plain"Chat: ",
                     bold"Personal tasks",
                     lineBreak,
                     plain"1. Buy some milk",
-                    italic"",
-                    lineBreak,
-                    lineBreak,
-                    italic"Select the task number to mark it as completed."
+                    italic""
                   )
                 ),
                 replyMarkup = InlineKeyboardMarkups
                   .singleColumn(
                     List(
-                      inlineKeyboardButton("1", CheckTask(0, 1L)),
+                      inlineKeyboardButton("1", TaskDetails(1L, 0)),
                       inlineKeyboardButton("Chat list", Chats(0))
                     )
                   )
@@ -78,7 +74,10 @@ object CommandControllerSpec extends ZIOSpecDefault:
               reply.contains(
                 Methods.sendMessage(
                   ChatIntId(johnChatId),
-                  "Current language: English",
+                  s"""
+                    |Current language: English
+                    |Timezone: UTC
+                    |""".stripMargin,
                   replyMarkup =
                     InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
                 )

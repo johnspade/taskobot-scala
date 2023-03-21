@@ -3,18 +3,28 @@ package ru.johnspade.taskobot
 import ru.johnspade.taskobot.core.Page
 import ru.johnspade.taskobot.core.TelegramOps.toUser
 import ru.johnspade.taskobot.messages.MessageService
-import ru.johnspade.taskobot.task.{BotTask, TaskRepository}
-import ru.johnspade.taskobot.user.{User, UserRepository}
+import ru.johnspade.taskobot.messages.MsgId
+import ru.johnspade.taskobot.task.BotTask
+import ru.johnspade.taskobot.task.TaskRepository
+import ru.johnspade.taskobot.user.User
+import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
-import ru.johnspade.taskobot.messages.MsgId
 import telegramium.bots
 import zio.*
 import zio.interop.catz.*
 
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import ru.johnspade.taskobot.messages.Language
+
 trait BotService:
-  def updateUser(tgUser: telegramium.bots.User, chatId: Option[Long] = None): Task[User]
+  def updateUser(
+      tgUser: telegramium.bots.User,
+      chatId: Option[Long] = None,
+      timezone: Option[ZoneId] = None
+  ): Task[User]
 
   def getTasks(
       `for`: User,
@@ -22,9 +32,15 @@ trait BotService:
       pageNumber: Int
   ): Task[(Page[BotTask], List[TypedMessageEntity])]
 
+  def createTaskDetails(task: BotTask, language: Language): List[TypedMessageEntity]
+
 object BotService:
-  def updateUser(tgUser: telegramium.bots.User, chatId: Option[Long] = None): RIO[BotService, User] =
-    ZIO.serviceWithZIO(_.updateUser(tgUser, chatId))
+  def updateUser(
+      tgUser: telegramium.bots.User,
+      chatId: Option[Long] = None,
+      timezone: Option[ZoneId] = None
+  ): RIO[BotService, User] =
+    ZIO.serviceWithZIO(_.updateUser(tgUser, chatId, timezone))
 
   def getTasks(
       `for`: User,
@@ -34,21 +50,22 @@ object BotService:
     ZIO.serviceWithZIO(_.getTasks(`for`, collaborator, pageNumber))
 
 class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgService: MessageService) extends BotService:
-  override def updateUser(tgUser: bots.User, chatId: Option[Long] = None): Task[User] =
-    userRepo.createOrUpdate(toUser(tgUser, chatId))
+  private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+  override def updateUser(tgUser: bots.User, chatId: Option[Long] = None, timezone: Option[ZoneId] = None): Task[User] =
+    userRepo.createOrUpdate(toUser(tgUser, chatId, timezone))
 
   override def getTasks(
       `for`: User,
       collaborator: User,
       pageNumber: Int
-  ): Task[(Page[BotTask], List[TypedMessageEntity])] = {
+  ): Task[(Page[BotTask], List[TypedMessageEntity])] =
     Page
       .request[BotTask, Task](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
       .map { page =>
         val chatName =
           if (collaborator.id == `for`.id) msgService.personalTasks(`for`.language) else collaborator.fullName
         val header = List(Plain(msgService.getMessage(MsgId.`chat`, `for`.language) + ": "), Bold(chatName), lineBreak)
-        val footer = List(lineBreak, Italic(msgService.getMessage(MsgId.`tasks-complete`, `for`.language)))
 
         val taskLines = page.items.zipWithIndex
           .map { case (task, i) =>
@@ -64,23 +81,42 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
             TaskLine(taskText, senderName)
           }
 
-        val taskList = limitTaskLines(taskLines, headerFooterLength = (header ++ footer).map(_.text).mkString.length)
+        val taskList = limitTaskLines(taskLines, headerFooterLength = header.map(_.text).mkString.length)
           .flatMap { line =>
             List(Plain(line.text), Italic(line.senderName), lineBreak)
           }
 
-        val messageEntities = header ++ taskList ++ footer
+        val messageEntities = header ++ taskList
 
         (page, messageEntities)
       }
-  }
+
+  override def createTaskDetails(task: BotTask, language: Language): List[TypedMessageEntity] =
+    val deadline = List(
+      bold"🕒 ${msgService.getMessage(MsgId.`tasks-due-date`, language)}: ",
+      Bold(task.deadline.map(_.format(dateTimeFormatter)).getOrElse("-")),
+      lineBreak,
+      lineBreak
+    )
+    val created = List(
+      italic"${msgService.getMessage(MsgId.`tasks-created-at`, language)}: ",
+      Italic(
+        task.createdAt
+          .atZone(task.timezoneOrDefault)
+          .format(dateTimeFormatter)
+      )
+    )
+    val breaks = List(lineBreak, lineBreak)
+    val footer = breaks ++ deadline ++ created
+    val text   = List(Plain(limitTaskText(task.text, footer.map(_.text).mkString.length))) // todo test
+    text ++ footer
 
   private case class TaskLine(text: String, senderName: String)
 
   private val LineBreakLength = "\n".length
   private val LineBreaksCount = DefaultPageSize
 
-  private def limitTaskLines(lines: List[TaskLine], headerFooterLength: Int): List[TaskLine] = {
+  private def limitTaskLines(lines: List[TaskLine], headerFooterLength: Int): List[TaskLine] =
     val messageLength = lines.map(l => (l.text + l.senderName).length + LineBreakLength).sum + headerFooterLength
     if (messageLength > MessageLimit) {
       val taskListLimit = MessageLimit - headerFooterLength - LineBreaksCount
@@ -90,7 +126,10 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
         line.copy(text = line.text.take(lineLimit - line.senderName.length - ellipsis.length) + ellipsis)
       }
     } else lines
-  }
+
+  private def limitTaskText(text: String, headerFooterLength: Int) =
+    val ellipsis = if text.length + headerFooterLength > MessageLimit then "..." else ""
+    text.take(MessageLimit - headerFooterLength - ellipsis.length) + ellipsis
 
 object BotServiceLive:
   val layer: URLayer[UserRepository with TaskRepository with MessageService, BotService] =

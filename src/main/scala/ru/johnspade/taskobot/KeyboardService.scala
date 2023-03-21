@@ -1,15 +1,29 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option.*
+import ru.johnspade.taskobot.core.Chats
+import ru.johnspade.taskobot.core.Ignore
+import ru.johnspade.taskobot.core.Page
+import ru.johnspade.taskobot.core.SetLanguage
+import ru.johnspade.taskobot.core.TaskDetails
+import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{Chats, CheckTask, Ignore, Page, SetLanguage, Tasks}
-import ru.johnspade.taskobot.messages.{Language, MessageService}
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.messages.MessageService
+import ru.johnspade.taskobot.messages.MsgId
+import ru.johnspade.taskobot.messages.MsgId.*
 import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.user.User
-import ru.johnspade.taskobot.messages.MsgId
-import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups, KeyboardButtons}
-import telegramium.bots.{InlineKeyboardMarkup, ReplyKeyboardMarkup}
-import zio.{URLayer, ZIO, ZLayer}
+import telegramium.bots.InlineKeyboardMarkup
+import telegramium.bots.KeyboardButton
+import telegramium.bots.ReplyKeyboardMarkup
+import telegramium.bots.WebAppInfo
+import telegramium.bots.high.keyboards.InlineKeyboardButtons
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.keyboards.KeyboardButtons
+import zio.URLayer
+import zio.ZIO
+import zio.ZLayer
 
 trait KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup
@@ -34,7 +48,7 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
     val supportButtonRow = List(
       List(
         InlineKeyboardButtons.url(
-          msgService.getMessage(MsgId.`buy-coffee`, `for`.language) + " ☕",
+          msgService.getMessage(`buy-coffee`, `for`.language) + " ☕",
           "https://buymeacoff.ee/johnspade"
         )
       )
@@ -49,14 +63,14 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
     lazy val nextButton = inlineKeyboardButton(msgService.nextPage(language), Tasks(page.number + 1, collaborator.id))
     val tasksButtons = page.items.zipWithIndex
       .map { case (task, i) =>
-        inlineKeyboardButton((i + 1).toString, CheckTask(page.number, task.id))
+        inlineKeyboardButton((i + 1).toString, TaskDetails(task.id, page.number))
       }
     val nextButtonRow = if (page.hasNext) List(nextButton) else List.empty
     val prevButtonRow = if (page.hasPrevious) List(prevButton) else List.empty
     val navButtons    = List(prevButtonRow, nextButtonRow)
     val listButtonRow = List(
       inlineKeyboardButton(
-        msgService.getMessage(MsgId.`chats-list`, language),
+        msgService.getMessage(`chats-list`, language),
         Chats(0)
       )
     )
@@ -77,14 +91,18 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
       List(
         List(
           KeyboardButtons.text("\uD83D\uDCCB " + msgService.getMessage(MsgId.`tasks`, language)),
-          KeyboardButtons.text("➕ " + msgService.getMessage(MsgId.`tasks-personal-new`, language))
+          KeyboardButtons.text("➕ " + msgService.getMessage(`tasks-personal-new`, language))
         ),
         List(
-          KeyboardButtons.text("\uD83D\uDE80 " + msgService.getMessage(MsgId.`tasks-collaborative-new`, language))
+          KeyboardButtons.text("\uD83D\uDE80 " + msgService.getMessage(`tasks-collaborative-new`, language)),
+          KeyboardButtons.text("❓ " + msgService.getMessage(`help`, language))
         ),
         List(
-          KeyboardButtons.text("⚙️ " + msgService.getMessage(MsgId.`settings`, language)),
-          KeyboardButtons.text("❓ " + msgService.getMessage(MsgId.`help`, language))
+          KeyboardButtons.text("⚙️ " + msgService.getMessage(`settings`, language)),
+          KeyboardButton(
+            text = "🌍 " + msgService.getMessage(`timezone`, language),
+            webApp = Some(WebAppInfo("https://timezones.johnspade.ru"))
+          )
         )
       ),
       resizeKeyboard = true.some

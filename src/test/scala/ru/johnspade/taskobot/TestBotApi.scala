@@ -1,27 +1,40 @@
 package ru.johnspade.taskobot
 
+import cats.syntax.option.*
 import com.dimafeng.testcontainers.MockServerContainer
-import zio.*
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.mockserver.client.MockServerClient
+import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
-import org.mockserver.model.{HttpRequest, JsonBody}
-import zio.interop.catz.*
-import telegramium.bots.high.BotApi
+import org.mockserver.model.JsonBody
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.TestUsers.{johnChatId, kaitrin, kaitrinChatId}
-import ru.johnspade.taskobot.core.{Chats, CheckTask, ConfirmTask, Ignore, SetLanguage, Tasks}
-import ru.johnspade.taskobot.messages.Language
-import cats.syntax.option.*
+import ru.johnspade.taskobot.TestUsers.johnChatId
+import ru.johnspade.taskobot.TestUsers.kaitrin
+import ru.johnspade.taskobot.TestUsers.kaitrinChatId
+import ru.johnspade.taskobot.core.Chats
+import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.Ignore
+import ru.johnspade.taskobot.core.SetLanguage
+import ru.johnspade.taskobot.core.TaskDetails
+import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
-import telegramium.bots.{ChatIntId, InlineKeyboardMarkup, Message, ReplyKeyboardMarkup}
+import telegramium.bots.ChatIntId
+import telegramium.bots.InlineKeyboardMarkup
+import telegramium.bots.KeyboardButton
+import telegramium.bots.Message
+import telegramium.bots.ReplyKeyboardMarkup
+import telegramium.bots.WebAppInfo
 import telegramium.bots.client.Method
-import telegramium.bots.high.keyboards.*
+import telegramium.bots.high.BotApi
 import telegramium.bots.high.Methods
+import telegramium.bots.high.keyboards.*
+import zio.*
+import zio.interop.catz.*
 
 object TestBotApi:
   private val mockServerContainer: ULayer[MockServerContainer] =
@@ -134,8 +147,11 @@ object TestBotApi:
         replyMarkup = ReplyKeyboardMarkup(
           List(
             List(KeyboardButtons.text("\uD83D\uDCCB Задачи"), KeyboardButtons.text("➕ Новая личная задача")),
-            List(KeyboardButtons.text("\uD83D\uDE80 Новая совместная задача")),
-            List(KeyboardButtons.text("⚙️ Настройки"), KeyboardButtons.text("❓ Справка"))
+            List(KeyboardButtons.text("\uD83D\uDE80 Новая совместная задача"), KeyboardButtons.text("❓ Справка")),
+            List(
+              KeyboardButtons.text("⚙️ Настройки"),
+              KeyboardButton("🌍 Часовой пояс", webApp = Some(WebAppInfo("https://timezones.johnspade.ru")))
+            )
           ),
           resizeKeyboard = true.some
         ).some
@@ -148,8 +164,11 @@ object TestBotApi:
         replyMarkup = ReplyKeyboardMarkup(
           List(
             List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
-            List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task")),
-            List(KeyboardButtons.text("⚙️ Settings"), KeyboardButtons.text("❓ Help"))
+            List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
+            List(
+              KeyboardButtons.text("⚙️ Settings"),
+              KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo("https://timezones.johnspade.ru")))
+            )
           ),
           resizeKeyboard = true.some
         ).some
@@ -170,7 +189,7 @@ object TestBotApi:
 
     val editMessageTextList: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: John\n1. Buy some milk – John\n\nSelect the task number to mark it as completed.",
+        "Chat: John\n1. Buy some milk – John\n",
         ChatIntId(kaitrinChatId).some,
         messageId = 0.some,
         entities = TypedMessageEntity.toMessageEntities(
@@ -180,15 +199,13 @@ object TestBotApi:
             lineBreak,
             plain"1. Buy some milk",
             italic" – John",
-            lineBreak,
-            lineBreak,
-            italic"Select the task number to mark it as completed."
+            lineBreak
           )
         ),
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List(
-              inlineKeyboardButton("1", CheckTask(0, 1L)),
+              inlineKeyboardButton("1", TaskDetails(1L, 0)),
               inlineKeyboardButton("Chat list", Chats(0))
             )
           )
@@ -197,36 +214,32 @@ object TestBotApi:
 
     def editMessageTextCheckTask(chatId: Int): Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: John\n\nSelect the task number to mark it as completed.",
+        "Chat: John\n",
         ChatIntId(chatId).some,
         messageId = 0.some,
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
             bold"John",
-            lineBreak,
-            lineBreak,
-            italic"Select the task number to mark it as completed."
+            lineBreak
           )
         ),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(0))).some
       )
 
     val taskCompletedMessage: Method[Message] =
-      Methods.sendMessage(ChatIntId(kaitrinChatId), "Task \"Buy some milk\" has been marked as completed by Kaitrin.")
+      Methods.sendMessage(ChatIntId(kaitrinChatId), "Task \"Buy some milk\" has been marked completed by Kaitrin.")
 
     val editMessageTextPersonalTasks: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: Personal tasks\n\nSelect the task number to mark it as completed.",
+        "Chat: Personal tasks\n",
         ChatIntId(johnChatId).some,
         messageId = 0.some,
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
             bold"Personal tasks",
-            lineBreak,
-            lineBreak,
-            italic"Select the task number to mark it as completed."
+            lineBreak
           )
         ),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(0))).some
@@ -268,7 +281,7 @@ object TestBotApi:
       Methods.editMessageText(
         chatId = ChatIntId(0).some,
         messageId = 0.some,
-        text = "Chat: Kaitrin\n1. Wash dishes please – John\n\nSelect the task number to mark it as completed.",
+        text = "Chat: Kaitrin\n1. Wash dishes please – John\n",
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
@@ -276,15 +289,13 @@ object TestBotApi:
             lineBreak,
             plain"1. Wash dishes please",
             italic" – John",
-            lineBreak,
-            lineBreak,
-            italic"Select the task number to mark it as completed."
+            lineBreak
           )
         ),
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List(
-              inlineKeyboardButton("1", CheckTask(0, taskId)),
+              inlineKeyboardButton("1", TaskDetails(taskId, 0)),
               inlineKeyboardButton("Chat list", Chats(0))
             )
           )
@@ -295,8 +306,7 @@ object TestBotApi:
       Methods.editMessageText(
         chatId = ChatIntId(0).some,
         messageId = 0.some,
-        text =
-          "Chat: Kaitrin\n1. 5 – John\n2. 6 – John\n3. 7 – John\n4. 8 – John\n5. 9 – John\n\nSelect the task number to mark it as completed.",
+        text = "Chat: Kaitrin\n1. 5 – John\n2. 6 – John\n3. 7 – John\n4. 8 – John\n5. 9 – John\n",
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
@@ -316,19 +326,17 @@ object TestBotApi:
             lineBreak,
             plain"5. 9",
             italic" – John",
-            lineBreak,
-            lineBreak,
-            italic"Select the task number to mark it as completed."
+            lineBreak
           )
         ),
         replyMarkup = InlineKeyboardMarkup(
           List(
             List(
-              inlineKeyboardButton("1", CheckTask(1, 23L)),
-              inlineKeyboardButton("2", CheckTask(1, 24L)),
-              inlineKeyboardButton("3", CheckTask(1, 25L)),
-              inlineKeyboardButton("4", CheckTask(1, 26L)),
-              inlineKeyboardButton("5", CheckTask(1, 27L))
+              inlineKeyboardButton("1", TaskDetails(23L, 1)),
+              inlineKeyboardButton("2", TaskDetails(24L, 1)),
+              inlineKeyboardButton("3", TaskDetails(25L, 1)),
+              inlineKeyboardButton("4", TaskDetails(26L, 1)),
+              inlineKeyboardButton("5", TaskDetails(27L, 1))
             ),
             List(inlineKeyboardButton("Previous page", Tasks(0, kaitrin.id))),
             List(inlineKeyboardButton("Next page", Tasks(2, kaitrin.id))),
@@ -339,16 +347,14 @@ object TestBotApi:
 
     val editMessageTextTasksKaitrin: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: Kaitrin\n\nSelect the task number to mark it as completed.",
+        "Chat: Kaitrin\n",
         ChatIntId(0).some,
         messageId = 0.some,
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
             bold"Kaitrin",
-            lineBreak,
-            lineBreak,
-            italic"Select the task number to mark it as completed."
+            lineBreak
           )
         ),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(0))).some
@@ -357,11 +363,11 @@ object TestBotApi:
     val taskCompletedByJohnMessage: Method[Message] =
       Methods.sendMessage(
         ChatIntId(kaitrinChatId),
-        """Task "Buy some milk" has been marked as completed by John."""
+        """Task "Buy some milk" has been marked completed by John."""
       )
 
     val taskCompletedByKaitrinMessage: Method[Message] =
       Methods.sendMessage(
         ChatIntId(johnChatId),
-        """Task "Buy some milk" has been marked as completed by Kaitrin."""
+        """Task "Buy some milk" has been marked completed by Kaitrin."""
       )

@@ -1,11 +1,16 @@
 package ru.johnspade.taskobot
 
-import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
+import ru.johnspade.taskobot.datetime.DateTimeControllerLive
+import ru.johnspade.taskobot.messages.MessageServiceLive
+import ru.johnspade.taskobot.messages.MsgConfig
 import ru.johnspade.taskobot.settings.SettingsControllerLive
-import ru.johnspade.taskobot.task.{TaskControllerLive, TaskRepositoryLive}
+import ru.johnspade.taskobot.task.TaskControllerLive
+import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
 import zio.*
 import zio.interop.catz.*
+import ru.johnspade.taskobot.datetime.DatePickerServiceLive
+import ru.johnspade.taskobot.datetime.TimePickerServiceLive
 
 object Main extends ZIOAppDefault:
   private val program =
@@ -31,6 +36,9 @@ object Main extends ZIOAppDefault:
         CommandControllerLive.layer,
         TaskControllerLive.layer,
         SettingsControllerLive.layer,
+        DatePickerServiceLive.layer,
+        TimePickerServiceLive.layer,
+        DateTimeControllerLive.layer,
         IgnoreControllerLive.layer,
         UserMiddleware.live,
         Taskobot.live

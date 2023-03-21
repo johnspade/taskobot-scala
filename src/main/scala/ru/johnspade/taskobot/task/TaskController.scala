@@ -1,20 +1,42 @@
 package ru.johnspade.taskobot.task
 
-import cats.implicits.*
+import cats.syntax.option.*
+import ru.johnspade.taskobot.BotService
+import ru.johnspade.taskobot.CbDataRoutes
+import ru.johnspade.taskobot.CbDataUserRoutes
+import ru.johnspade.taskobot.DefaultPageSize
+import ru.johnspade.taskobot.Errors
+import ru.johnspade.taskobot.KeyboardService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.{Chats, CheckTask, ConfirmTask, Page, Tasks}
-import ru.johnspade.taskobot.messages.{Language, MessageService}
-import ru.johnspade.taskobot.user.{User, UserRepository}
-import ru.johnspade.taskobot.{BotService, CbDataRoutes, CbDataUserRoutes, DefaultPageSize, Errors, KeyboardService}
-import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
-import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
+import ru.johnspade.taskobot.core.Chats
+import ru.johnspade.taskobot.core.CheckTask
+import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.DatePicker
+import ru.johnspade.taskobot.core.Page
+import ru.johnspade.taskobot.core.RemoveTaskDeadline
+import ru.johnspade.taskobot.core.TaskDeadlineDate
+import ru.johnspade.taskobot.core.TaskDetails
+import ru.johnspade.taskobot.core.Tasks
+import ru.johnspade.taskobot.core.TelegramOps.ackCb
+import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.TimePicker
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
+import ru.johnspade.taskobot.user.User
+import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextRoutes
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryRoutes
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity
+import telegramium.bots.CallbackQuery
+import telegramium.bots.ChatIntId
+import telegramium.bots.InlineKeyboardMarkup
+import telegramium.bots.Message
 import telegramium.bots.client.Method
-import telegramium.bots.high.Methods.{answerCallbackQuery, editMessageReplyMarkup, editMessageText, sendMessage}
+import telegramium.bots.high.Methods.*
 import telegramium.bots.high.*
 import telegramium.bots.high.implicits.*
-import telegramium.bots.{ChatIntId, Message}
 import zio.*
 import zio.interop.catz.*
 
@@ -50,7 +72,7 @@ final class TaskControllerLive(
 
     for
       id        <- ZIO.fromOption(taskIdOpt).orElseFail(new RuntimeException(Errors.Default))
-      taskOpt   <- taskRepo.findById(id)
+      taskOpt   <- taskRepo.findByIdUnsafe(id)
       task      <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
       user      <- botService.updateUser(cb.from)
       answerOpt <- if (task.sender == cb.from.id) mustBeConfirmedByReceiver(user) else confirm(task, user)
@@ -61,34 +83,37 @@ final class TaskControllerLive(
   override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
 
     case Chats(pageNumber) in cb as user =>
-      for
-        page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
-        _ <- ZIO.foreachDiscard(cb.message) { msg =>
-          editMessageText(
+      ackCb(cb) { msg =>
+        for
+          page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
+          _ <- editMessageText(
             msgService.chatsWithTasks(user.language),
             ChatIntId(msg.chat.id).some,
             msg.messageId.some,
             replyMarkup = kbService.chats(page, user).some
           )
             .exec[Task]
-        }
-        ack = answerCallbackQuery(cb.id).some
-      yield ack
+        yield ()
+      }
 
     case Tasks(pageNumber, collaboratorId) in cb as user =>
-      for
-        userOpt            <- userRepo.findById(collaboratorId)
-        collaborator       <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
-        message            <- ZIO.fromOption(cb.message).orElseFail(new RuntimeException(Errors.Default))
-        pageAndMsgEntities <- botService.getTasks(user, collaborator, pageNumber)
-        _ <- listTasks(message, pageAndMsgEntities._2, pageAndMsgEntities._1, collaborator, user.language)
-      yield answerCallbackQuery(cb.id).some
+      ackCb(cb) { msg =>
+        for
+          userOpt            <- userRepo.findById(collaboratorId)
+          collaborator       <- ZIO.fromOption(userOpt).orElseFail(new RuntimeException(Errors.NotFound))
+          pageAndMsgEntities <- botService.getTasks(user, collaborator, pageNumber)
+          _ <- listTasks(msg, pageAndMsgEntities._2, pageAndMsgEntities._1, collaborator, user.language)
+        yield ()
+      }
+
+    case TaskDetails(id, pageNumber) in cb as user =>
+      returnTaskDetails(cb, user, id, task => ZIO.succeed(task))
 
     case CheckTask(pageNumber, id) in cb as user =>
       def checkTask(task: TaskWithCollaborator) =
         for
           now <- Clock.instant
-          _   <- taskRepo.check(task.id, now.toEpochMilli, user.id)
+          _   <- taskRepo.check(task.id, now, user.id)
         yield ()
 
       def listTasksAndNotify(task: TaskWithCollaborator, message: Message) =
@@ -122,6 +147,29 @@ final class TaskControllerLive(
             .as(answerCallbackQuery(cb.id, answerText.some).some)
         }
 
+    case TaskDeadlineDate(id, date) in cb as user =>
+      def setDeadline(task: BotTask) =
+        val deadline = task.deadline
+          .map(dt => dt.`with`(date.atTime(dt.toLocalTime())))
+          .getOrElse(date.atStartOfDay())
+        taskRepo.setDeadline(id, Some(deadline), user.id)
+
+      returnTaskDetails(cb, user, id, setDeadline)
+
+    case RemoveTaskDeadline(id) in cb as user =>
+      returnTaskDetails(cb, user, id, task => taskRepo.setDeadline(task.id, deadline = None, userId = user.id))
+
+    case TimePicker(taskId, Some(hour), Some(minute), true) in cb as user =>
+      def setDeadline(task: BotTask) =
+        task.deadline
+          .map { dt =>
+            val deadline = dt
+              .withHour(hour)
+              .withMinute(minute)
+            taskRepo.setDeadline(taskId, Some(deadline), user.id)
+          }
+          .getOrElse(ZIO.succeed(task))
+      returnTaskDetails(cb, user, taskId, setDeadline)
   }
 
   private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
@@ -132,7 +180,7 @@ final class TaskControllerLive(
         sendMessage(
           ChatIntId(chatId),
           msgService.getMessage(MsgId.`tasks-completed-by`, from.language, taskText, completedBy)
-        ).exec.void
+        ).exec.unit
       }
       .getOrElse(ZIO.unit)
 
@@ -149,7 +197,54 @@ final class TaskControllerLive(
       message.messageId.some,
       entities = TypedMessageEntity.toMessageEntities(messageEntities),
       replyMarkup = kbService.tasks(page, collaborator, language).some
-    ).exec.void
+    ).exec.unit
+
+  private def editWithTaskDetails(
+      message: Message,
+      messageEntities: List[TypedMessageEntity],
+      taskId: Long,
+      pageNumber: Int,
+      collaborator: User
+  ) =
+    Clock.instant.flatMap { now =>
+      editMessageText(
+        messageEntities.map(_.text).mkString,
+        ChatIntId(message.chat.id).some,
+        message.messageId.some,
+        entities = TypedMessageEntity.toMessageEntities(messageEntities),
+        replyMarkup = Some(
+          InlineKeyboardMarkup(
+            List(
+              List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+              List(
+                inlineKeyboardButton(
+                  "📅",
+                  DatePicker(taskId, now.atZone(collaborator.timezoneOrDefault).toLocalDate())
+                ),
+                inlineKeyboardButton("🕒", TimePicker(taskId))
+              ),
+              List(
+                inlineKeyboardButton(
+                  msgService.getMessage(MsgId.`tasks`, collaborator.language),
+                  Tasks(pageNumber, collaborator.id)
+                )
+              )
+            )
+          )
+        )
+      ).exec.unit
+    }
+
+  private def returnTaskDetails(cb: CallbackQuery, user: User, id: Long, processTask: BotTask => Task[BotTask]) =
+    ackCb(cb) { msg =>
+      for
+        taskOpt <- taskRepo.findById(id, user.id)
+        task    <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
+        task    <- processTask(task)
+        messageEntities = botService.createTaskDetails(task, user.language)
+        _ <- editWithTaskDetails(msg, messageEntities, task.id, pageNumber = 0, collaborator = user)
+      yield ()
+    }
 
 object TaskControllerLive:
   val layer: URLayer[

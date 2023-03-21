@@ -2,19 +2,26 @@ package ru.johnspade.taskobot
 
 import cats.syntax.option.*
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
+import ru.johnspade.taskobot.core.ChangeLanguage
+import ru.johnspade.taskobot.core.Page
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{ChangeLanguage, Page}
 import ru.johnspade.taskobot.messages.MessageService
-import ru.johnspade.taskobot.task.{NewTask, TaskRepository}
-import ru.johnspade.taskobot.user.{User, UserRepository}
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.taskobot.messages.MsgId
+import ru.johnspade.taskobot.task.NewTask
+import ru.johnspade.taskobot.task.TaskRepository
+import ru.johnspade.taskobot.user.User
+import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.tgbot.messageentities.TypedMessageEntity
+import telegramium.bots.ChatIntId
+import telegramium.bots.ForceReply
+import telegramium.bots.Html
+import telegramium.bots.Message
 import telegramium.bots.client.Method
 import telegramium.bots.high.Api
 import telegramium.bots.high.Methods.sendMessage
 import telegramium.bots.high.implicits.*
-import telegramium.bots.high.keyboards.{InlineKeyboardButtons, InlineKeyboardMarkups}
-import telegramium.bots.{ChatIntId, ForceReply, Html, Message}
+import telegramium.bots.high.keyboards.InlineKeyboardButtons
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import zio.*
 import zio.interop.catz.*
 
@@ -72,7 +79,7 @@ final class CommandControllerLive(
           .map { task =>
             for
               now <- Clock.instant
-              _   <- taskRepo.create(NewTask(user.id, task, now.toEpochMilli, user.id.some))
+              _   <- taskRepo.create(NewTask(user.id, task, now, user.id.some, timezone = user.timezoneOrDefault))
               _ <- sendMessage(
                 ChatIntId(message.chat.id),
                 msgService.taskCreated(task, user.language),
@@ -138,9 +145,14 @@ final class CommandControllerLive(
     }
 
   private def createSettingsMessage(message: Message, user: User) =
+    val currentLanguage = msgService.currentLanguage(user.language)
+    val currentTimezone = s"${msgService.getMessage(MsgId.`timezone`, user.language)}: ${user.timezoneOrDefault.getId}"
     sendMessage(
       ChatIntId(message.chat.id),
-      msgService.currentLanguage(user.language),
+      s"""
+        |$currentLanguage
+        |$currentTimezone
+        |""".stripMargin,
       replyMarkup = InlineKeyboardMarkups
         .singleButton(inlineKeyboardButton(msgService.switchLanguage(user.language), ChangeLanguage))
         .some
