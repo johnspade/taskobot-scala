@@ -185,7 +185,7 @@ final class TaskControllerLive(
         val completedBy = from.fullName
         sendMessage(
           ChatIntId(chatId),
-          msgService.getMessage(MsgId.`tasks-completed-by`, from.language, taskText, completedBy)
+          msgService.getMessage(MsgId.`tasks-completed-by`, collaborator.language, taskText, completedBy)
         ).exec.unit
       }
       .getOrElse(ZIO.unit)
