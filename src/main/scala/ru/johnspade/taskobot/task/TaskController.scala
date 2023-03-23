@@ -107,7 +107,7 @@ final class TaskControllerLive(
       }
 
     case TaskDetails(id, pageNumber) in cb as user =>
-      returnTaskDetails(cb, user, id, task => ZIO.succeed(task))
+      returnTaskDetails(cb, user, id, pageNumber, task => ZIO.succeed(task))
 
     case CheckTask(pageNumber, id) in cb as user =>
       def checkTask(task: TaskWithCollaborator) =
@@ -154,10 +154,16 @@ final class TaskControllerLive(
           .getOrElse(date.atStartOfDay())
         taskRepo.setDeadline(id, Some(deadline), user.id)
 
-      returnTaskDetails(cb, user, id, setDeadline)
+      returnTaskDetails(cb, user, id, pageNumber = 0, processTask = setDeadline)
 
     case RemoveTaskDeadline(id) in cb as user =>
-      returnTaskDetails(cb, user, id, task => taskRepo.setDeadline(task.id, deadline = None, userId = user.id))
+      returnTaskDetails(
+        cb,
+        user,
+        id,
+        pageNumber = 0,
+        processTask = task => taskRepo.setDeadline(task.id, deadline = None, userId = user.id)
+      )
 
     case TimePicker(taskId, Some(hour), Some(minute), true) in cb as user =>
       def setDeadline(task: BotTask) =
@@ -169,7 +175,7 @@ final class TaskControllerLive(
             taskRepo.setDeadline(taskId, Some(deadline), user.id)
           }
           .getOrElse(ZIO.succeed(task))
-      returnTaskDetails(cb, user, taskId, setDeadline)
+      returnTaskDetails(cb, user, taskId, pageNumber = 0, processTask = setDeadline)
   }
 
   private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
@@ -235,14 +241,20 @@ final class TaskControllerLive(
       ).exec.unit
     }
 
-  private def returnTaskDetails(cb: CallbackQuery, user: User, id: Long, processTask: BotTask => Task[BotTask]) =
+  private def returnTaskDetails(
+      cb: CallbackQuery,
+      user: User,
+      id: Long,
+      pageNumber: Int,
+      processTask: BotTask => Task[BotTask]
+  ) =
     ackCb(cb) { msg =>
       for
         taskOpt <- taskRepo.findById(id, user.id)
         task    <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
         task    <- processTask(task)
         messageEntities = botService.createTaskDetails(task, user.language)
-        _ <- editWithTaskDetails(msg, messageEntities, task.id, pageNumber = 0, collaborator = user)
+        _ <- editWithTaskDetails(msg, messageEntities, task.id, pageNumber = pageNumber, collaborator = user)
       yield ()
     }
 
