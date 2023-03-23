@@ -21,5 +21,6 @@ enablePlugins(JavaAppPackaging, DockerPlugin, AshScriptPlugin)
 ThisBuild / dynverSeparator := "-"
 dockerBaseImage             := "eclipse-temurin:17.0.6_10-jre-jammy"
 dockerExposedPorts ++= Seq(8080)
-dockerRepository := Some("ghcr.io/johnspade/tasko_bot")
+dockerRepository := Some("ghcr.io")
+dockerUsername   := Some("johnspade")
 dockerLabels     := Map("org.opencontainers.image.source" -> "https://github.com/johnspade/tasko_bot")
