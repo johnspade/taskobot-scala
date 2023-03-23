@@ -11,7 +11,7 @@ services:
     ports:
       - ${DB_PORT:-5432}:5432
   bot:
-    image: tasko_bot:latest
+    image: ghcr.io/johnspade/tasko_bot:0.0.0-109-91c1c725-20230323-2127
     depends_on: 
       - db
     ports:
