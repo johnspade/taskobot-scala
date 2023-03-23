@@ -15,8 +15,12 @@ import ru.johnspade.taskobot.core.CbData
 import ru.johnspade.taskobot.core.Chats
 import ru.johnspade.taskobot.core.CheckTask
 import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.RemoveTaskDeadline
+import ru.johnspade.taskobot.core.TaskDeadlineDate
+import ru.johnspade.taskobot.core.TaskDetails
 import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.toUser
+import ru.johnspade.taskobot.core.TimePicker
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
@@ -31,6 +35,10 @@ import zio.*
 import zio.test.Assertion.*
 import zio.test.TestAspect.*
 import zio.test.*
+
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 object TaskControllerSpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment, Throwable] = (suite("TaskControllerSpec")(
@@ -137,6 +145,59 @@ object TaskControllerSpec extends ZIOSpecDefault:
           confirmTaskReplyAssertions = assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
           unconfirmedTaskAssertions  = assert(unconfirmedTask.get.receiver)(isNone)
         yield confirmTaskReplyAssertions && unconfirmedTaskAssertions
+      }
+    ),
+    suite("TaskDetails")(
+      test("should handle TaskDetails callback query") {
+        for
+          _     <- TestClock.setTime(Instant.EPOCH)
+          now   <- Clock.instant
+          task  <- createTask("Buy some milk", kaitrin.id.some)
+          _     <- createMock(Mocks.editMessageTextTaskDetails(task.id, now), Mocks.messageResponse)
+          reply <- callUserRoute(TaskDetails(task.id, 0), johnTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      }
+    ),
+    suite("TaskDeadlineDate")(
+      test("should update task deadline date") {
+        for
+          _    <- TestClock.setTime(Instant.EPOCH)
+          now  <- Clock.instant
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          _    <- createMock(Mocks.editMessageTextTaskDeadlineUpdated(task.id, now), Mocks.messageResponse)
+          deadlineDate = LocalDate.ofInstant(now, UTC)
+          reply       <- callUserRoute(TaskDeadlineDate(task.id, deadlineDate), johnTg)
+          updatedTask <- TaskRepository.findById(task.id)
+        yield assert(updatedTask.get.deadline)(equalTo(deadlineDate.atStartOfDay().some)) &&
+          assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      }
+    ),
+    suite("RemoveTaskDeadline")(
+      test("should remove task deadline") {
+        for
+          _    <- TestClock.setTime(Instant.EPOCH)
+          now  <- Clock.instant
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          deadlineDate = LocalDateTime.ofInstant(now, UTC)
+          taskWithDeadline <- TaskRepository.setDeadline(task.id, deadlineDate.some, kaitrin.id)
+          _                <- createMock(Mocks.editMessageTextTaskDeadlineRemoved(task.id, now), Mocks.messageResponse)
+          reply            <- callUserRoute(RemoveTaskDeadline(task.id), johnTg)
+          updatedTask      <- TaskRepository.findById(task.id)
+        yield assert(taskWithDeadline.deadline)(isSome) && assert(updatedTask.get.deadline)(isNone) &&
+          assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      }
+    ),
+    suite("TimePicker")(
+      test("should handle TimePicker callback query") {
+        for
+          _    <- TestClock.setTime(Instant.EPOCH)
+          now  <- Clock.instant
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          deadlineDate = LocalDateTime.ofInstant(now, UTC)
+          _     <- TaskRepository.setDeadline(task.id, deadlineDate.some, kaitrin.id)
+          _     <- createMock(Mocks.editMessageTextTimePicker(task.id, now), Mocks.messageResponse)
+          reply <- callUserRoute(TimePicker(task.id, 13.some, 15.some, confirm = true), johnTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
       }
     )
   )

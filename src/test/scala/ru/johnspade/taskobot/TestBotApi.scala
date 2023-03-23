@@ -9,16 +9,20 @@ import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.JsonBody
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
+import ru.johnspade.taskobot.TestUsers.john
 import ru.johnspade.taskobot.TestUsers.johnChatId
 import ru.johnspade.taskobot.TestUsers.kaitrin
 import ru.johnspade.taskobot.TestUsers.kaitrinChatId
 import ru.johnspade.taskobot.core.Chats
+import ru.johnspade.taskobot.core.CheckTask
 import ru.johnspade.taskobot.core.ConfirmTask
+import ru.johnspade.taskobot.core.DatePicker
 import ru.johnspade.taskobot.core.Ignore
 import ru.johnspade.taskobot.core.SetLanguage
 import ru.johnspade.taskobot.core.TaskDetails
 import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.TimePicker
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
@@ -36,12 +40,15 @@ import telegramium.bots.high.keyboards.*
 import zio.*
 import zio.interop.catz.*
 
+import java.time.Instant
+import java.time.LocalDate
+
 object TestBotApi:
   private val mockServerContainer: ULayer[MockServerContainer] =
     ZLayer.scoped {
       ZIO.acquireRelease {
         ZIO.attemptBlocking {
-          val container = MockServerContainer("5.13.2")
+          val container = MockServerContainer("5.15.0")
           container.start()
           container
         }.orDie
@@ -52,7 +59,12 @@ object TestBotApi:
     ZLayer(
       ZIO
         .service[MockServerContainer]
-        .flatMap(mockServer => ZIO.attemptBlocking(new MockServerClient("localhost", mockServer.serverPort)).orDie)
+        .flatMap { mockServer =>
+          ZIO
+            .attemptBlocking(new MockServerClient("localhost", mockServer.serverPort))
+            // .tap(client => ZIO.attemptBlocking(client.openUI()))
+            .orDie
+        }
     )
 
   private val api: URLayer[MockServerContainer, TelegramBotApi] = ZLayer.scoped {
@@ -371,3 +383,164 @@ object TestBotApi:
         ChatIntId(johnChatId),
         """Task "Buy some milk" has been marked completed by Kaitrin."""
       )
+
+    def editMessageTextTaskDetails(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
+      Methods.editMessageText(
+        s"""|Buy some milk
+            |
+            |🕒 Due date: -
+            |
+            |Created at: 1970-01-01 00:00""".stripMargin,
+        ChatIntId(0).some,
+        messageId = 0.some,
+        entities = TypedMessageEntity.toMessageEntities(
+          List(
+            plain"Buy some milk",
+            lineBreak,
+            lineBreak,
+            bold"🕒 Due date: -",
+            lineBreak,
+            lineBreak,
+            italic"Created at: 1970-01-01 00:00"
+          )
+        ),
+        replyMarkup = InlineKeyboardMarkup(
+          List(
+            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+            List(
+              inlineKeyboardButton(
+                "📅",
+                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
+              ),
+              inlineKeyboardButton("🕒", TimePicker(taskId))
+            ),
+            List(
+              inlineKeyboardButton(
+                "Tasks",
+                Tasks(0, john.id)
+              )
+            )
+          )
+        ).some
+      )
+
+    def editMessageTextTaskDeadlineUpdated(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
+      Methods.editMessageText(
+        s"""|Buy some milk
+            |
+            |🕒 Due date: 1970-01-01 00:00
+            |
+            |Created at: 1970-01-01 00:00""".stripMargin,
+        ChatIntId(0).some,
+        messageId = 0.some,
+        entities = TypedMessageEntity.toMessageEntities(
+          List(
+            plain"Buy some milk",
+            lineBreak,
+            lineBreak,
+            bold"🕒 Due date: 1970-01-01 00:00",
+            lineBreak,
+            lineBreak,
+            italic"Created at: 1970-01-01 00:00"
+          )
+        ),
+        replyMarkup = InlineKeyboardMarkup(
+          List(
+            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+            List(
+              inlineKeyboardButton(
+                "📅",
+                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
+              ),
+              inlineKeyboardButton("🕒", TimePicker(taskId))
+            ),
+            List(
+              inlineKeyboardButton(
+                "Tasks",
+                Tasks(0, john.id)
+              )
+            )
+          )
+        ).some
+      )
+
+    def editMessageTextTaskDeadlineRemoved(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
+      Methods.editMessageText(
+        s"""|Buy some milk
+            |
+            |🕒 Due date: -
+            |
+            |Created at: 1970-01-01 00:00""".stripMargin,
+        ChatIntId(0).some,
+        messageId = 0.some,
+        entities = TypedMessageEntity.toMessageEntities(
+          List(
+            plain"Buy some milk",
+            lineBreak,
+            lineBreak,
+            bold"🕒 Due date: -",
+            lineBreak,
+            lineBreak,
+            italic"Created at: 1970-01-01 00:00"
+          )
+        ),
+        replyMarkup = InlineKeyboardMarkup(
+          List(
+            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+            List(
+              inlineKeyboardButton(
+                "📅",
+                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
+              ),
+              inlineKeyboardButton("🕒", TimePicker(taskId))
+            ),
+            List(
+              inlineKeyboardButton(
+                "Tasks",
+                Tasks(0, john.id)
+              )
+            )
+          )
+        ).some
+      )
+
+    def editMessageTextTimePicker(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
+      Methods.editMessageText(
+        s"""|Buy some milk
+            |
+            |🕒 Due date: 1970-01-01 13:15
+            |
+            |Created at: 1970-01-01 00:00""".stripMargin,
+        ChatIntId(0).some,
+        messageId = 0.some,
+        entities = TypedMessageEntity.toMessageEntities(
+          List(
+            plain"Buy some milk",
+            lineBreak,
+            lineBreak,
+            bold"🕒 Due date: 1970-01-01 13:15",
+            lineBreak,
+            lineBreak,
+            italic"Created at: 1970-01-01 00:00"
+          )
+        ),
+        replyMarkup = InlineKeyboardMarkup(
+          List(
+            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+            List(
+              inlineKeyboardButton(
+                "📅",
+                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
+              ),
+              inlineKeyboardButton("🕒", TimePicker(taskId))
+            ),
+            List(
+              inlineKeyboardButton(
+                "Tasks",
+                Tasks(0, john.id)
+              )
+            )
+          )
+        ).some
+      )
+  end Mocks

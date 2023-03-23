@@ -4,12 +4,12 @@ import ru.johnspade.taskobot.core.Ignore
 import ru.johnspade.taskobot.core.TaskDetails
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.TimePicker
+import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageService
+import ru.johnspade.taskobot.messages.MsgId
 import telegramium.bots.InlineKeyboardMarkup
 import zio.ZIO
 import zio.ZLayer
-import ru.johnspade.taskobot.messages.Language
-import ru.johnspade.taskobot.messages.MsgId
 
 trait TimePickerService:
   def generateTimePicker(
@@ -65,7 +65,7 @@ final class TimePickerServiceLive(msgService: MessageService) extends TimePicker
       )
     )
 
-    InlineKeyboardMarkup(keyboard.map(_.toList))
+    InlineKeyboardMarkup(keyboard)
 end TimePickerServiceLive
 
 object TimePickerServiceLive:

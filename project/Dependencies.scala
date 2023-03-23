@@ -8,16 +8,16 @@ object Dependencies {
     val zioCats          = "23.0.0.2"
     val zioLogging       = "2.1.11"
     val zioJson          = "0.4.2"
-    val logback          = "1.2.7"
+    val logback          = "1.4.5"
     val cats             = "2.6.1"
     val pureconfig       = "0.17.1"
     val doobie           = "1.0.0-RC1"
     val flyway           = "8.0.5"
     val http4s           = "0.23.6"
     val postgresql       = "42.3.1"
-    val testcontainers   = "0.40.6"
+    val testcontainers   = "0.40.14"
     val mockitoScala     = "1.16.46"
-    val mockServerClient = "5.13.2"
+    val mockServerClient = "5.15.0"
   }
 
   val distributionDependencies = Seq(

@@ -11,9 +11,15 @@ import ru.johnspade.taskobot.core.Chats
 import ru.johnspade.taskobot.core.CheckTask
 import ru.johnspade.taskobot.core.ConfirmTask
 import ru.johnspade.taskobot.core.Ignore
+import ru.johnspade.taskobot.core.RemoveTaskDeadline
+import ru.johnspade.taskobot.core.TaskDeadlineDate
+import ru.johnspade.taskobot.core.TaskDetails
 import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.TimePicker
+import ru.johnspade.taskobot.datetime.DatePickerServiceLive
 import ru.johnspade.taskobot.datetime.DateTimeControllerLive
+import ru.johnspade.taskobot.datetime.TimePickerServiceLive
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
 import ru.johnspade.taskobot.settings.SettingsControllerLive
@@ -32,9 +38,9 @@ import telegramium.bots.high.keyboards.KeyboardButtons
 import zio.*
 import zio.test.TestAspect.sequential
 import zio.test.*
-import ru.johnspade.taskobot.datetime.TimePickerServiceLive
-import ru.johnspade.taskobot.datetime.DatePickerServiceLive
-import ru.johnspade.taskobot.core.TaskDetails
+
+import java.time.Instant
+import java.time.LocalDate
 
 object TaskobotISpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment with Scope, Any] = (suite("TaskobotISpec")(
@@ -120,6 +126,22 @@ object TaskobotISpec extends ZIOSpecDefault:
         assertTrue(tasksReply.contains(Methods.answerCallbackQuery("0")))
       )
 
+      val getTaskDetails = sendCallbackQuery(TaskDetails(1L, firstPage)).map { detailsReply =>
+        assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+      }
+
+      val setDeadlineDate = sendCallbackQuery(TaskDeadlineDate(1L, LocalDate.EPOCH)).map { detailsReply =>
+        assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+      }
+
+      val setDeadlineTime = sendCallbackQuery(TimePicker(1L, 0.some, 0.some, confirm = true)).map { detailsReply =>
+        assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+      }
+
+      val removeDeadline = sendCallbackQuery(RemoveTaskDeadline(1L)).map { detailsReply =>
+        assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+      }
+
       val checkTask =
         sendCallbackQuery(CheckTask(firstPage, 1L), kaitrinTg, chatId = kaitrinChatId).map(checkTaskReply =>
           assertTrue(
@@ -128,22 +150,36 @@ object TaskobotISpec extends ZIOSpecDefault:
         )
 
       for
-        _                     <- createMock(Mocks.addConfirmButton, Mocks.messageResponse)
-        _                     <- createMock(Mocks.removeReplyMarkup, Mocks.messageResponse)
-        _                     <- createMock(Mocks.editMessageTextList, Mocks.messageResponse)
-        _                     <- createMock(Mocks.editMessageTextCheckTask(kaitrinChatId), Mocks.messageResponse)
-        _                     <- createMock(Mocks.taskCompletedMessage, Mocks.messageResponse)
-        typeTaskAssertions    <- typeTask
-        createTaskAssertions  <- createTask
-        confirmTaskAssertions <- confirmTask
-        listChatsAssertions   <- listChats
-        listTasksAssertions   <- listTasks
-        checkTaskAssertions   <- checkTask
+        _                      <- TestClock.setTime(Instant.EPOCH)
+        now                    <- Clock.instant
+        _                      <- createMock(Mocks.addConfirmButton, Mocks.messageResponse)
+        _                      <- createMock(Mocks.removeReplyMarkup, Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextList, Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextCheckTask(kaitrinChatId), Mocks.messageResponse)
+        _                      <- createMock(Mocks.taskCompletedMessage, Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextTaskDetails(1L, now), Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextTaskDeadlineUpdated(1L, now), Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextTimePicker(1L, now), Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextTaskDeadlineRemoved(1L, now), Mocks.messageResponse)
+        typeTaskAssertions     <- typeTask
+        createTaskAssertions   <- createTask
+        confirmTaskAssertions  <- confirmTask
+        listChatsAssertions    <- listChats
+        listTasksAssertions    <- listTasks
+        taskDetailsAssertions  <- getTaskDetails
+        deadlineDateAssertions <- setDeadlineDate
+        deadlineTimeAssertions <- setDeadlineTime
+        noDeadlineAssertions   <- removeDeadline
+        checkTaskAssertions    <- checkTask
       yield typeTaskAssertions &&
         createTaskAssertions &&
         confirmTaskAssertions &&
         listChatsAssertions &&
         listTasksAssertions &&
+        taskDetailsAssertions &&
+        deadlineDateAssertions &&
+        deadlineTimeAssertions &&
+        noDeadlineAssertions &&
         checkTaskAssertions
     },
     test("personal tasks") {
@@ -155,7 +191,7 @@ object TaskobotISpec extends ZIOSpecDefault:
               Methods.sendMessage(
                 ChatIntId(johnChatId),
                 "Taskobot is a task collaboration bot. Type <code>@tasko_bot task</code> in any private chat and " +
-                  "select <b>Create task</b>. After receiver's confirmation collaborative task will be created. " +
+                  "select <b>Create task</b>. After receiver's confirmation, a collaborative task will be created. " +
                   "Type /list in the bot chat to see your tasks.\n\nSwitch language: /settings\n" +
                   "Support a creator: https://buymeacoff.ee/johnspade ☕\n\n" +
                   "Forward messages here to create personal tasks.",

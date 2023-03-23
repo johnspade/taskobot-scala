@@ -1,25 +1,31 @@
 package ru.johnspade.taskobot
 
-import java.time.Instant
-
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
-import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
+import ru.johnspade.taskobot.TestBotApi.Mocks
+import ru.johnspade.taskobot.TestBotApi.createMock
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.*
+import ru.johnspade.taskobot.core.ChangeLanguage
+import ru.johnspade.taskobot.core.Chats
+import ru.johnspade.taskobot.core.TaskDetails
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.{ChangeLanguage, Chats, TaskDetails}
-import ru.johnspade.taskobot.messages.{MessageServiceLive, MsgConfig}
-import ru.johnspade.taskobot.task.{BotTask, TaskRepository, TaskRepositoryLive}
+import ru.johnspade.taskobot.messages.MessageServiceLive
+import ru.johnspade.taskobot.messages.MsgConfig
+import ru.johnspade.taskobot.task.BotTask
+import ru.johnspade.taskobot.task.TaskRepository
+import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import telegramium.bots.high.Methods
 import telegramium.bots.ChatIntId
-import zio.test.*
+import telegramium.bots.high.Methods
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import zio.*
+import zio.test.*
+
+import java.time.Instant
 
 object CommandControllerSpec extends ZIOSpecDefault:
   def spec: Spec[TestEnvironment with Scope, Any] = suite("CommandControllerSpec")(
@@ -66,7 +72,7 @@ object CommandControllerSpec extends ZIOSpecDefault:
       }
     ),
     suite("/settings")(
-      test("should reply with language settings") {
+      test("should reply with language and timezone settings") {
         ZIO
           .serviceWithZIO[CommandController](_.onSettingsCommand(createMessage("/settings")))
           .map(reply =>

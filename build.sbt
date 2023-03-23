@@ -8,7 +8,8 @@ scalacOptions ++= Seq(
   "-language:higherKinds",
   "-Wunused:imports",
   "-Wunused:locals",
-  "-Wunused:privates"
+  "-Wunused:privates",
+  "-deprecation"
 )
 
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"

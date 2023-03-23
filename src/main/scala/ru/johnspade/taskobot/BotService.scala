@@ -2,6 +2,7 @@ package ru.johnspade.taskobot
 
 import ru.johnspade.taskobot.core.Page
 import ru.johnspade.taskobot.core.TelegramOps.toUser
+import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
 import ru.johnspade.taskobot.task.BotTask
@@ -17,7 +18,6 @@ import zio.interop.catz.*
 
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import ru.johnspade.taskobot.messages.Language
 
 trait BotService:
   def updateUser(
@@ -48,6 +48,9 @@ object BotService:
       pageNumber: Int
   ): RIO[BotService, (Page[BotTask], List[TypedMessageEntity])] =
     ZIO.serviceWithZIO(_.getTasks(`for`, collaborator, pageNumber))
+
+  def createTaskDetails(task: BotTask, language: Language): ZIO[BotService, Nothing, List[TypedMessageEntity]] =
+    ZIO.serviceWith(_.createTaskDetails(task, language))
 
 class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgService: MessageService) extends BotService:
   private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -93,22 +96,26 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
 
   override def createTaskDetails(task: BotTask, language: Language): List[TypedMessageEntity] =
     val deadline = List(
-      bold"🕒 ${msgService.getMessage(MsgId.`tasks-due-date`, language)}: ",
-      Bold(task.deadline.map(_.format(dateTimeFormatter)).getOrElse("-")),
+      Bold(
+        s"🕒 ${msgService.getMessage(MsgId.`tasks-due-date`, language)}: " +
+          task.deadline
+            .map(_.format(dateTimeFormatter))
+            .getOrElse("-")
+      ),
       lineBreak,
       lineBreak
     )
     val created = List(
-      italic"${msgService.getMessage(MsgId.`tasks-created-at`, language)}: ",
       Italic(
-        task.createdAt
-          .atZone(task.timezoneOrDefault)
-          .format(dateTimeFormatter)
+        s"${msgService.getMessage(MsgId.`tasks-created-at`, language)}: " +
+          task.createdAt
+            .atZone(task.timezoneOrDefault)
+            .format(dateTimeFormatter)
       )
     )
     val breaks = List(lineBreak, lineBreak)
     val footer = breaks ++ deadline ++ created
-    val text   = List(Plain(limitTaskText(task.text, footer.map(_.text).mkString.length))) // todo test
+    val text   = List(Plain(limitTaskText(task.text, footer.map(_.text).mkString.length)))
     text ++ footer
 
   private case class TaskLine(text: String, senderName: String)
