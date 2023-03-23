@@ -9,7 +9,6 @@ import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.JsonBody
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.TestUsers.john
 import ru.johnspade.taskobot.TestUsers.johnChatId
 import ru.johnspade.taskobot.TestUsers.kaitrin
 import ru.johnspade.taskobot.TestUsers.kaitrinChatId
@@ -417,7 +416,7 @@ object TestBotApi:
             List(
               inlineKeyboardButton(
                 "Tasks",
-                Tasks(0, john.id)
+                Tasks(0, kaitrin.id)
               )
             )
           )
@@ -457,7 +456,7 @@ object TestBotApi:
             List(
               inlineKeyboardButton(
                 "Tasks",
-                Tasks(0, john.id)
+                Tasks(0, kaitrin.id)
               )
             )
           )
@@ -497,7 +496,7 @@ object TestBotApi:
             List(
               inlineKeyboardButton(
                 "Tasks",
-                Tasks(0, john.id)
+                Tasks(0, kaitrin.id)
               )
             )
           )
@@ -537,7 +536,7 @@ object TestBotApi:
             List(
               inlineKeyboardButton(
                 "Tasks",
-                Tasks(0, john.id)
+                Tasks(0, kaitrin.id)
               )
             )
           )

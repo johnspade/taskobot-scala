@@ -21,6 +21,8 @@ case class BotTask(
     timezone: Option[ZoneId] = None
 ) {
   val timezoneOrDefault: ZoneId = timezone.getOrElse(UTC)
+
+  def getCollaborator(userId: Long): Long = receiver.filterNot(_ == userId).getOrElse(sender)
 }
 
 case class TaskWithCollaborator(

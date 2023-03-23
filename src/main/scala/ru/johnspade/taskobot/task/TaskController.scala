@@ -254,7 +254,15 @@ final class TaskControllerLive(
         task    <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
         task    <- processTask(task)
         messageEntities = botService.createTaskDetails(task, user.language)
-        _ <- editWithTaskDetails(msg, messageEntities, task.id, pageNumber = pageNumber, collaborator = user)
+        collaboratorId  = task.getCollaborator(user.id)
+        collaborator <- if collaboratorId == user.id then ZIO.some(user) else userRepo.findById(collaboratorId)
+        _ <- editWithTaskDetails(
+          msg,
+          messageEntities,
+          task.id,
+          pageNumber = pageNumber,
+          collaborator = collaborator.getOrElse(user)
+        )
       yield ()
     }
 
