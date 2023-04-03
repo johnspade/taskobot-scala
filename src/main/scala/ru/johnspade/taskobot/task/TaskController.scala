@@ -8,18 +8,9 @@ import ru.johnspade.taskobot.DefaultPageSize
 import ru.johnspade.taskobot.Errors
 import ru.johnspade.taskobot.KeyboardService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.Chats
-import ru.johnspade.taskobot.core.CheckTask
-import ru.johnspade.taskobot.core.ConfirmTask
-import ru.johnspade.taskobot.core.DatePicker
-import ru.johnspade.taskobot.core.Page
-import ru.johnspade.taskobot.core.RemoveTaskDeadline
-import ru.johnspade.taskobot.core.TaskDeadlineDate
-import ru.johnspade.taskobot.core.TaskDetails
-import ru.johnspade.taskobot.core.Tasks
-import ru.johnspade.taskobot.core.TelegramOps.ackCb
-import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.TelegramOps.*
 import ru.johnspade.taskobot.core.TimePicker
+import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
@@ -37,6 +28,7 @@ import telegramium.bots.client.Method
 import telegramium.bots.high.Methods.*
 import telegramium.bots.high.*
 import telegramium.bots.high.implicits.*
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import zio.*
 import zio.interop.catz.*
 
@@ -48,12 +40,12 @@ trait TaskController:
 final class TaskControllerLive(
     userRepo: UserRepository,
     taskRepo: TaskRepository,
+    reminderRepo: ReminderRepository,
     botService: BotService,
     msgService: MessageService,
     kbService: KeyboardService
-)(implicit
-    api: Api[Task]
-) extends TaskController:
+)(using api: Api[Task])
+    extends TaskController:
   override val routes: CbDataRoutes[Task] = CallbackQueryRoutes.of { case ConfirmTask(taskIdOpt, senderIdOpt) in cb =>
     def confirm(task: BotTask, from: User): Task[Option[Method[_]]] =
       for
@@ -81,7 +73,6 @@ final class TaskControllerLive(
   }
 
   override val userRoutes: CbDataUserRoutes[Task] = CallbackQueryContextRoutes.of {
-
     case Chats(pageNumber) in cb as user =>
       ackCb(cb) { msg =>
         for
@@ -175,7 +166,61 @@ final class TaskControllerLive(
             taskRepo.setDeadline(taskId, Some(deadline), user.id)
           }
           .getOrElse(ZIO.succeed(task))
+
       returnTaskDetails(cb, user, taskId, pageNumber = 0, processTask = setDeadline)
+
+    case Reminders(taskId, pageNumber) in cb as user =>
+      for
+        task      <- getTaskSafe(taskId, user.id)
+        reminders <- reminderRepo.getByTaskIdAndUserId(taskId, user.id)
+        result <- taskDetails(
+          cb,
+          user,
+          task,
+          processTask = ZIO.succeed(_),
+          generateKeyboard = _ => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber))
+        )
+      yield result
+
+    case StandardReminders(taskId, pageNumber) in cb as user =>
+      for
+        task <- getTaskSafe(taskId, user.id)
+        result <- taskDetails(
+          cb,
+          user,
+          task,
+          processTask = ZIO.succeed(_),
+          generateKeyboard = _ => ZIO.succeed(createDefaultRemindersKeyboard(taskId, pageNumber))
+        )
+      yield result
+
+    case CreateReminder(taskId, offsetMinutes) in cb as user =>
+      for
+        task      <- getTaskSafe(taskId, user.id)
+        _         <- reminderRepo.create(task.id, user.id, offsetMinutes).when(task.deadline.isDefined)
+        reminders <- reminderRepo.getByTaskIdAndUserId(task.id, user.id)
+        result <- taskDetails(
+          cb,
+          user,
+          task,
+          processTask = ZIO.succeed(_),
+          generateKeyboard = _ => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
+        )
+      yield result
+
+    case RemoveReminder(reminderId, taskId) in cb as user =>
+      for
+        task      <- getTaskSafe(taskId, user.id)
+        _         <- reminderRepo.delete(reminderId)
+        reminders <- reminderRepo.getByTaskIdAndUserId(task.id, user.id)
+        result <- taskDetails(
+          cb,
+          user,
+          task,
+          processTask = ZIO.succeed(_),
+          generateKeyboard = _ => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
+        )
+      yield result
   }
 
   private def notify(task: TaskWithCollaborator, from: User, collaborator: User) =
@@ -205,40 +250,94 @@ final class TaskControllerLive(
       replyMarkup = kbService.tasks(page, collaborator, language).some
     ).exec.unit
 
+  private def createDefaultRemindersKeyboard(taskId: Long, pageNumber: Int) =
+    InlineKeyboardMarkups.singleColumn(
+      List(
+        inlineKeyboardButton("At start", CreateReminder(taskId, 0)),
+        inlineKeyboardButton("1 minute before", CreateReminder(taskId, 1)),
+        inlineKeyboardButton("5 minutes before", CreateReminder(taskId, 5)),
+        inlineKeyboardButton("10 minutes before", CreateReminder(taskId, 10)),
+        inlineKeyboardButton("30 minutes before", CreateReminder(taskId, 30)),
+        inlineKeyboardButton("1 hour before", CreateReminder(taskId, 60)),
+        inlineKeyboardButton("1 day before", CreateReminder(taskId, 60 * 24)),
+        inlineKeyboardButton("2 days before", CreateReminder(taskId, 60 * 24 * 2)),
+        inlineKeyboardButton("Back", Reminders(taskId, pageNumber))
+      )
+    )
+
+  private def minutesToLabel(minutes: Int): String =
+    val days                      = minutes / (60 * 24)
+    val remainingMinutesAfterDays = minutes                   % (60 * 24)
+    val hours                     = remainingMinutesAfterDays / 60
+    val remainingMinutes          = remainingMinutesAfterDays % 60
+
+    (days, hours, remainingMinutes) match {
+      case (0, 0, 0) => "At start"
+      case (d, h, m) =>
+        val dayLabel    = if (d > 0) s"$d d " else ""
+        val hourLabel   = if (h > 0) s"$h h " else ""
+        val minuteLabel = if (m > 0) s"$m m " else ""
+        s"$dayLabel$hourLabel$minuteLabel before".trim
+    }
+
+  private def createRemindersKeyboard(
+      taskId: Long,
+      reminders: List[Reminder],
+      pageNumber: Int
+  ) =
+    InlineKeyboardMarkup(
+      reminders.map { reminder =>
+        List(
+          inlineKeyboardButton(
+            "🔔 " + minutesToLabel(reminder.offsetMinutes),
+            RemoveReminder(reminder.id, reminder.taskId)
+          )
+        )
+      } ++
+        List(
+          List(
+            inlineKeyboardButton("Add", StandardReminders(taskId, pageNumber)),
+            inlineKeyboardButton("Back", TaskDetails(taskId, pageNumber))
+          )
+        )
+    )
+
   private def editWithTaskDetails(
       message: Message,
       messageEntities: List[TypedMessageEntity],
-      taskId: Long,
-      pageNumber: Int,
-      collaborator: User
+      keyboard: InlineKeyboardMarkup
   ) =
-    Clock.instant.flatMap { now =>
-      editMessageText(
-        messageEntities.map(_.text).mkString,
-        ChatIntId(message.chat.id).some,
-        message.messageId.some,
-        entities = TypedMessageEntity.toMessageEntities(messageEntities),
-        replyMarkup = Some(
-          InlineKeyboardMarkup(
-            List(
-              List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
-              List(
-                inlineKeyboardButton(
-                  "📅",
-                  DatePicker(taskId, now.atZone(collaborator.timezoneOrDefault).toLocalDate())
-                ),
-                inlineKeyboardButton("🕒", TimePicker(taskId))
-              ),
-              List(
-                inlineKeyboardButton(
-                  msgService.getMessage(MsgId.`tasks`, collaborator.language),
-                  Tasks(pageNumber, collaborator.id)
-                )
-              )
-            )
-          )
-        )
-      ).exec.unit
+    editMessageText(
+      messageEntities.map(_.text).mkString,
+      ChatIntId(message.chat.id).some,
+      message.messageId.some,
+      entities = TypedMessageEntity.toMessageEntities(messageEntities),
+      replyMarkup = Some(keyboard)
+    ).exec.unit
+
+  private def getTaskSafe(id: Long, userId: Long) =
+    for
+      taskOpt <- taskRepo.findById(id, userId)
+      task    <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
+    yield task
+
+  private def taskDetails(
+      cb: CallbackQuery,
+      user: User,
+      task: BotTask,
+      processTask: BotTask => Task[BotTask],
+      generateKeyboard: User => Task[InlineKeyboardMarkup]
+  ) =
+    ackCb(cb) { msg =>
+      for
+        processedTask <- processTask(task)
+        messageEntities = botService.createTaskDetails(processedTask, user.language)
+        collaboratorId  = processedTask.getCollaborator(user.id)
+        collaboratorOpt <- if collaboratorId == user.id then ZIO.some(user) else userRepo.findById(collaboratorId)
+        collaborator = collaboratorOpt.getOrElse(user)
+        keyboard <- generateKeyboard(collaborator)
+        _        <- editWithTaskDetails(msg, messageEntities, keyboard)
+      yield ()
     }
 
   private def returnTaskDetails(
@@ -248,36 +347,31 @@ final class TaskControllerLive(
       pageNumber: Int,
       processTask: BotTask => Task[BotTask]
   ) =
-    ackCb(cb) { msg =>
-      for
-        taskOpt <- taskRepo.findById(id, user.id)
-        task    <- ZIO.fromOption(taskOpt).orElseFail(new RuntimeException(Errors.NotFound))
-        task    <- processTask(task)
-        messageEntities = botService.createTaskDetails(task, user.language)
-        collaboratorId  = task.getCollaborator(user.id)
-        collaborator <- if collaboratorId == user.id then ZIO.some(user) else userRepo.findById(collaboratorId)
-        _ <- editWithTaskDetails(
-          msg,
-          messageEntities,
-          task.id,
-          pageNumber = pageNumber,
-          collaborator = collaborator.getOrElse(user)
-        )
-      yield ()
+    getTaskSafe(id, user.id).flatMap { task =>
+      taskDetails(
+        cb,
+        user,
+        task,
+        processTask,
+        collaborator => kbService.taskDetails(id, pageNumber, collaborator)
+      )
     }
+end TaskControllerLive
 
 object TaskControllerLive:
   val layer: URLayer[
-    UserRepository with TaskRepository with BotService with MessageService with KeyboardService with TelegramBotApi,
+    UserRepository & TaskRepository & ReminderRepository & BotService & MessageService & KeyboardService &
+      TelegramBotApi,
     TaskController
   ] =
     ZLayer(
       for
-        userRepo   <- ZIO.service[UserRepository]
-        taskRepo   <- ZIO.service[TaskRepository]
-        botService <- ZIO.service[BotService]
-        msgService <- ZIO.service[MessageService]
-        kbService  <- ZIO.service[KeyboardService]
-        api        <- ZIO.service[TelegramBotApi]
-      yield TaskControllerLive(userRepo, taskRepo, botService, msgService, kbService)(api)
+        userRepo     <- ZIO.service[UserRepository]
+        taskRepo     <- ZIO.service[TaskRepository]
+        reminderRepo <- ZIO.service[ReminderRepository]
+        botService   <- ZIO.service[BotService]
+        msgService   <- ZIO.service[MessageService]
+        kbService    <- ZIO.service[KeyboardService]
+        api          <- ZIO.service[TelegramBotApi]
+      yield TaskControllerLive(userRepo, taskRepo, reminderRepo, botService, msgService, kbService)(using api)
     )

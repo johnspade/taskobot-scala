@@ -273,6 +273,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
     TestBotApi.testApiLayer,
     UserRepositoryLive.layer,
     TaskRepositoryLive.layer,
+    ReminderRepositoryLive.layer,
     MsgConfig.live,
     MessageServiceLive.layer,
     KeyboardServiceLive.layer,

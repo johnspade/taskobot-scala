@@ -1,5 +1,6 @@
 package ru.johnspade.taskobot.user
 
+import cats.data.NonEmptyList
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
@@ -20,6 +21,10 @@ trait UserRepository:
 
   def findUsersWithSharedTasks(id: Long)(offset: Long, limit: Int): Task[List[User]]
 
+  def findAll(ids: NonEmptyList[Long]): Task[List[User]]
+
+  def setBlockedBotTrue(id: Long): Task[Unit]
+
   def clear(): Task[Unit]
 
 object UserRepository:
@@ -34,6 +39,9 @@ object UserRepository:
 
   def findUsersWithSharedTasks(id: Long)(offset: Long, limit: Int): ZIO[UserRepository, Throwable, List[User]] =
     ZIO.serviceWithZIO(_.findUsersWithSharedTasks(id)(offset, limit))
+
+  def findAll(ids: NonEmptyList[Long]): ZIO[UserRepository, Throwable, List[User]] =
+    ZIO.serviceWithZIO(_.findAll(ids))
 
   def clear(): ZIO[UserRepository, Throwable, Unit] =
     ZIO.serviceWithZIO(_.clear())
@@ -56,6 +64,15 @@ class UserRepositoryLive(xa: Transactor[zio.Task]) extends UserRepository:
       .to[List]
       .transact(xa)
 
+  override def findAll(ids: NonEmptyList[Long]): Task[List[User]] =
+    selectByIds(ids)
+      .to[List]
+      .transact(xa)
+
+  override def setBlockedBotTrue(id: Long): Task[Unit] =
+    setBlockedBot(id).run.void
+      .transact(xa)
+
   override def clear(): Task[Unit] =
     deleteAll.run.void
       .transact(xa)
@@ -73,7 +90,7 @@ object UserRepositoryLive:
 
     def selectById(id: Long): Query0[User] =
       sql"""
-        select id, first_name, language, chat_id, last_name, timezone
+        select id, first_name, language, chat_id, last_name, timezone, blocked_bot
         from users
         where id = $id
       """
@@ -83,11 +100,15 @@ object UserRepositoryLive:
       import user._
 
       sql"""
-        insert into users (id, first_name, language, chat_id, last_name, timezone)
-        values ($id, $firstName, ${language.value}, $chatId, $lastName, $timezone)
+        insert into users (id, first_name, language, chat_id, last_name, timezone, blocked_bot)
+        values ($id, $firstName, ${language.value}, $chatId, $lastName, $timezone, $blockedBot)
         on conflict(id) do update set
-        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(excluded.chat_id, users.chat_id), timezone = coalesce(excluded.timezone, users.timezone)
-        returning id, first_name, language, chat_id, last_name, timezone
+        first_name = excluded.first_name, 
+        last_name = excluded.last_name, 
+        chat_id = coalesce(excluded.chat_id, users.chat_id), 
+        timezone = coalesce(excluded.timezone, users.timezone), 
+        blocked_bot = coalesce(excluded.blocked_bot, users.blocked_bot)
+        returning id, first_name, language, chat_id, last_name, timezone, blocked_bot
       """
         .query[User]
     }
@@ -96,18 +117,23 @@ object UserRepositoryLive:
       import user._
 
       sql"""
-        insert into users (id, first_name, language, chat_id, last_name, timezone)
-        values ($id, $firstName, ${language.value}, $chatId, $lastName, $timezone)
+        insert into users (id, first_name, language, chat_id, last_name, timezone, blocked_bot)
+        values ($id, $firstName, ${language.value}, $chatId, $lastName, $timezone, $blockedBot)
         on conflict(id) do update set
-        first_name = excluded.first_name, last_name = excluded.last_name, chat_id = coalesce(excluded.chat_id, users.chat_id), language = excluded.language, timezone = coalesce(excluded.timezone, users.timezone)
-        returning id, first_name, language, chat_id, last_name, timezone
+        first_name = excluded.first_name, 
+        last_name = excluded.last_name, 
+        chat_id = coalesce(excluded.chat_id, users.chat_id), 
+        language = excluded.language, 
+        timezone = coalesce(excluded.timezone, users.timezone),
+        blocked_bot = coalesce(excluded.blocked_bot, users.blocked_bot)
+        returning id, first_name, language, chat_id, last_name, timezone, blocked_bot
       """
         .query[User]
     }
 
     def selectBySharedTasks(id: Long, offset: Long, limit: Int): Query0[User] =
       sql"""
-        select distinct u.id, u.first_name, u.language, u.chat_id, u.last_name, u.timezone
+        select distinct u.id, u.first_name, u.language, u.chat_id, u.last_name, u.timezone, u.blocked_bot
         from users as u
                  join (select t3.collaborator, t3.created_at
                        from (
@@ -125,6 +151,17 @@ object UserRepositoryLive:
                        order by t3.created_at desc) c on u.id = c.collaborator offset $offset limit $limit;
       """
         .query[User]
+
+    def selectByIds(ids: NonEmptyList[Long]): Query0[User] =
+      (fr"""
+          select id, first_name, language, chat_id, last_name, timezone, blocked_bot
+          from users
+          where 
+        """ ++ Fragments.in(fr"id", ids))
+        .query[User]
+
+    def setBlockedBot(id: Long): Update0 =
+      sql"""update users set blocked_bot = true where id = $id""".update
 
     val deleteAll: Update0 = sql"delete from users where true".update
   }

@@ -34,6 +34,8 @@ trait BotService:
 
   def createTaskDetails(task: BotTask, language: Language): List[TypedMessageEntity]
 
+  def createTaskDetailsReminder(task: BotTask, language: Language): List[TypedMessageEntity]
+
 object BotService:
   def updateUser(
       tgUser: telegramium.bots.User,
@@ -51,6 +53,9 @@ object BotService:
 
   def createTaskDetails(task: BotTask, language: Language): ZIO[BotService, Nothing, List[TypedMessageEntity]] =
     ZIO.serviceWith(_.createTaskDetails(task, language))
+
+  def createTaskDetailsReminder(task: BotTask, language: Language): ZIO[BotService, Nothing, List[TypedMessageEntity]] =
+    ZIO.serviceWith(_.createTaskDetailsReminder(task, language))
 
 class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgService: MessageService) extends BotService:
   private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -93,8 +98,16 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
 
         (page, messageEntities)
       }
+  end getTasks
 
   override def createTaskDetails(task: BotTask, language: Language): List[TypedMessageEntity] =
+    taskDetails(task, language)
+
+  override def createTaskDetailsReminder(task: BotTask, language: Language): List[TypedMessageEntity] =
+    taskDetails(task, language, reminderHeader = "🔔  ")
+
+  private def taskDetails(task: BotTask, language: Language, reminderHeader: String = "") =
+    val header = Plain(reminderHeader)
     val deadline = List(
       Bold(
         s"🕒 ${msgService.getMessage(MsgId.`tasks-due-date`, language)}: " +
@@ -113,10 +126,12 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
             .format(dateTimeFormatter)
       )
     )
-    val breaks = List(lineBreak, lineBreak)
-    val footer = breaks ++ deadline ++ created
-    val text   = List(Plain(limitTaskText(task.text, footer.map(_.text).mkString.length)))
-    text ++ footer
+    val breaks             = List(lineBreak, lineBreak)
+    val footer             = breaks ++ deadline ++ created
+    val headerFooterLength = (header :: footer).map(_.text).mkString.length
+    val text               = List(Plain(limitTaskText(task.text, headerFooterLength)))
+    header :: text ++ footer
+  end taskDetails
 
   private case class TaskLine(text: String, senderName: String)
 

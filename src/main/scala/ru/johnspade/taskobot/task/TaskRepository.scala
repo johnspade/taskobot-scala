@@ -1,21 +1,22 @@
 package ru.johnspade.taskobot.task
 
+import cats.data.NonEmptyList
 import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
+import doobie.implicits.javasql.TimestampMeta
+import doobie.postgres.implicits.JavaTimeLocalDateTimeMeta
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
+import ru.johnspade.taskobot.UTC
 import ru.johnspade.taskobot.task.TaskRepositoryLive.TaskQueries.*
 import ru.johnspade.taskobot.user.User
 import zio.*
 import zio.interop.catz.*
-import doobie.implicits.javasql.TimestampMeta
-import doobie.postgres.implicits.JavaTimeLocalDateTimeMeta
 
-import java.time.ZoneId
-import java.time.Instant
 import java.sql.Timestamp
+import java.time.Instant
 import java.time.LocalDateTime
-import ru.johnspade.taskobot.UTC
+import java.time.ZoneId
 
 trait TaskRepository:
   def findByIdUnsafe(id: Long): Task[Option[BotTask]]
@@ -33,6 +34,8 @@ trait TaskRepository:
   def check(id: Long, doneAt: Instant, userId: Long): Task[Unit]
 
   def setDeadline(id: Long, deadline: Option[LocalDateTime], userId: Long): Task[BotTask]
+
+  def findAll(ids: NonEmptyList[Long]): Task[List[BotTask]]
 
   def clear(): Task[Unit]
 
@@ -57,6 +60,9 @@ object TaskRepository:
 
   def setDeadline(id: Long, deadline: Option[LocalDateTime], userId: Long): ZIO[TaskRepository, Throwable, BotTask] =
     ZIO.serviceWithZIO(_.setDeadline(id, deadline, userId))
+
+  def findAll(ids: NonEmptyList[Long]): ZIO[TaskRepository, Throwable, List[BotTask]] =
+    ZIO.serviceWithZIO(_.findAll(ids))
 
   def clear(): ZIO[TaskRepository, Throwable, Unit] =
     ZIO.serviceWithZIO(_.clear())
@@ -92,12 +98,16 @@ class TaskRepositoryLive(xa: DbTransactor) extends TaskRepository:
       .transact(xa)
 
   override def check(id: Long, doneAt: Instant, userId: Long): Task[Unit] =
-    setDone(id, doneAt, userId).run.void
+    (setDone(id, doneAt, userId).run *> deleteRemindersByTaskId(id).run)
       .transact(xa)
+      .unit
 
   override def setDeadline(id: Long, deadline: Option[LocalDateTime], userId: Long): Task[BotTask] =
     updateDeadlineDate(id, deadline, userId).unique
       .transact(xa)
+
+  override def findAll(ids: NonEmptyList[Long]): Task[List[BotTask]] =
+    selectByIds(ids).to[List].transact(xa)
 
   override def clear(): Task[Unit] =
     deleteAll.run.void
@@ -131,7 +141,7 @@ object TaskRepositoryLive:
 
     def selectByIdJoinCollaborator(id: Long, `for`: Long): Query0[TaskWithCollaborator] =
       sql"""
-          select t.id, t.text, u.id, u.first_name, u.language, u.chat_id, u.last_name, u.timezone
+          select t.id, t.text, u.id, u.first_name, u.language, u.chat_id, u.last_name, u.timezone, u.blocked_bot
           from tasks t
           left join users u on
             (u.id = t.sender_id and u.id <> ${`for`}) or
@@ -195,6 +205,17 @@ object TaskRepositoryLive:
           returning id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name, deadline, timezone
       """
         .query[BotTask]
+
+    def selectByIds(ids: NonEmptyList[Long]): Query0[BotTask] =
+      (fr"""
+          select id, sender_id, text, receiver_id, created_at, done_at, done, forward_from_id, forward_sender_name, deadline, timezone
+          from tasks
+          where 
+      """ ++ Fragments.in(fr"id", ids))
+        .query[BotTask]
+
+    def deleteRemindersByTaskId(taskId: Long): Update0 =
+      sql"""delete from reminders where task_id = $taskId""".update
 
     val deleteAll: Update0 = sql"delete from tasks where true".update
   end TaskQueries

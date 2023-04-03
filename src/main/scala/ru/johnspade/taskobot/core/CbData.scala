@@ -74,6 +74,18 @@ final case class TimePicker(
     confirm: Boolean = false
 ) extends CbData
 
+@TypeId(14)
+final case class Reminders(taskId: Long, pageNumber: Int) extends CbData
+
+@TypeId(15)
+final case class StandardReminders(taskId: Long, pageNumber: Int) extends CbData
+
+@TypeId(16)
+final case class CreateReminder(taskId: Long, offsetMinutes: Int) extends CbData
+
+@TypeId(17)
+final case class RemoveReminder(reminderId: Long, taskId: Long) extends CbData
+
 object CbData:
   given StringEncoder[Language] = _.value
   given StringDecoder[Language] = s => Language.withValue(s).toRight(StringDecoder.typeError(s, "Language"))

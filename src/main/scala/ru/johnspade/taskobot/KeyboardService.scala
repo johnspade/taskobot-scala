@@ -1,13 +1,8 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option.*
-import ru.johnspade.taskobot.core.Chats
-import ru.johnspade.taskobot.core.Ignore
-import ru.johnspade.taskobot.core.Page
-import ru.johnspade.taskobot.core.SetLanguage
-import ru.johnspade.taskobot.core.TaskDetails
-import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
@@ -21,9 +16,7 @@ import telegramium.bots.WebAppInfo
 import telegramium.bots.high.keyboards.InlineKeyboardButtons
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.keyboards.KeyboardButtons
-import zio.URLayer
-import zio.ZIO
-import zio.ZLayer
+import zio.*
 
 trait KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup
@@ -33,6 +26,8 @@ trait KeyboardService:
   def languages(currentLanguage: Language): InlineKeyboardMarkup
 
   def menu(language: Language): ReplyKeyboardMarkup
+
+  def taskDetails(taskId: Long, pageNumber: Int, collaborator: User): ZIO[Any, Nothing, InlineKeyboardMarkup]
 
 final class KeyboardServiceLive(msgService: MessageService) extends KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup = {
@@ -107,6 +102,32 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
       ),
       resizeKeyboard = true.some
     )
+
+  override def taskDetails(taskId: Long, pageNumber: Int, collaborator: User): ZIO[Any, Nothing, InlineKeyboardMarkup] =
+    Clock.instant.map { now =>
+      InlineKeyboardMarkup(
+        List(
+          List(
+            inlineKeyboardButton("✅", CheckTask(0, taskId)),
+            inlineKeyboardButton("🔔", Reminders(taskId, pageNumber))
+          ),
+          List(
+            inlineKeyboardButton(
+              "📅",
+              DatePicker(taskId, now.atZone(collaborator.timezoneOrDefault).toLocalDate())
+            ),
+            inlineKeyboardButton("🕒", TimePicker(taskId))
+          ),
+          List(
+            inlineKeyboardButton(
+              msgService.getMessage(MsgId.`tasks`, collaborator.language),
+              Tasks(pageNumber, collaborator.id)
+            )
+          )
+        )
+      )
+    }
+end KeyboardServiceLive
 
 object KeyboardServiceLive:
   val layer: URLayer[MessageService, KeyboardService] =

@@ -23,6 +23,7 @@ import ru.johnspade.taskobot.datetime.TimePickerServiceLive
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
 import ru.johnspade.taskobot.settings.SettingsControllerLive
+import ru.johnspade.taskobot.task.ReminderRepositoryLive
 import ru.johnspade.taskobot.task.TaskControllerLive
 import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
@@ -394,6 +395,7 @@ object TaskobotISpec extends ZIOSpecDefault:
     TestBotApi.testApiLayer,
     UserRepositoryLive.layer,
     TaskRepositoryLive.layer,
+    ReminderRepositoryLive.layer,
     MsgConfig.live,
     MessageServiceLive.layer,
     KeyboardServiceLive.layer,

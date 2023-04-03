@@ -36,7 +36,14 @@ object BotServiceSpec extends ZIOSpecDefault:
       test("should convert and create a Telegram user") {
         val tgUser = telegramium.bots.User(1337, isBot = false, "John")
         val expectedUser =
-          User(1337L, "John", Language.English, chatId = Some(123L), timezone = Some(madridTimezone))
+          User(
+            1337L,
+            "John",
+            Language.English,
+            chatId = Some(123L),
+            timezone = Some(madridTimezone),
+            blockedBot = Some(false)
+          )
         for
           user      <- BotService.updateUser(tgUser, chatId = Some(123L), timezone = Some(madridTimezone))
           savedUser <- UserRepository.findById(1337L)
@@ -50,7 +57,8 @@ object BotServiceSpec extends ZIOSpecDefault:
           Language.English,
           lastName = "Spade".some,
           chatId = Some(123L),
-          timezone = Some(madridTimezone)
+          timezone = Some(madridTimezone),
+          blockedBot = Some(false)
         )
         for
           _         <- UserRepository.createOrUpdate(User(1337L, "John", Language.English))
@@ -187,6 +195,7 @@ object BotServiceSpec extends ZIOSpecDefault:
           details <- BotService.createTaskDetails(task, Language.English)
         yield assertTrue(
           details == List(
+            plain"",
             plain"Full text",
             lineBreak,
             lineBreak,
@@ -215,6 +224,7 @@ object BotServiceSpec extends ZIOSpecDefault:
           details <- BotService.createTaskDetails(task, Language.English)
         yield assertTrue(
           details == List(
+            plain"",
             Plain(shortenedVeryLongTaskText),
             lineBreak,
             lineBreak,
@@ -242,6 +252,7 @@ object BotServiceSpec extends ZIOSpecDefault:
           details <- BotService.createTaskDetails(task, Language.English)
         yield assertTrue(
           details == List(
+            plain"",
             Plain(longTaskText),
             lineBreak,
             lineBreak,

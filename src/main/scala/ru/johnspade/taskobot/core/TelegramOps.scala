@@ -25,7 +25,9 @@ object TelegramOps {
       lastName = tgUser.lastName,
       chatId = chatId,
       language = language,
-      timezone = timezone
+      timezone = timezone,
+      // If we got chatId, the bot is not blocked
+      blockedBot = chatId.map(_ => false)
     )
   }
 
