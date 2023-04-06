@@ -19,14 +19,15 @@ import zio.interop.catz.*
 object Main extends ZIOAppDefault:
   private val program =
     for
-      _         <- FlywayMigration.migrate
-      botConfig <- ZIO.service[BotConfig]
-      notificationJobStream <- ReminderNotificationService.scheduleNotificationJob.retry(
-        Schedule.exponential(5.seconds)
-      )
-      _ <- notificationJobStream.runDrain.zipPar(
-        ZIO.serviceWithZIO[Taskobot](_.start(botConfig.port, "0.0.0.0").useForever)
-      )
+      _                     <- FlywayMigration.migrate
+      botConfig             <- ZIO.service[BotConfig]
+      notificationJobStream <- ReminderNotificationService.scheduleNotificationJob
+      _ <- notificationJobStream
+        .retry(Schedule.exponential(5.seconds))
+        .runDrain
+        .zipPar(
+          ZIO.serviceWithZIO[Taskobot](_.start(botConfig.port, "0.0.0.0").useForever)
+        )
     yield ()
 
   def run: ZIO[Environment with ZIOAppArgs with Scope, Any, Any] =

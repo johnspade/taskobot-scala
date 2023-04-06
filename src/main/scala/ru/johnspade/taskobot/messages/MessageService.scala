@@ -24,6 +24,12 @@ trait MessageService:
 
   def switchLanguage(language: Language): String
 
+  def remindersMinutesBefore(n: Int, language: Language): String
+
+  def remindersHoursBefore(n: Int, language: Language): String
+
+  def remindersDaysBefore(n: Int, language: Language): String
+
 final class MessageServiceLive(msgConfig: MsgConfig) extends MessageService:
   def getMessage(id: MsgId, language: Language, args: String*): String =
     val message = msgConfig.messages(language)(id)
@@ -56,6 +62,15 @@ final class MessageServiceLive(msgConfig: MsgConfig) extends MessageService:
 
   def switchLanguage(language: Language): String =
     getMessage(`languages-switch`, language)
+
+  def remindersMinutesBefore(n: Int, language: Language): String =
+    getMessage(`reminders-minutes-before`, language, n.toString())
+
+  def remindersHoursBefore(n: Int, language: Language): String =
+    getMessage(`reminders-hours-before`, language, n.toString())
+
+  def remindersDaysBefore(n: Int, language: Language): String =
+    getMessage(`reminders-days-before`, language, n.toString())
 
 object MessageServiceLive:
   val layer: URLayer[MsgConfig, MessageServiceLive] =

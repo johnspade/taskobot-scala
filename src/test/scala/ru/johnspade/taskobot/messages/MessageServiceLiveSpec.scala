@@ -26,6 +26,18 @@ object MessageServiceLiveSpec extends ZIOSpecDefault:
             case MsgId.`tasks-completed-by` =>
               val message = msgService.getMessage(MsgId.`tasks-completed-by`, lang, "test-task", "completed-by")
               assertTrue(message.contains("test-task")) && assertTrue(message.contains("completed-by"))
+            case MsgId.`reminders-minutes-before` =>
+              val message = msgService.remindersMinutesBefore(999, lang)
+              assertTrue(message.contains("999"))
+            case MsgId.`reminders-hours-before` =>
+              val message = msgService.remindersHoursBefore(17, lang)
+              assertTrue(message.contains("17"))
+            case MsgId.`reminders-days-before` =>
+              val message = msgService.remindersDaysBefore(31, lang)
+              assertTrue(message.contains("31"))
+            case MsgId.`reminders-reminder` =>
+              val message = msgService.getMessage(MsgId.`reminders-reminder`, lang, "3d ", "4h ", "5m ")
+              assertTrue(message.contains("3d 4h 5m"))
             case _ =>
               val message = msgService.getMessage(msgId, lang)
               assertTrue(message.nonEmpty)

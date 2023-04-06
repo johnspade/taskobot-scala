@@ -6,6 +6,7 @@ import ru.johnspade.taskobot.CbDataRoutes
 import ru.johnspade.taskobot.CbDataUserRoutes
 import ru.johnspade.taskobot.DefaultPageSize
 import ru.johnspade.taskobot.Errors
+import ru.johnspade.taskobot.Errors.MaxRemindersExceeded
 import ru.johnspade.taskobot.KeyboardService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.TelegramOps.*
@@ -178,7 +179,8 @@ final class TaskControllerLive(
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber))
+          generateKeyboard =
+            (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber, language = user.language))
         )
       yield result
 
@@ -190,35 +192,42 @@ final class TaskControllerLive(
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = (_, _) => ZIO.succeed(createDefaultRemindersKeyboard(taskId, pageNumber))
+          generateKeyboard = (_, _) => ZIO.succeed(createDefaultRemindersKeyboard(taskId, pageNumber, user.language))
         )
       yield result
 
     case CreateReminder(taskId, offsetMinutes) in cb as user =>
       for
-        task      <- getTaskSafe(taskId, user.id)
-        _         <- reminderRepo.create(task.id, user.id, offsetMinutes).when(task.deadline.isDefined)
+        task <- getTaskSafe(taskId, user.id)
+        _ <- reminderRepo
+          .create(task.id, user.id, offsetMinutes)
+          .when(task.deadline.isDefined)
+          .catchSome { case MaxRemindersExceeded(taskId) =>
+            ZIO.logWarning(s"Max reminders for taskId $taskId exceeded")
+          }
         reminders <- reminderRepo.getByTaskIdAndUserId(task.id, user.id)
         result <- taskDetails(
           cb,
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
+          generateKeyboard =
+            (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0, language = user.language))
         )
       yield result
 
     case RemoveReminder(reminderId, taskId) in cb as user =>
       for
         task      <- getTaskSafe(taskId, user.id)
-        _         <- reminderRepo.delete(reminderId)
+        _         <- reminderRepo.delete(reminderId, user.id)
         reminders <- reminderRepo.getByTaskIdAndUserId(task.id, user.id)
         result <- taskDetails(
           cb,
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
+          generateKeyboard =
+            (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0, language = user.language))
         )
       yield result
   }
@@ -250,54 +259,62 @@ final class TaskControllerLive(
       replyMarkup = kbService.tasks(page, collaborator, language).some
     ).exec.unit
 
-  private def createDefaultRemindersKeyboard(taskId: Long, pageNumber: Int) =
+  private def createDefaultRemindersKeyboard(taskId: Long, pageNumber: Int, language: Language) =
     InlineKeyboardMarkups.singleColumn(
       List(
-        inlineKeyboardButton("At start", CreateReminder(taskId, 0)),
-        inlineKeyboardButton("1 minute before", CreateReminder(taskId, 1)),
-        inlineKeyboardButton("5 minutes before", CreateReminder(taskId, 5)),
-        inlineKeyboardButton("10 minutes before", CreateReminder(taskId, 10)),
-        inlineKeyboardButton("30 minutes before", CreateReminder(taskId, 30)),
-        inlineKeyboardButton("1 hour before", CreateReminder(taskId, 60)),
-        inlineKeyboardButton("1 day before", CreateReminder(taskId, 60 * 24)),
-        inlineKeyboardButton("2 days before", CreateReminder(taskId, 60 * 24 * 2)),
-        inlineKeyboardButton("Back", Reminders(taskId, pageNumber))
+        inlineKeyboardButton(msgService.getMessage(MsgId.`reminders-at-start`, language), CreateReminder(taskId, 0)),
+        inlineKeyboardButton(msgService.remindersMinutesBefore(1, language), CreateReminder(taskId, 1)),
+        inlineKeyboardButton(msgService.remindersMinutesBefore(5, language), CreateReminder(taskId, 5)),
+        inlineKeyboardButton(msgService.remindersMinutesBefore(10, language), CreateReminder(taskId, 10)),
+        inlineKeyboardButton(msgService.remindersMinutesBefore(30, language), CreateReminder(taskId, 30)),
+        inlineKeyboardButton(msgService.remindersHoursBefore(1, language), CreateReminder(taskId, 60)),
+        inlineKeyboardButton(msgService.remindersDaysBefore(1, language), CreateReminder(taskId, 60 * 24)),
+        inlineKeyboardButton(msgService.remindersDaysBefore(2, language), CreateReminder(taskId, 60 * 24 * 2)),
+        inlineKeyboardButton(msgService.getMessage(MsgId.`back`, language), Reminders(taskId, pageNumber))
       )
     )
 
-  private def minutesToLabel(minutes: Int): String =
+  private def minutesToLabel(minutes: Int, language: Language): String =
     val days                      = minutes / (60 * 24)
     val remainingMinutesAfterDays = minutes                   % (60 * 24)
     val hours                     = remainingMinutesAfterDays / 60
     val remainingMinutes          = remainingMinutesAfterDays % 60
 
     (days, hours, remainingMinutes) match {
-      case (0, 0, 0) => "At start"
+      case (0, 0, 0) => msgService.getMessage(MsgId.`reminders-at-start`, language)
       case (d, h, m) =>
-        val dayLabel    = if (d > 0) s"$d d " else ""
-        val hourLabel   = if (h > 0) s"$h h " else ""
-        val minuteLabel = if (m > 0) s"$m m " else ""
-        s"$dayLabel$hourLabel$minuteLabel before".trim
+        val dayLabel =
+          if d > 0 then d.toString() + msgService.getMessage(MsgId.`reminders-days-short`, language, d.toString) + " "
+          else ""
+        val hourLabel =
+          if h > 0 then h.toString() + msgService.getMessage(MsgId.`reminders-hours-short`, language, h.toString) + " "
+          else ""
+        val minuteLabel =
+          if m > 0 then
+            m.toString() + msgService.getMessage(MsgId.`reminders-minutes-short`, language, m.toString) + " "
+          else ""
+        msgService.getMessage(MsgId.`reminders-reminder`, language, dayLabel, hourLabel, minuteLabel)
     }
 
   private def createRemindersKeyboard(
       taskId: Long,
       reminders: List[Reminder],
-      pageNumber: Int
+      pageNumber: Int,
+      language: Language
   ) =
     InlineKeyboardMarkup(
       reminders.map { reminder =>
         List(
           inlineKeyboardButton(
-            "🔔 " + minutesToLabel(reminder.offsetMinutes),
+            "🔔 " + minutesToLabel(reminder.offsetMinutes, language),
             RemoveReminder(reminder.id, reminder.taskId)
           )
         )
       } ++
         List(
           List(
-            inlineKeyboardButton("Add", StandardReminders(taskId, pageNumber)),
-            inlineKeyboardButton("Back", TaskDetails(taskId, pageNumber))
+            inlineKeyboardButton(msgService.getMessage(MsgId.`add`, language), StandardReminders(taskId, pageNumber)),
+            inlineKeyboardButton(msgService.getMessage(MsgId.`back`, language), TaskDetails(taskId, pageNumber))
           )
         )
     )

@@ -15,7 +15,7 @@ import doobie.free.connection
 trait ReminderRepository:
   def create(taskId: Long, userId: Long, offsetMinutes: Int): ZIO[Any, MaxRemindersExceeded | Throwable, Reminder]
   def getByTaskIdAndUserId(taskId: Long, userId: Long): Task[List[Reminder]]
-  def delete(id: Long): Task[Unit]
+  def delete(id: Long, userId: Long): Task[Unit]
   def getEnqueued(): Task[List[Reminder]]
   def fetchAndMarkAsProcessing(ids: NonEmptyList[Long]): Task[List[Reminder]]
   def deleteByIds(ids: NonEmptyList[Long]): Task[Unit]
@@ -31,8 +31,8 @@ object ReminderRepository:
   def getByTaskIdAndUserId(taskId: Long, userId: Long): ZIO[ReminderRepository, Throwable, List[Reminder]] =
     ZIO.serviceWithZIO(_.getByTaskIdAndUserId(taskId, userId))
 
-  def delete(id: Long): ZIO[ReminderRepository, Throwable, Unit] =
-    ZIO.serviceWithZIO(_.delete(id))
+  def delete(id: Long, userId: Long): ZIO[ReminderRepository, Throwable, Unit] =
+    ZIO.serviceWithZIO(_.delete(id, userId))
 
   def getEnqueued(): ZIO[ReminderRepository, Throwable, List[Reminder]] =
     ZIO.serviceWithZIO(_.getEnqueued())
@@ -50,7 +50,7 @@ class ReminderRepositoryLive(xa: DbTransactor) extends ReminderRepository:
       offsetMinutes: Int
   ): ZIO[Any, MaxRemindersExceeded | Throwable, Reminder] =
     (for
-      reminderIds <- countByTaskId(taskId).to[List]
+      reminderIds <- countByTaskId(taskId, userId).to[List]
       reminderCount = reminderIds.length
       reminder <-
         if (reminderCount < 3) insert(taskId, userId, offsetMinutes).unique
@@ -63,8 +63,8 @@ class ReminderRepositoryLive(xa: DbTransactor) extends ReminderRepository:
       .to[List]
       .transact(xa)
 
-  override def delete(id: Long): Task[Unit] =
-    deleteById(id).run.void
+  override def delete(id: Long, userId: Long): Task[Unit] =
+    deleteById(id, userId).run.void
       .transact(xa)
 
   override def getEnqueued(): Task[List[Reminder]] =
@@ -102,10 +102,10 @@ object ReminderRepositoryLive:
         """
         .query[Reminder]
 
-    def deleteById(id: Long): Update0 =
+    def deleteById(id: Long, userId: Long): Update0 =
       sql"""
           delete from reminders
-          where id = $id
+          where id = $id and user_id = $userId
         """.update
 
     def selectEnqueued(): Query0[Reminder] =
@@ -130,9 +130,9 @@ object ReminderRepositoryLive:
           """)
         .query[Reminder]
 
-    def countByTaskId(taskId: Long): Query0[Long] =
+    def countByTaskId(taskId: Long, userId: Long): Query0[Long] =
       sql"""
-           select id from reminders where task_id = $taskId for update
+           select id from reminders where task_id = $taskId and user_id = $userId for update
          """.query[Long]
 
     def deleteMultiple(ids: NonEmptyList[Long]): Update0 =

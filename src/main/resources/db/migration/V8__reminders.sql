@@ -14,3 +14,6 @@ create table reminders
 
 alter table users
     add column blocked_bot boolean;
+
+create index idx_reminders_task_user on reminders(task_id, user_id);
+create index idx_reminders_status on reminders(status);

@@ -58,7 +58,7 @@ object ReminderNotificationServiceSpec extends ZIOSpecDefault:
         _    <- ReminderRepository.create(task.id, john.id, offsetMinutes = 0)
         _    <- createMock(sendMessageReminder("Homework assignment", task.id, now), messageResponse)
         stream <- ReminderNotificationService.scheduleNotificationJob
-        fiber  <- stream.take(2).runDrain.fork
+        fiber  <- stream.takeUntilZIO(_ => remindersTableEmpty).runDrain.fork
         _      <- TestClock.adjust(1.minute)
         _      <- fiber.join
       yield assertTrue(true)
@@ -75,7 +75,7 @@ object ReminderNotificationServiceSpec extends ZIOSpecDefault:
         _ <- ReminderRepository.create(task2.id, john.id, offsetMinutes = 0)
         _ <- createMock(sendMessageReminder("Homework assignment1", task1.id, now), messageResponse)
         stream <- ReminderNotificationService.scheduleNotificationJob
-        fiber  <- stream.take(5).runDrain.fork
+        fiber  <- stream.takeUntilZIO(_ => remindersTableEmpty).runDrain.fork
         _      <- TestClock.adjust(70.seconds)
         _ <- createMock(
           sendMessageReminder("Homework assignment2", task2.id, now, "1970-01-01 00:02"),
@@ -98,6 +98,8 @@ object ReminderNotificationServiceSpec extends ZIOSpecDefault:
         _ <- CleanupRepository.clearUsers()
       yield ()
     }).provideShared(testEnv)
+
+  private val remindersTableEmpty = ReminderRepository.getEnqueued().map(_.isEmpty)
 
   private def createTask(text: String, receiver: Option[Long]) =
     for
