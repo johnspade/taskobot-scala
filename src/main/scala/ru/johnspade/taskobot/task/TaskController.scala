@@ -178,7 +178,7 @@ final class TaskControllerLive(
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = _ => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber))
+          generateKeyboard = (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber))
         )
       yield result
 
@@ -190,7 +190,7 @@ final class TaskControllerLive(
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = _ => ZIO.succeed(createDefaultRemindersKeyboard(taskId, pageNumber))
+          generateKeyboard = (_, _) => ZIO.succeed(createDefaultRemindersKeyboard(taskId, pageNumber))
         )
       yield result
 
@@ -204,7 +204,7 @@ final class TaskControllerLive(
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = _ => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
+          generateKeyboard = (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
         )
       yield result
 
@@ -218,7 +218,7 @@ final class TaskControllerLive(
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = _ => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
+          generateKeyboard = (_, _) => ZIO.succeed(createRemindersKeyboard(taskId, reminders, pageNumber = 0))
         )
       yield result
   }
@@ -326,16 +326,14 @@ final class TaskControllerLive(
       user: User,
       task: BotTask,
       processTask: BotTask => Task[BotTask],
-      generateKeyboard: User => Task[InlineKeyboardMarkup]
+      generateKeyboard: (User, Long) => Task[InlineKeyboardMarkup]
   ) =
     ackCb(cb) { msg =>
       for
         processedTask <- processTask(task)
         messageEntities = botService.createTaskDetails(processedTask, user.language)
         collaboratorId  = processedTask.getCollaborator(user.id)
-        collaboratorOpt <- if collaboratorId == user.id then ZIO.some(user) else userRepo.findById(collaboratorId)
-        collaborator = collaboratorOpt.getOrElse(user)
-        keyboard <- generateKeyboard(collaborator)
+        keyboard <- generateKeyboard(user, collaboratorId)
         _        <- editWithTaskDetails(msg, messageEntities, keyboard)
       yield ()
     }
@@ -353,7 +351,7 @@ final class TaskControllerLive(
         user,
         task,
         processTask,
-        collaborator => kbService.taskDetails(id, pageNumber, collaborator)
+        (user, collaboratorId) => kbService.taskDetails(id, pageNumber, user, collaboratorId)
       )
     }
 end TaskControllerLive

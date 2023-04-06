@@ -9,9 +9,11 @@ import ru.johnspade.taskobot.task.ReminderRepositoryLive.ReminderQueries.*
 import zio.*
 import zio.interop.catz.*
 import zio.interop.catz.implicits.*
+import ru.johnspade.taskobot.Errors.MaxRemindersExceeded
+import doobie.free.connection
 
 trait ReminderRepository:
-  def create(taskId: Long, userId: Long, offsetMinutes: Int): Task[Unit]
+  def create(taskId: Long, userId: Long, offsetMinutes: Int): ZIO[Any, MaxRemindersExceeded | Throwable, Reminder]
   def getByTaskIdAndUserId(taskId: Long, userId: Long): Task[List[Reminder]]
   def delete(id: Long): Task[Unit]
   def getEnqueued(): Task[List[Reminder]]
@@ -19,7 +21,11 @@ trait ReminderRepository:
   def deleteByIds(ids: NonEmptyList[Long]): Task[Unit]
 
 object ReminderRepository:
-  def create(taskId: Long, userId: Long, offsetMinutes: Int): ZIO[ReminderRepository, Throwable, Unit] =
+  def create(
+      taskId: Long,
+      userId: Long,
+      offsetMinutes: Int
+  ): ZIO[ReminderRepository, MaxRemindersExceeded | Throwable, Reminder] =
     ZIO.serviceWithZIO(_.create(taskId, userId, offsetMinutes))
 
   def getByTaskIdAndUserId(taskId: Long, userId: Long): ZIO[ReminderRepository, Throwable, List[Reminder]] =
@@ -38,16 +44,19 @@ object ReminderRepository:
     ZIO.serviceWithZIO(_.deleteByIds(ids))
 
 class ReminderRepositoryLive(xa: DbTransactor) extends ReminderRepository:
-  override def create(taskId: Long, userId: Long, offsetMinutes: Int): Task[Unit] =
+  override def create(
+      taskId: Long,
+      userId: Long,
+      offsetMinutes: Int
+  ): ZIO[Any, MaxRemindersExceeded | Throwable, Reminder] =
     (for
       reminderIds <- countByTaskId(taskId).to[List]
       reminderCount = reminderIds.length
-      _ <- insert(taskId, userId, offsetMinutes).run.void.whenA(reminderCount < 3)
-    yield reminderCount)
+      reminder <-
+        if (reminderCount < 3) insert(taskId, userId, offsetMinutes).unique
+        else connection.raiseError(MaxRemindersExceeded(taskId)) // todo log & test
+    yield reminder)
       .transact(xa)
-      .flatMap { count =>
-        ZIO.logWarning(s"Max reminders for taskId $taskId exceeded").when(count >= 3).unit
-      }
 
   override def getByTaskIdAndUserId(taskId: Long, userId: Long): Task[List[Reminder]] =
     selectByTaskIdAndUserId(taskId, userId)
@@ -77,11 +86,12 @@ object ReminderRepositoryLive:
     ZLayer(ZIO.service[DbTransactor].map(new ReminderRepositoryLive(_)))
 
   object ReminderQueries:
-    def insert(taskId: Long, userId: Long, offsetMinutes: Int): Update0 =
+    def insert(taskId: Long, userId: Long, offsetMinutes: Int): Query0[Reminder] =
       sql"""
           insert into reminders (task_id, user_id, offset_minutes, status)
           values ($taskId, $userId, $offsetMinutes, 'ENQUEUED')
-        """.update
+          returning id, task_id, user_id, offset_minutes, status
+        """.query[Reminder]
 
     def selectByTaskIdAndUserId(taskId: Long, userId: Long): Query0[Reminder] =
       sql"""

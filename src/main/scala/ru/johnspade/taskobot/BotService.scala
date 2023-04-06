@@ -104,7 +104,7 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
     taskDetails(task, language)
 
   override def createTaskDetailsReminder(task: BotTask, language: Language): List[TypedMessageEntity] =
-    taskDetails(task, language, reminderHeader = "🔔  ")
+    taskDetails(task, language, reminderHeader = "🔔 ")
 
   private def taskDetails(task: BotTask, language: Language, reminderHeader: String = "") =
     val header = Plain(reminderHeader)

@@ -25,8 +25,6 @@ trait UserRepository:
 
   def setBlockedBotTrue(id: Long): Task[Unit]
 
-  def clear(): Task[Unit]
-
 object UserRepository:
   def findById(id: Long): ZIO[UserRepository, Throwable, Option[User]] =
     ZIO.serviceWithZIO(_.findById(id))
@@ -42,9 +40,6 @@ object UserRepository:
 
   def findAll(ids: NonEmptyList[Long]): ZIO[UserRepository, Throwable, List[User]] =
     ZIO.serviceWithZIO(_.findAll(ids))
-
-  def clear(): ZIO[UserRepository, Throwable, Unit] =
-    ZIO.serviceWithZIO(_.clear())
 
 class UserRepositoryLive(xa: Transactor[zio.Task]) extends UserRepository:
   override def findById(id: Long): Task[Option[User]] =
@@ -71,10 +66,6 @@ class UserRepositoryLive(xa: Transactor[zio.Task]) extends UserRepository:
 
   override def setBlockedBotTrue(id: Long): Task[Unit] =
     setBlockedBot(id).run.void
-      .transact(xa)
-
-  override def clear(): Task[Unit] =
-    deleteAll.run.void
       .transact(xa)
 
 object UserRepositoryLive:
@@ -162,6 +153,4 @@ object UserRepositoryLive:
 
     def setBlockedBot(id: Long): Update0 =
       sql"""update users set blocked_bot = true where id = $id""".update
-
-    val deleteAll: Update0 = sql"delete from users where true".update
   }

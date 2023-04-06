@@ -27,7 +27,12 @@ trait KeyboardService:
 
   def menu(language: Language): ReplyKeyboardMarkup
 
-  def taskDetails(taskId: Long, pageNumber: Int, collaborator: User): ZIO[Any, Nothing, InlineKeyboardMarkup]
+  def taskDetails(
+      taskId: Long,
+      pageNumber: Int,
+      user: User,
+      collaboratorId: Long
+  ): ZIO[Any, Nothing, InlineKeyboardMarkup]
 
 final class KeyboardServiceLive(msgService: MessageService) extends KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup = {
@@ -103,7 +108,12 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
       resizeKeyboard = true.some
     )
 
-  override def taskDetails(taskId: Long, pageNumber: Int, collaborator: User): ZIO[Any, Nothing, InlineKeyboardMarkup] =
+  override def taskDetails(
+      taskId: Long,
+      pageNumber: Int,
+      user: User,
+      collaboratorId: Long
+  ): ZIO[Any, Nothing, InlineKeyboardMarkup] =
     Clock.instant.map { now =>
       InlineKeyboardMarkup(
         List(
@@ -114,14 +124,14 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
           List(
             inlineKeyboardButton(
               "📅",
-              DatePicker(taskId, now.atZone(collaborator.timezoneOrDefault).toLocalDate())
+              DatePicker(taskId, now.atZone(user.timezoneOrDefault).toLocalDate())
             ),
             inlineKeyboardButton("🕒", TimePicker(taskId))
           ),
           List(
             inlineKeyboardButton(
-              msgService.getMessage(MsgId.`tasks`, collaborator.language),
-              Tasks(pageNumber, collaborator.id)
+              msgService.getMessage(MsgId.`tasks`, user.language),
+              Tasks(pageNumber, collaboratorId)
             )
           )
         )

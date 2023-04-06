@@ -3,6 +3,8 @@ package ru.johnspade.taskobot.task
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
 import ru.johnspade.taskobot.BotServiceLive
+import ru.johnspade.taskobot.CleanupRepository
+import ru.johnspade.taskobot.CleanupRepositoryLive
 import ru.johnspade.taskobot.KeyboardServiceLive
 import ru.johnspade.taskobot.TestBotApi
 import ru.johnspade.taskobot.TestBotApi.Mocks
@@ -210,8 +212,8 @@ object TaskControllerSpec extends ZIOSpecDefault:
     }
     @@ TestAspect.after {
       for
-        _ <- TaskRepository.clear()
-        _ <- UserRepository.clear()
+        _ <- CleanupRepository.clearTasks()
+        _ <- CleanupRepository.clearUsers()
       yield ()
     })
     .provideShared(env)
@@ -222,7 +224,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
     for
       now <- Clock.instant
       task <- TaskRepository.create(
-        NewTask(john.id, text, now, receiver, timezone = UTC)
+        NewTask(john.id, text, now, UTC, receiver)
       )
     yield task
 
@@ -231,7 +233,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
       now <- Clock.instant
       usersAndTasks = List.tabulate(count) { n =>
         val user = User(n.toLong, n.toString, Language.English)
-        user -> NewTask(john.id, n.toString, now, user.id.some, timezone = UTC)
+        user -> NewTask(john.id, n.toString, now, UTC, user.id.some)
       }
       _ <- ZIO.foreachDiscard(usersAndTasks) { case (user, task) =>
         UserRepository.createOrUpdate(user) *> TaskRepository.create(task)
@@ -242,7 +244,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
     for
       now <- Clock.instant
       tasks = List.tabulate(11) { n =>
-        NewTask(john.id, n.toString, now, kaitrin.id.some, timezone = UTC)
+        NewTask(john.id, n.toString, now, UTC, kaitrin.id.some)
       }
       _ <- ZIO.foreachDiscard(tasks)(TaskRepository.create)
     yield ()
@@ -268,15 +270,17 @@ object TaskControllerSpec extends ZIOSpecDefault:
         .map(_.flatten)
     }
 
-  private val env = ZLayer.make[MockServerClient with TaskController with UserRepository with TaskRepository](
-    TestDatabase.layer,
-    TestBotApi.testApiLayer,
-    UserRepositoryLive.layer,
-    TaskRepositoryLive.layer,
-    ReminderRepositoryLive.layer,
-    MsgConfig.live,
-    MessageServiceLive.layer,
-    KeyboardServiceLive.layer,
-    BotServiceLive.layer,
-    TaskControllerLive.layer
-  )
+  private val env =
+    ZLayer.make[MockServerClient & TaskController & UserRepository & TaskRepository & CleanupRepository](
+      TestDatabase.layer,
+      TestBotApi.testApiLayer,
+      UserRepositoryLive.layer,
+      TaskRepositoryLive.layer,
+      ReminderRepositoryLive.layer,
+      CleanupRepositoryLive.layer,
+      MsgConfig.live,
+      MessageServiceLive.layer,
+      KeyboardServiceLive.layer,
+      BotServiceLive.layer,
+      TaskControllerLive.layer
+    )

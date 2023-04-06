@@ -79,7 +79,7 @@ final class CommandControllerLive(
           .map { task =>
             for
               now <- Clock.instant
-              _   <- taskRepo.create(NewTask(user.id, task, now, user.id.some, timezone = user.timezoneOrDefault))
+              _   <- taskRepo.create(NewTask(user.id, task, now, timezone = user.timezoneOrDefault, user.id.some))
               _ <- sendMessage(
                 ChatIntId(message.chat.id),
                 msgService.taskCreated(task, user.language),

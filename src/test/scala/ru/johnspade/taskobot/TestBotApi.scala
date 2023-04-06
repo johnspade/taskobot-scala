@@ -542,4 +542,48 @@ object TestBotApi:
           )
         ).some
       )
+
+    def sendMessageReminder(
+        text: String,
+        taskId: Long,
+        now: Instant,
+        dueDate: String = "1970-01-01 00:01"
+    ): Method[Message] =
+      Methods.sendMessage(
+        ChatIntId(johnChatId),
+        s"""|🔔 $text
+            |
+            |🕒 Due date: $dueDate
+            |
+            |Created at: 1970-01-01 00:00""".stripMargin,
+        entities = TypedMessageEntity.toMessageEntities(
+          List(
+            plain"🔔 $text",
+            lineBreak,
+            lineBreak,
+            bold"🕒 Due date: $dueDate",
+            lineBreak,
+            lineBreak,
+            italic"Created at: 1970-01-01 00:00"
+          )
+        ),
+        replyMarkup = InlineKeyboardMarkup(
+          List(
+            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+            List(
+              inlineKeyboardButton(
+                "📅",
+                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
+              ),
+              inlineKeyboardButton("🕒", TimePicker(taskId))
+            ),
+            List(
+              inlineKeyboardButton(
+                "Tasks",
+                Tasks(0, kaitrin.id)
+              )
+            )
+          )
+        ).some
+      )
   end Mocks

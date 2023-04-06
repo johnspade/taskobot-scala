@@ -7,6 +7,7 @@ import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
 import ru.johnspade.taskobot.scheduled.ReminderNotificationService
 import ru.johnspade.taskobot.scheduled.ReminderNotificationServiceLive
+import ru.johnspade.taskobot.scheduled.ReminderServiceLive
 import ru.johnspade.taskobot.settings.SettingsControllerLive
 import ru.johnspade.taskobot.task.ReminderRepositoryLive
 import ru.johnspade.taskobot.task.TaskControllerLive
@@ -20,7 +21,10 @@ object Main extends ZIOAppDefault:
     for
       _         <- FlywayMigration.migrate
       botConfig <- ZIO.service[BotConfig]
-      _ <- ReminderNotificationService.scheduleNotificationJob.zipPar(
+      notificationJobStream <- ReminderNotificationService.scheduleNotificationJob.retry(
+        Schedule.exponential(5.seconds)
+      )
+      _ <- notificationJobStream.runDrain.zipPar(
         ZIO.serviceWithZIO[Taskobot](_.start(botConfig.port, "0.0.0.0").useForever)
       )
     yield ()
@@ -48,5 +52,6 @@ object Main extends ZIOAppDefault:
         IgnoreControllerLive.layer,
         UserMiddleware.live,
         Taskobot.live,
-        ReminderNotificationServiceLive.layer
+        ReminderNotificationServiceLive.layer,
+        ReminderServiceLive.layer
       )

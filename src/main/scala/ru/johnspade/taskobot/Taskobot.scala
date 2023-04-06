@@ -86,7 +86,7 @@ final class Taskobot(
     for
       user <- botService.updateUser(inlineResult.from)
       now  <- Clock.instant
-      task <- taskRepo.create(NewTask(user.id, inlineResult.query, now, None, timezone = user.timezoneOrDefault))
+      task <- taskRepo.create(NewTask(user.id, inlineResult.query, now, user.timezoneOrDefault))
       method = editMessageReplyMarkup(
         inlineMessageId = inlineResult.inlineMessageId,
         replyMarkup = InlineKeyboardMarkups
@@ -120,7 +120,7 @@ final class Taskobot(
         for
           user <- botService.updateUser(from, msg.chat.id.some)
           now  <- Clock.instant
-          _    <- taskRepo.create(NewTask(user.id, text, now, user.id.some, timezone = user.timezoneOrDefault))
+          _    <- taskRepo.create(NewTask(user.id, text, now, user.timezoneOrDefault, user.id.some))
           _ <- sendMessage(
             ChatIntId(msg.chat.id),
             msgService.taskCreated(text, user.language),
@@ -148,8 +148,8 @@ final class Taskobot(
             user.id,
             text,
             now,
+            user.timezoneOrDefault,
             user.id.some,
-            timezone = user.timezoneOrDefault,
             forwardFromId = msg.forwardFrom.map(user => user.id),
             forwardFromSenderName = senderName
           )

@@ -37,8 +37,6 @@ trait TaskRepository:
 
   def findAll(ids: NonEmptyList[Long]): Task[List[BotTask]]
 
-  def clear(): Task[Unit]
-
 object TaskRepository:
   def findById(id: Long): ZIO[TaskRepository, Throwable, Option[BotTask]] =
     ZIO.serviceWithZIO(_.findByIdUnsafe(id))
@@ -63,9 +61,6 @@ object TaskRepository:
 
   def findAll(ids: NonEmptyList[Long]): ZIO[TaskRepository, Throwable, List[BotTask]] =
     ZIO.serviceWithZIO(_.findAll(ids))
-
-  def clear(): ZIO[TaskRepository, Throwable, Unit] =
-    ZIO.serviceWithZIO(_.clear())
 
 class TaskRepositoryLive(xa: DbTransactor) extends TaskRepository:
   override def findByIdUnsafe(id: Long): Task[Option[BotTask]] =
@@ -108,10 +103,6 @@ class TaskRepositoryLive(xa: DbTransactor) extends TaskRepository:
 
   override def findAll(ids: NonEmptyList[Long]): Task[List[BotTask]] =
     selectByIds(ids).to[List].transact(xa)
-
-  override def clear(): Task[Unit] =
-    deleteAll.run.void
-      .transact(xa)
 
 object TaskRepositoryLive:
   val layer: URLayer[DbTransactor, TaskRepository] =
@@ -216,7 +207,5 @@ object TaskRepositoryLive:
 
     def deleteRemindersByTaskId(taskId: Long): Update0 =
       sql"""delete from reminders where task_id = $taskId""".update
-
-    val deleteAll: Update0 = sql"delete from tasks where true".update
   end TaskQueries
 end TaskRepositoryLive

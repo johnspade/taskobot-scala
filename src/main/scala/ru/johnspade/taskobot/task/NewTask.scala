@@ -7,9 +7,9 @@ final case class NewTask(
     sender: Long,
     text: String,
     createdAt: Instant,
+    timezone: ZoneId,
     receiver: Option[Long] = None,
     done: Boolean = false,
-    timezone: ZoneId,
     forwardFromId: Option[Long] = None,
     forwardFromSenderName: Option[String] = None
 )

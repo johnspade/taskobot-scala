@@ -83,8 +83,8 @@ object BotServiceSpec extends ZIOSpecDefault:
         )
         for
           now <- Clock.instant
-          task1 = NewTask(322L, "task1", now, alice.id.some, timezone = UTC)
-          task2 = NewTask(322L, "task2", now.plusSeconds(1), alice.id.some, timezone = UTC)
+          task1 = NewTask(322L, "task1", now, UTC, alice.id.some)
+          task2 = NewTask(322L, "task2", now.plusSeconds(1), UTC, alice.id.some)
           expectedTasks = List(
             BotTask(2L, task2.sender, task2.text, task2.receiver, task2.createdAt, timezone = Some(UTC)),
             BotTask(1L, task1.sender, task1.text, task1.receiver, task1.createdAt, timezone = Some(UTC))
@@ -143,9 +143,9 @@ object BotServiceSpec extends ZIOSpecDefault:
       test("should not cut long tasks if message limits are not exceeded") {
         for
           now <- Clock.instant
-          tasks = NewTask(bob.id, longTaskText, now, alice.id.some, timezone = UTC) ::
+          tasks = NewTask(bob.id, longTaskText, now, UTC, alice.id.some) ::
             List.tabulate(4) { _ =>
-              NewTask(bob.id, "Fix bugs", now, alice.id.some, timezone = UTC)
+              NewTask(bob.id, "Fix bugs", now, UTC, alice.id.some)
             }
           _      <- UserRepository.createOrUpdate(bob)
           _      <- UserRepository.createOrUpdate(alice)
