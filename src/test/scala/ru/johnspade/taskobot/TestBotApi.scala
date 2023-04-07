@@ -392,7 +392,7 @@ object TestBotApi:
       val markup = InlineKeyboardMarkups
         .singleColumn(
           List(
-            inlineKeyboardButton("At start", CreateReminder(taskId, 0)),
+            inlineKeyboardButton("At due time", CreateReminder(taskId, 0)),
             inlineKeyboardButton("10m before", CreateReminder(taskId, 10)),
             inlineKeyboardButton("30m before", CreateReminder(taskId, 30)),
             inlineKeyboardButton("1h before", CreateReminder(taskId, 60)),
@@ -447,7 +447,7 @@ object TestBotApi:
     ): Method[Either[Boolean, Message]] =
       val markup = InlineKeyboardMarkup(
         List(
-          List(inlineKeyboardButton("🔔 At start", RemoveReminder(reminder1Id, taskId))),
+          List(inlineKeyboardButton("🔔 At due time", RemoveReminder(reminder1Id, taskId))),
           List(inlineKeyboardButton("🔔 1m  before", RemoveReminder(reminder2Id, taskId))),
           List(inlineKeyboardButton("🔔 10m  before", RemoveReminder(reminder3Id, taskId))),
           List(

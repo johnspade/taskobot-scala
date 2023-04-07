@@ -54,7 +54,7 @@ class ReminderRepositoryLive(xa: DbTransactor) extends ReminderRepository:
       reminderCount = reminderIds.length
       reminder <-
         if (reminderCount < 3) insert(taskId, userId, offsetMinutes).unique
-        else connection.raiseError(MaxRemindersExceeded(taskId)) // todo log & test
+        else connection.raiseError(MaxRemindersExceeded(taskId))
     yield reminder)
       .transact(xa)
 
