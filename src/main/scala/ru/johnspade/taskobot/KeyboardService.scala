@@ -34,6 +34,8 @@ trait KeyboardService:
       collaboratorId: Long
   ): ZIO[Any, Nothing, InlineKeyboardMarkup]
 
+  def standardReminders(taskId: Long, pageNumber: Int, language: Language): InlineKeyboardMarkup
+
 final class KeyboardServiceLive(msgService: MessageService) extends KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup = {
     lazy val prevButton = inlineKeyboardButton(msgService.previousPage(`for`.language), Chats(page.number - 1))
@@ -137,6 +139,21 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
         )
       )
     }
+
+  override def standardReminders(taskId: Long, pageNumber: Int, language: Language): InlineKeyboardMarkup =
+    InlineKeyboardMarkups.singleColumn(
+      List(
+        inlineKeyboardButton(msgService.getMessage(MsgId.`reminders-at-start`, language), CreateReminder(taskId, 0)),
+        inlineKeyboardButton(msgService.remindersMinutesBefore(10, language), CreateReminder(taskId, 10)),
+        inlineKeyboardButton(msgService.remindersMinutesBefore(30, language), CreateReminder(taskId, 30)),
+        inlineKeyboardButton(msgService.remindersHoursBefore(1, language), CreateReminder(taskId, 60)),
+        inlineKeyboardButton(msgService.remindersHoursBefore(2, language), CreateReminder(taskId, 60 * 2)),
+        inlineKeyboardButton(msgService.remindersDaysBefore(1, language), CreateReminder(taskId, 60 * 24)),
+        inlineKeyboardButton(msgService.remindersDaysBefore(2, language), CreateReminder(taskId, 60 * 24 * 2)),
+        inlineKeyboardButton(msgService.remindersDaysBefore(3, language), CreateReminder(taskId, 60 * 24 * 3)),
+        inlineKeyboardButton(msgService.getMessage(MsgId.`back`, language), Reminders(taskId, pageNumber))
+      )
+    )
 end KeyboardServiceLive
 
 object KeyboardServiceLive:

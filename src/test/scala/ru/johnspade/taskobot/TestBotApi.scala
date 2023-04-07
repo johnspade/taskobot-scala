@@ -393,13 +393,13 @@ object TestBotApi:
         .singleColumn(
           List(
             inlineKeyboardButton("At start", CreateReminder(taskId, 0)),
-            inlineKeyboardButton("1m before", CreateReminder(taskId, 1)),
-            inlineKeyboardButton("5m before", CreateReminder(taskId, 5)),
             inlineKeyboardButton("10m before", CreateReminder(taskId, 10)),
             inlineKeyboardButton("30m before", CreateReminder(taskId, 30)),
             inlineKeyboardButton("1h before", CreateReminder(taskId, 60)),
+            inlineKeyboardButton("2h before", CreateReminder(taskId, 60 * 2)),
             inlineKeyboardButton("1d before", CreateReminder(taskId, 60 * 24)),
             inlineKeyboardButton("2d before", CreateReminder(taskId, 60 * 24 * 2)),
+            inlineKeyboardButton("3d before", CreateReminder(taskId, 60 * 24 * 3)),
             inlineKeyboardButton("Back", Reminders(taskId, 0))
           )
         )

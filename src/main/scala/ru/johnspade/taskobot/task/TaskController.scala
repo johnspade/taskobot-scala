@@ -29,7 +29,6 @@ import telegramium.bots.client.Method
 import telegramium.bots.high.Methods.*
 import telegramium.bots.high.*
 import telegramium.bots.high.implicits.*
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import zio.*
 import zio.interop.catz.*
 
@@ -192,7 +191,7 @@ final class TaskControllerLive(
           user,
           task,
           processTask = ZIO.succeed(_),
-          generateKeyboard = (_, _) => ZIO.succeed(createDefaultRemindersKeyboard(taskId, pageNumber, user.language))
+          generateKeyboard = (_, _) => ZIO.succeed(kbService.standardReminders(taskId, pageNumber, user.language))
         )
       yield result
 
@@ -258,21 +257,6 @@ final class TaskControllerLive(
       entities = TypedMessageEntity.toMessageEntities(messageEntities),
       replyMarkup = kbService.tasks(page, collaborator, language).some
     ).exec.unit
-
-  private def createDefaultRemindersKeyboard(taskId: Long, pageNumber: Int, language: Language) =
-    InlineKeyboardMarkups.singleColumn(
-      List(
-        inlineKeyboardButton(msgService.getMessage(MsgId.`reminders-at-start`, language), CreateReminder(taskId, 0)),
-        inlineKeyboardButton(msgService.remindersMinutesBefore(1, language), CreateReminder(taskId, 1)),
-        inlineKeyboardButton(msgService.remindersMinutesBefore(5, language), CreateReminder(taskId, 5)),
-        inlineKeyboardButton(msgService.remindersMinutesBefore(10, language), CreateReminder(taskId, 10)),
-        inlineKeyboardButton(msgService.remindersMinutesBefore(30, language), CreateReminder(taskId, 30)),
-        inlineKeyboardButton(msgService.remindersHoursBefore(1, language), CreateReminder(taskId, 60)),
-        inlineKeyboardButton(msgService.remindersDaysBefore(1, language), CreateReminder(taskId, 60 * 24)),
-        inlineKeyboardButton(msgService.remindersDaysBefore(2, language), CreateReminder(taskId, 60 * 24 * 2)),
-        inlineKeyboardButton(msgService.getMessage(MsgId.`back`, language), Reminders(taskId, pageNumber))
-      )
-    )
 
   private def minutesToLabel(minutes: Int, language: Language): String =
     val days                      = minutes / (60 * 24)
