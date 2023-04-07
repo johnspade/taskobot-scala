@@ -9,32 +9,16 @@ import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.JsonBody
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.TestUsers.johnChatId
-import ru.johnspade.taskobot.TestUsers.kaitrin
-import ru.johnspade.taskobot.TestUsers.kaitrinChatId
-import ru.johnspade.taskobot.core.Chats
-import ru.johnspade.taskobot.core.CheckTask
-import ru.johnspade.taskobot.core.ConfirmTask
-import ru.johnspade.taskobot.core.DatePicker
-import ru.johnspade.taskobot.core.Ignore
-import ru.johnspade.taskobot.core.SetLanguage
-import ru.johnspade.taskobot.core.TaskDetails
-import ru.johnspade.taskobot.core.Tasks
+import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.TimePicker
+import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
 import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
-import telegramium.bots.ChatIntId
-import telegramium.bots.InlineKeyboardMarkup
-import telegramium.bots.KeyboardButton
-import telegramium.bots.Message
-import telegramium.bots.ReplyKeyboardMarkup
-import telegramium.bots.WebAppInfo
+import telegramium.bots.*
 import telegramium.bots.client.Method
-import telegramium.bots.high.BotApi
-import telegramium.bots.high.Methods
+import telegramium.bots.high.*
 import telegramium.bots.high.keyboards.*
 import zio.*
 import zio.interop.catz.*
@@ -384,164 +368,158 @@ object TestBotApi:
       )
 
     def editMessageTextTaskDetails(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
-      Methods.editMessageText(
-        s"""|Buy some milk
-            |
-            |🕒 Due date: -
-            |
-            |Created at: 1970-01-01 00:00""".stripMargin,
-        ChatIntId(0).some,
-        messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
           List(
-            plain"Buy some milk",
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: -",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
-        ),
-        replyMarkup = InlineKeyboardMarkup(
-          List(
-            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
-            List(
-              inlineKeyboardButton(
-                "📅",
-                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
-              ),
-              inlineKeyboardButton("🕒", TimePicker(taskId))
+            inlineKeyboardButton(
+              "📅",
+              DatePicker(taskId, LocalDate.ofInstant(now, UTC))
             ),
-            List(
-              inlineKeyboardButton(
-                "Tasks",
-                Tasks(0, kaitrin.id)
-              )
+            inlineKeyboardButton("🕒", TimePicker(taskId))
+          ),
+          List(
+            inlineKeyboardButton(
+              "Tasks",
+              Tasks(0, kaitrin.id)
             )
           )
-        ).some
+        )
       )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup)
+
+    def editMessageTextTaskDetailsStandardReminders(taskId: Long): Method[Either[Boolean, Message]] =
+      val markup = InlineKeyboardMarkups
+        .singleColumn(
+          List(
+            inlineKeyboardButton("At start", CreateReminder(taskId, 0)),
+            inlineKeyboardButton("1m before", CreateReminder(taskId, 1)),
+            inlineKeyboardButton("5m before", CreateReminder(taskId, 5)),
+            inlineKeyboardButton("10m before", CreateReminder(taskId, 10)),
+            inlineKeyboardButton("30m before", CreateReminder(taskId, 30)),
+            inlineKeyboardButton("1h before", CreateReminder(taskId, 60)),
+            inlineKeyboardButton("1d before", CreateReminder(taskId, 60 * 24)),
+            inlineKeyboardButton("2d before", CreateReminder(taskId, 60 * 24 * 2)),
+            inlineKeyboardButton("Back", Reminders(taskId, 0))
+          )
+        )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup)
+
+    def editMessageTextTaskDetailsReminders(taskId: Long, reminderId: Long): Method[Either[Boolean, Message]] =
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(inlineKeyboardButton("🔔 1h  before", RemoveReminder(reminderId, taskId))),
+          List(
+            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+          )
+        )
+      )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup, "1970-01-01 00:00".some)
+
+    def editMessageTextTaskDetailsNoReminders(taskId: Long): Method[Either[Boolean, Message]] =
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(
+            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+          )
+        )
+      )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup, "1970-01-01 00:00".some)
+
+    def editMessageTextTaskDetailsNoRemindersNoDeadline(taskId: Long): Method[Either[Boolean, Message]] =
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(
+            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+          )
+        )
+      )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup)
+
+    def editMessageTextTaskDetailsThreeReminders(
+        taskId: Long,
+        reminder1Id: Long,
+        reminder2Id: Long,
+        reminder3Id: Long
+    ): Method[Either[Boolean, Message]] =
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(inlineKeyboardButton("🔔 At start", RemoveReminder(reminder1Id, taskId))),
+          List(inlineKeyboardButton("🔔 1m  before", RemoveReminder(reminder2Id, taskId))),
+          List(inlineKeyboardButton("🔔 10m  before", RemoveReminder(reminder3Id, taskId))),
+          List(
+            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+          )
+        )
+      )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup, "1970-01-01 00:00".some)
 
     def editMessageTextTaskDeadlineUpdated(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
-      Methods.editMessageText(
-        s"""|Buy some milk
-            |
-            |🕒 Due date: 1970-01-01 00:00
-            |
-            |Created at: 1970-01-01 00:00""".stripMargin,
-        ChatIntId(0).some,
-        messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
           List(
-            plain"Buy some milk",
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: 1970-01-01 00:00",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
-        ),
-        replyMarkup = InlineKeyboardMarkup(
-          List(
-            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
-            List(
-              inlineKeyboardButton(
-                "📅",
-                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
-              ),
-              inlineKeyboardButton("🕒", TimePicker(taskId))
+            inlineKeyboardButton(
+              "📅",
+              DatePicker(taskId, LocalDate.ofInstant(now, UTC))
             ),
-            List(
-              inlineKeyboardButton(
-                "Tasks",
-                Tasks(0, kaitrin.id)
-              )
+            inlineKeyboardButton("🕒", TimePicker(taskId))
+          ),
+          List(
+            inlineKeyboardButton(
+              "Tasks",
+              Tasks(0, kaitrin.id)
             )
           )
-        ).some
+        )
       )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup, "1970-01-01 00:00".some)
 
     def editMessageTextTaskDeadlineRemoved(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
-      Methods.editMessageText(
-        s"""|Buy some milk
-            |
-            |🕒 Due date: -
-            |
-            |Created at: 1970-01-01 00:00""".stripMargin,
-        ChatIntId(0).some,
-        messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
           List(
-            plain"Buy some milk",
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: -",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
-        ),
-        replyMarkup = InlineKeyboardMarkup(
-          List(
-            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
-            List(
-              inlineKeyboardButton(
-                "📅",
-                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
-              ),
-              inlineKeyboardButton("🕒", TimePicker(taskId))
+            inlineKeyboardButton(
+              "📅",
+              DatePicker(taskId, LocalDate.ofInstant(now, UTC))
             ),
-            List(
-              inlineKeyboardButton(
-                "Tasks",
-                Tasks(0, kaitrin.id)
-              )
+            inlineKeyboardButton("🕒", TimePicker(taskId))
+          ),
+          List(
+            inlineKeyboardButton(
+              "Tasks",
+              Tasks(0, kaitrin.id)
             )
           )
-        ).some
+        )
       )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup)
 
     def editMessageTextTimePicker(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
-      Methods.editMessageText(
-        s"""|Buy some milk
-            |
-            |🕒 Due date: 1970-01-01 13:15
-            |
-            |Created at: 1970-01-01 00:00""".stripMargin,
-        ChatIntId(0).some,
-        messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
+      val markup = InlineKeyboardMarkup(
+        List(
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
           List(
-            plain"Buy some milk",
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: 1970-01-01 13:15",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
-        ),
-        replyMarkup = InlineKeyboardMarkup(
-          List(
-            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
-            List(
-              inlineKeyboardButton(
-                "📅",
-                DatePicker(taskId, LocalDate.ofInstant(now, UTC))
-              ),
-              inlineKeyboardButton("🕒", TimePicker(taskId))
+            inlineKeyboardButton(
+              "📅",
+              DatePicker(taskId, LocalDate.ofInstant(now, UTC))
             ),
-            List(
-              inlineKeyboardButton(
-                "Tasks",
-                Tasks(0, kaitrin.id)
-              )
+            inlineKeyboardButton("🕒", TimePicker(taskId))
+          ),
+          List(
+            inlineKeyboardButton(
+              "Tasks",
+              Tasks(0, kaitrin.id)
             )
           )
-        ).some
+        )
       )
+      editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup, "1970-01-01 13:15".some)
 
     def sendMessageReminder(
         text: String,
@@ -585,5 +563,33 @@ object TestBotApi:
             )
           )
         ).some
+      )
+
+    private def editMessageTextTaskDetailsMock(
+        taskId: Long,
+        text: String,
+        replyMarkup: InlineKeyboardMarkup,
+        dueDate: Option[String] = None
+    ) =
+      Methods.editMessageText(
+        s"""|$text
+            |
+            |🕒 Due date: ${dueDate.getOrElse("-")}
+            |
+            |Created at: 1970-01-01 00:00""".stripMargin,
+        ChatIntId(0).some,
+        messageId = 0.some,
+        entities = TypedMessageEntity.toMessageEntities(
+          List(
+            Plain(text),
+            lineBreak,
+            lineBreak,
+            bold"🕒 Due date: ${dueDate.getOrElse("-")}",
+            lineBreak,
+            lineBreak,
+            italic"Created at: 1970-01-01 00:00"
+          )
+        ),
+        replyMarkup = replyMarkup.some
       )
   end Mocks

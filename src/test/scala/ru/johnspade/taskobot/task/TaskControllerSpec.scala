@@ -13,24 +13,15 @@ import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestHelpers.callbackQuery
 import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.UTC
-import ru.johnspade.taskobot.core.CbData
-import ru.johnspade.taskobot.core.Chats
-import ru.johnspade.taskobot.core.CheckTask
-import ru.johnspade.taskobot.core.ConfirmTask
-import ru.johnspade.taskobot.core.RemoveTaskDeadline
-import ru.johnspade.taskobot.core.TaskDeadlineDate
-import ru.johnspade.taskobot.core.TaskDetails
-import ru.johnspade.taskobot.core.Tasks
+import ru.johnspade.taskobot.core.CreateReminder
+import ru.johnspade.taskobot.core.RemoveReminder
 import ru.johnspade.taskobot.core.TelegramOps.toUser
-import ru.johnspade.taskobot.core.TimePicker
-import ru.johnspade.taskobot.messages.Language
-import ru.johnspade.taskobot.messages.MessageServiceLive
-import ru.johnspade.taskobot.messages.MsgConfig
+import ru.johnspade.taskobot.core.*
+import ru.johnspade.taskobot.messages.*
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import ru.johnspade.tgbot.callbackqueries.CallbackQueryData
-import ru.johnspade.tgbot.callbackqueries.ContextCallbackQuery
+import ru.johnspade.tgbot.callbackqueries.*
 import telegramium.bots.high.Methods
 import telegramium.bots.{User as TgUser}
 import zio.*
@@ -152,7 +143,6 @@ object TaskControllerSpec extends ZIOSpecDefault:
     suite("TaskDetails")(
       test("should handle TaskDetails callback query") {
         for
-          _     <- TestClock.setTime(Instant.EPOCH)
           now   <- Clock.instant
           task  <- createTask("Buy some milk", kaitrin.id.some)
           _     <- createMock(Mocks.editMessageTextTaskDetails(task.id, now), Mocks.messageResponse)
@@ -163,7 +153,6 @@ object TaskControllerSpec extends ZIOSpecDefault:
     suite("TaskDeadlineDate")(
       test("should update task deadline date") {
         for
-          _    <- TestClock.setTime(Instant.EPOCH)
           now  <- Clock.instant
           task <- createTask("Buy some milk", kaitrin.id.some)
           _    <- createMock(Mocks.editMessageTextTaskDeadlineUpdated(task.id, now), Mocks.messageResponse)
@@ -177,7 +166,6 @@ object TaskControllerSpec extends ZIOSpecDefault:
     suite("RemoveTaskDeadline")(
       test("should remove task deadline") {
         for
-          _    <- TestClock.setTime(Instant.EPOCH)
           now  <- Clock.instant
           task <- createTask("Buy some milk", kaitrin.id.some)
           deadlineDate = LocalDateTime.ofInstant(now, UTC)
@@ -192,7 +180,6 @@ object TaskControllerSpec extends ZIOSpecDefault:
     suite("TimePicker")(
       test("should handle TimePicker callback query") {
         for
-          _    <- TestClock.setTime(Instant.EPOCH)
           now  <- Clock.instant
           task <- createTask("Buy some milk", kaitrin.id.some)
           deadlineDate = LocalDateTime.ofInstant(now, UTC)
@@ -201,17 +188,73 @@ object TaskControllerSpec extends ZIOSpecDefault:
           reply <- callUserRoute(TimePicker(task.id, 13.some, 15.some, confirm = true), johnTg)
         yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
       }
+    ),
+    suite("Reminders")(
+      test("show standard reminders") {
+        for
+          task  <- createTask("Buy some milk", kaitrin.id.some)
+          _     <- createMock(Mocks.editMessageTextTaskDetailsStandardReminders(task.id), Mocks.messageResponse)
+          reply <- callUserRoute(StandardReminders(task.id, 0), johnTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      },
+      test("list reminders") {
+        for
+          now  <- Clock.instant
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          deadlineDate = LocalDateTime.ofInstant(now, UTC)
+          _     <- TaskRepository.setDeadline(task.id, deadlineDate.some, kaitrin.id)
+          _     <- createMock(Mocks.editMessageTextTaskDetailsReminders(task.id, 1L), Mocks.messageResponse)
+          reply <- callUserRoute(CreateReminder(task.id, 60), johnTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      },
+      test("remove reminder") {
+        for
+          now  <- Clock.instant
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          deadlineDate = LocalDateTime.ofInstant(now, UTC)
+          _     <- TaskRepository.setDeadline(task.id, deadlineDate.some, kaitrin.id)
+          _     <- createMock(Mocks.editMessageTextTaskDetailsReminders(task.id, 1L), Mocks.messageResponse)
+          _     <- createMock(Mocks.editMessageTextTaskDetailsNoReminders(task.id), Mocks.messageResponse)
+          _     <- callUserRoute(CreateReminder(task.id, 60), johnTg)
+          reply <- callUserRoute(RemoveReminder(1L, task.id), johnTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      },
+      test("cannot create reminders for a task without deadline") {
+        for
+          task  <- createTask("Buy some milk", kaitrin.id.some)
+          _     <- createMock(Mocks.editMessageTextTaskDetailsNoRemindersNoDeadline(task.id), Mocks.messageResponse)
+          reply <- callUserRoute(CreateReminder(task.id, 120), johnTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      },
+      test("cannot create more than 3 reminders") {
+        for
+          now  <- Clock.instant
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          deadlineDate = LocalDateTime.ofInstant(now, UTC)
+          _         <- TaskRepository.setDeadline(task.id, deadlineDate.some, kaitrin.id)
+          reminder1 <- ReminderRepository.create(task.id, john.id, offsetMinutes = 0)
+          reminder2 <- ReminderRepository.create(task.id, john.id, offsetMinutes = 1)
+          reminder3 <- ReminderRepository.create(task.id, john.id, offsetMinutes = 10)
+          _ <- createMock(
+            Mocks.editMessageTextTaskDetailsThreeReminders(task.id, reminder1.id, reminder2.id, reminder3.id),
+            Mocks.messageResponse
+          )
+          reply <- callUserRoute(CreateReminder(task.id, 60), johnTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      }
     )
   )
     @@ sequential
     @@ before {
       for
+        _ <- TestClock.setTime(Instant.EPOCH)
         _ <- UserRepository.createOrUpdate(john).orDie
         _ <- UserRepository.createOrUpdate(kaitrin).orDie
       yield ()
     }
     @@ TestAspect.after {
       for
+        _ <- CleanupRepository.clearReminders()
         _ <- CleanupRepository.clearTasks()
         _ <- CleanupRepository.clearUsers()
       yield ()
@@ -271,7 +314,9 @@ object TaskControllerSpec extends ZIOSpecDefault:
     }
 
   private val env =
-    ZLayer.make[MockServerClient & TaskController & UserRepository & TaskRepository & CleanupRepository](
+    ZLayer.make[
+      MockServerClient & TaskController & UserRepository & TaskRepository & ReminderRepository & CleanupRepository
+    ](
       TestDatabase.layer,
       TestBotApi.testApiLayer,
       UserRepositoryLive.layer,

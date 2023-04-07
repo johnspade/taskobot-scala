@@ -6,20 +6,9 @@ import ru.johnspade.taskobot.TestBotApi.Mocks
 import ru.johnspade.taskobot.TestBotApi.createMock
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.*
-import ru.johnspade.taskobot.core.CbData
-import ru.johnspade.taskobot.core.Chats
-import ru.johnspade.taskobot.core.CheckTask
-import ru.johnspade.taskobot.core.ConfirmTask
-import ru.johnspade.taskobot.core.Ignore
-import ru.johnspade.taskobot.core.RemoveTaskDeadline
-import ru.johnspade.taskobot.core.TaskDeadlineDate
-import ru.johnspade.taskobot.core.TaskDetails
-import ru.johnspade.taskobot.core.Tasks
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.TimePicker
-import ru.johnspade.taskobot.datetime.DatePickerServiceLive
-import ru.johnspade.taskobot.datetime.DateTimeControllerLive
-import ru.johnspade.taskobot.datetime.TimePickerServiceLive
+import ru.johnspade.taskobot.core.*
+import ru.johnspade.taskobot.datetime.*
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
 import ru.johnspade.taskobot.settings.SettingsControllerLive
@@ -33,9 +22,7 @@ import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.*
 import telegramium.bots.client.Method
 import telegramium.bots.high.Methods
-import telegramium.bots.high.keyboards.InlineKeyboardButtons
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import telegramium.bots.high.keyboards.KeyboardButtons
+import telegramium.bots.high.keyboards.*
 import zio.*
 import zio.test.TestAspect.sequential
 import zio.test.*
@@ -139,6 +126,26 @@ object TaskobotISpec extends ZIOSpecDefault:
         assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
       }
 
+      val getStandardReminders =
+        sendCallbackQuery(StandardReminders(1L, 0)).map { detailsReply =>
+          assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+        }
+
+      val addReminder =
+        sendCallbackQuery(CreateReminder(1L, 0)).map { detailsReply =>
+          assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+        }
+
+      val getTaskReminders =
+        sendCallbackQuery(Reminders(1L, 0)).map { detailsReply =>
+          assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+        }
+
+      val removeReminder =
+        sendCallbackQuery(RemoveReminder(1L, 1L)).map { detailsReply =>
+          assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
+        }
+
       val removeDeadline = sendCallbackQuery(RemoveTaskDeadline(1L)).map { detailsReply =>
         assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
       }
@@ -151,27 +158,34 @@ object TaskobotISpec extends ZIOSpecDefault:
         )
 
       for
-        _                      <- TestClock.setTime(Instant.EPOCH)
-        now                    <- Clock.instant
-        _                      <- createMock(Mocks.addConfirmButton, Mocks.messageResponse)
-        _                      <- createMock(Mocks.removeReplyMarkup, Mocks.messageResponse)
-        _                      <- createMock(Mocks.editMessageTextList, Mocks.messageResponse)
-        _                      <- createMock(Mocks.editMessageTextCheckTask(kaitrinChatId), Mocks.messageResponse)
-        _                      <- createMock(Mocks.taskCompletedMessage, Mocks.messageResponse)
-        _                      <- createMock(Mocks.editMessageTextTaskDetails(1L, now), Mocks.messageResponse)
-        _                      <- createMock(Mocks.editMessageTextTaskDeadlineUpdated(1L, now), Mocks.messageResponse)
-        _                      <- createMock(Mocks.editMessageTextTimePicker(1L, now), Mocks.messageResponse)
-        _                      <- createMock(Mocks.editMessageTextTaskDeadlineRemoved(1L, now), Mocks.messageResponse)
-        typeTaskAssertions     <- typeTask
-        createTaskAssertions   <- createTask
-        confirmTaskAssertions  <- confirmTask
-        listChatsAssertions    <- listChats
-        listTasksAssertions    <- listTasks
-        taskDetailsAssertions  <- getTaskDetails
-        deadlineDateAssertions <- setDeadlineDate
-        deadlineTimeAssertions <- setDeadlineTime
-        noDeadlineAssertions   <- removeDeadline
-        checkTaskAssertions    <- checkTask
+        _                    <- TestClock.setTime(Instant.EPOCH)
+        now                  <- Clock.instant
+        _                    <- createMock(Mocks.addConfirmButton, Mocks.messageResponse)
+        _                    <- createMock(Mocks.removeReplyMarkup, Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextList, Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextCheckTask(kaitrinChatId), Mocks.messageResponse)
+        _                    <- createMock(Mocks.taskCompletedMessage, Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextTaskDetails(1L, now), Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextTaskDeadlineUpdated(1L, now), Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextTimePicker(1L, now), Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextTaskDetailsStandardReminders(1L), Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextTaskDetailsReminders(1L, 1L), Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextTaskDetailsNoReminders(1L), Mocks.messageResponse)
+        _                    <- createMock(Mocks.editMessageTextTaskDeadlineRemoved(1L, now), Mocks.messageResponse)
+        typeTaskAssertions   <- typeTask
+        createTaskAssertions <- createTask
+        confirmTaskAssertions       <- confirmTask
+        listChatsAssertions         <- listChats
+        listTasksAssertions         <- listTasks
+        taskDetailsAssertions       <- getTaskDetails
+        standardRemindersAssertions <- getStandardReminders
+        deadlineDateAssertions      <- setDeadlineDate
+        deadlineTimeAssertions      <- setDeadlineTime
+        newReminderAssertions       <- addReminder
+        remindersAssertions         <- getTaskReminders
+        noRemindersAssertions       <- removeReminder
+        noDeadlineAssertions        <- removeDeadline
+        checkTaskAssertions         <- checkTask
       yield typeTaskAssertions &&
         createTaskAssertions &&
         confirmTaskAssertions &&
@@ -180,6 +194,10 @@ object TaskobotISpec extends ZIOSpecDefault:
         taskDetailsAssertions &&
         deadlineDateAssertions &&
         deadlineTimeAssertions &&
+        standardRemindersAssertions &&
+        newReminderAssertions &&
+        remindersAssertions &&
+        noRemindersAssertions &&
         noDeadlineAssertions &&
         checkTaskAssertions
     },
