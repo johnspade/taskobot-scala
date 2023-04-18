@@ -15,10 +15,9 @@ object ReminderNotificationService:
 final class ReminderNotificationServiceLive(reminderService: ReminderService) extends ReminderNotificationService:
   override def scheduleNotifications(): ZStream[Any, Throwable, List[Reminder]] =
     ZStream
-      .fromSchedule(Schedule.once andThen Schedule.fixed(30.seconds))
-      .mapZIO(_ => reminderService.getEnqueuedReminders())
+      .fromSchedule((Schedule.once andThen Schedule.fixed(30.seconds)) >>> Schedule.count)
+      .mapZIO(runCount => reminderService.getEnqueuedReminders().tap(logEnqueuedReminders(_, runCount)))
       .filter(_.nonEmpty)
-      .tap(logEnqueuedReminders)
       .mapZIO(reminderService.fetchTasks)
       .mapZIO(reminderService.collectDueReminders)
       .filter(_.nonEmpty)
@@ -28,8 +27,8 @@ final class ReminderNotificationServiceLive(reminderService: ReminderService) ex
       .tap(reminderService.deleteProcessedReminders)
       .tapError(logError)
 
-  private def logEnqueuedReminders(reminders: List[Reminder]) =
-    ZIO.logInfo(s"Enqueued: ${reminders.size}")
+  private def logEnqueuedReminders(reminders: List[Reminder], runCount: Long) =
+    if (runCount % 120 == 0) ZIO.logInfo(s"Enqueued: ${reminders.size}") else ZIO.unit
 
   private def logDueReminders(reminders: List[(Reminder, BotTask)]) =
     ZIO.logInfo(s"Due: ${reminders.size}")
