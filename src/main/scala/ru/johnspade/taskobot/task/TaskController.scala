@@ -50,7 +50,9 @@ final class TaskControllerLive(
     def confirm(task: BotTask, from: User): Task[Option[Method[_]]] =
       for
         _ <- taskRepo.setReceiver(task.id, senderIdOpt, from.id)
-        _ <- editMessageReplyMarkup(inlineMessageId = cb.inlineMessageId, replyMarkup = Option.empty).exec
+        _ <- execDiscardWithHandling(
+          editMessageReplyMarkup(inlineMessageId = cb.inlineMessageId, replyMarkup = Option.empty)
+        )
       yield answerCallbackQuery(cb.id).some
 
     def mustBeConfirmedByReceiver(from: User): UIO[Option[Method[_]]] = {
@@ -77,13 +79,14 @@ final class TaskControllerLive(
       ackCb(cb) { msg =>
         for
           page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
-          _ <- editMessageText(
-            msgService.chatsWithTasks(user.language),
-            ChatIntId(msg.chat.id).some,
-            msg.messageId.some,
-            replyMarkup = kbService.chats(page, user).some
+          _ <- execDiscardWithHandling(
+            editMessageText(
+              msgService.chatsWithTasks(user.language),
+              ChatIntId(msg.chat.id).some,
+              msg.messageId.some,
+              replyMarkup = kbService.chats(page, user).some
+            )
           )
-            .exec[Task]
         yield ()
       }
 
@@ -250,13 +253,15 @@ final class TaskControllerLive(
       collaborator: User,
       language: Language
   ) =
-    editMessageText(
-      messageEntities.map(_.text).mkString,
-      ChatIntId(message.chat.id).some,
-      message.messageId.some,
-      entities = TypedMessageEntity.toMessageEntities(messageEntities),
-      replyMarkup = kbService.tasks(page, collaborator, language).some
-    ).exec.unit
+    execDiscardWithHandling(
+      editMessageText(
+        messageEntities.map(_.text).mkString,
+        ChatIntId(message.chat.id).some,
+        message.messageId.some,
+        entities = TypedMessageEntity.toMessageEntities(messageEntities),
+        replyMarkup = kbService.tasks(page, collaborator, language).some
+      )
+    )
 
   private def minutesToLabel(minutes: Int, language: Language): String =
     val days                      = minutes / (60 * 24)
@@ -308,13 +313,15 @@ final class TaskControllerLive(
       messageEntities: List[TypedMessageEntity],
       keyboard: InlineKeyboardMarkup
   ) =
-    editMessageText(
-      messageEntities.map(_.text).mkString,
-      ChatIntId(message.chat.id).some,
-      message.messageId.some,
-      entities = TypedMessageEntity.toMessageEntities(messageEntities),
-      replyMarkup = Some(keyboard)
-    ).exec.unit
+    execDiscardWithHandling(
+      editMessageText(
+        messageEntities.map(_.text).mkString,
+        ChatIntId(message.chat.id).some,
+        message.messageId.some,
+        entities = TypedMessageEntity.toMessageEntities(messageEntities),
+        replyMarkup = Some(keyboard)
+      )
+    )
 
   private def getTaskSafe(id: Long, userId: Long) =
     for

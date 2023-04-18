@@ -6,7 +6,10 @@ import telegramium.bots.CallbackQuery
 import telegramium.bots.InlineKeyboardButton
 import telegramium.bots.Message
 import telegramium.bots.client.Method
+import telegramium.bots.high.Api
+import telegramium.bots.high.FailedRequest
 import telegramium.bots.high.Methods.answerCallbackQuery
+import telegramium.bots.high.implicits.*
 import telegramium.bots.high.keyboards.InlineKeyboardButtons
 import zio.*
 
@@ -33,4 +36,15 @@ object TelegramOps {
 
   def ackCb(cb: CallbackQuery)(f: Message => Task[Unit]): ZIO[Any, Throwable, Option[Method[Boolean]]] =
     ZIO.foreachDiscard(cb.message)(f).as(Some(answerCallbackQuery(cb.id)))
+
+  def execDiscardWithHandling[Res](method: Method[Res])(using api: Api[Task]) =
+    method.exec.catchSome {
+      case err: FailedRequest[Res]
+          if err.errorCode.contains(400) && err.description.exists(
+            _.contains(
+              "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message"
+            )
+          ) =>
+        ZIO.logWarning("Bad Request: message is not modified") // ignore this error
+    }.unit
 }

@@ -1,19 +1,28 @@
 package ru.johnspade.taskobot.settings
 
 import cats.syntax.option.*
+import ru.johnspade.taskobot.CbDataRoutes
+import ru.johnspade.taskobot.CbDataUserRoutes
+import ru.johnspade.taskobot.KeyboardService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
+import ru.johnspade.taskobot.core.ChangeLanguage
+import ru.johnspade.taskobot.core.SetLanguage
+import ru.johnspade.taskobot.core.TelegramOps.execDiscardWithHandling
 import ru.johnspade.taskobot.core.TelegramOps.toUser
-import ru.johnspade.taskobot.core.{ChangeLanguage, SetLanguage}
-import ru.johnspade.taskobot.messages.{Language, MessageService}
-import ru.johnspade.taskobot.user.UserRepository
-import ru.johnspade.taskobot.{CbDataRoutes, CbDataUserRoutes, KeyboardService}
-import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
-import ru.johnspade.tgbot.callbackqueries.{CallbackQueryContextRoutes, CallbackQueryRoutes}
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
+import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextRoutes
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryRoutes
+import telegramium.bots.CallbackQuery
+import telegramium.bots.ChatIntId
 import telegramium.bots.high.Api
-import telegramium.bots.high.Methods.{answerCallbackQuery, editMessageText, sendMessage}
+import telegramium.bots.high.Methods.answerCallbackQuery
+import telegramium.bots.high.Methods.editMessageText
+import telegramium.bots.high.Methods.sendMessage
 import telegramium.bots.high.implicits.*
-import telegramium.bots.{CallbackQuery, ChatIntId}
 import zio.*
 import zio.interop.catz.*
 
@@ -46,13 +55,14 @@ final class SettingsControllerLive(
 
   private def listLanguages(cb: CallbackQuery, language: Language): Task[Unit] = {
     ZIO.foreachDiscard(cb.message) { msg =>
-      editMessageText(
-        msgService.currentLanguage(language),
-        ChatIntId(msg.chat.id).some,
-        msg.messageId.some,
-        replyMarkup = kbService.languages(language).some
+      execDiscardWithHandling(
+        editMessageText(
+          msgService.currentLanguage(language),
+          ChatIntId(msg.chat.id).some,
+          msg.messageId.some,
+          replyMarkup = kbService.languages(language).some
+        )
       )
-        .exec[Task]
     }
   }
 
