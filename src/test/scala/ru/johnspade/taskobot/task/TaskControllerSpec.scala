@@ -54,9 +54,12 @@ object TaskControllerSpec extends ZIOSpecDefault:
     suite("Tasks")(
       test("should list tasks as a single page") {
         for
-          task  <- createTask("Wash dishes please", kaitrin.id.some)
-          _     <- createMock(Mocks.editMessageTextTasksSinglePage(task.id), Mocks.messageResponse)
-          reply <- callUserRoute(Tasks(firstPage, kaitrin.id), johnTg)
+          now  <- Clock.instant
+          task <- createTask("Wash dishes please", kaitrin.id.some)
+          deadlineDate = LocalDateTime.ofInstant(now, UTC)
+          taskWithDeadline <- TaskRepository.setDeadline(task.id, deadlineDate.some, kaitrin.id)
+          _                <- createMock(Mocks.editMessageTextTasksSinglePage(task.id), Mocks.messageResponse)
+          reply            <- callUserRoute(Tasks(firstPage, kaitrin.id), johnTg)
         yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
       },
       test("should list tasks as multiple pages") {

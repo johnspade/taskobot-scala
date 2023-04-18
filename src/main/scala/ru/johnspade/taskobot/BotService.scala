@@ -86,12 +86,13 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
               val sender = if (task.sender == `for`.id) `for`.firstName else collaborator.firstName
               s" – $sender"
             }
-            TaskLine(taskText, senderName)
+            val deadline = task.deadline.fold("")(deadline => s" 🕒 ${deadline.format(dateTimeFormatter)}")
+            TaskLine(taskText, senderName, deadline)
           }
 
         val taskList = limitTaskLines(taskLines, headerFooterLength = header.map(_.text).mkString.length)
           .flatMap { line =>
-            List(Plain(line.text), Italic(line.senderName), lineBreak)
+            List(Plain(line.text), Italic(line.deadline + line.senderName), lineBreak)
           }
 
         val messageEntities = header ++ taskList
@@ -133,25 +134,28 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
     header :: text ++ footer
   end taskDetails
 
-  private case class TaskLine(text: String, senderName: String)
+  private case class TaskLine(text: String, senderName: String, deadline: String)
 
   private val LineBreakLength = "\n".length
   private val LineBreaksCount = DefaultPageSize
 
   private def limitTaskLines(lines: List[TaskLine], headerFooterLength: Int): List[TaskLine] =
-    val messageLength = lines.map(l => (l.text + l.senderName).length + LineBreakLength).sum + headerFooterLength
+    def truncatedText(line: TaskLine, lineLimit: Int): String =
+      val ellipsis = if ((line.text + line.senderName + line.deadline).length > lineLimit) "..." else ""
+      line.text.take(lineLimit - line.senderName.length - line.deadline.length - ellipsis.length) + ellipsis
+
+    val messageLength =
+      lines.map(l => (l.text + l.senderName + l.deadline).length + LineBreakLength).sum + headerFooterLength
+
     if (messageLength > MessageLimit) {
       val taskListLimit = MessageLimit - headerFooterLength - LineBreaksCount
       val lineLimit     = taskListLimit / DefaultPageSize
-      lines.map { line =>
-        val ellipsis = if ((line.text + line.senderName).length > lineLimit) "..." else ""
-        line.copy(text = line.text.take(lineLimit - line.senderName.length - ellipsis.length) + ellipsis)
-      }
+      lines.map(line => line.copy(text = truncatedText(line, lineLimit)))
     } else lines
 
-  private def limitTaskText(text: String, headerFooterLength: Int) =
-    val ellipsis = if text.length + headerFooterLength > MessageLimit then "..." else ""
-    text.take(MessageLimit - headerFooterLength - ellipsis.length) + ellipsis
+private def limitTaskText(text: String, headerFooterLength: Int) =
+  val ellipsis = if text.length + headerFooterLength > MessageLimit then "..." else ""
+  text.take(MessageLimit - headerFooterLength - ellipsis.length) + ellipsis
 
 object BotServiceLive:
   val layer: URLayer[UserRepository with TaskRepository with MessageService, BotService] =

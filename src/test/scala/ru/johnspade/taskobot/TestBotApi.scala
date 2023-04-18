@@ -276,14 +276,14 @@ object TestBotApi:
       Methods.editMessageText(
         chatId = ChatIntId(0).some,
         messageId = 0.some,
-        text = "Chat: Kaitrin\n1. Wash dishes please – John\n",
+        text = "Chat: Kaitrin\n1. Wash dishes please 🕒 1970-01-01 00:00 – John\n",
         entities = TypedMessageEntity.toMessageEntities(
           List(
             plain"Chat: ",
             bold"Kaitrin",
             lineBreak,
             plain"1. Wash dishes please",
-            italic" – John",
+            italic" 🕒 1970-01-01 00:00 – John",
             lineBreak
           )
         ),
