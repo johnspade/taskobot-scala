@@ -244,6 +244,18 @@ object TaskControllerSpec extends ZIOSpecDefault:
           )
           reply <- callUserRoute(CreateReminder(task.id, 60), johnTg)
         yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
+      },
+      test("cannot see someone else's reminders") {
+        for
+          now  <- Clock.instant
+          task <- createTask("Buy some milk", kaitrin.id.some)
+          deadlineDate = LocalDateTime.ofInstant(now, UTC)
+          _     <- TaskRepository.setDeadline(task.id, deadlineDate.some, kaitrin.id)
+          _     <- createMock(Mocks.editMessageTextTaskDetailsReminders(task.id, 1L), Mocks.messageResponse)
+          _     <- createMock(Mocks.editMessageTextTaskDetailsNoReminders(task.id), Mocks.messageResponse)
+          _     <- callUserRoute(CreateReminder(task.id, 60), johnTg)
+          reply <- callUserRoute(Reminders(task.id, 0), kaitrinTg)
+        yield assertTrue(reply.contains(Methods.answerCallbackQuery("0")))
       }
     )
   )

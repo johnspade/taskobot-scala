@@ -106,6 +106,33 @@ object ReminderServiceSpec extends ZIOSpecDefault:
         sentReminders     <- ReminderService.sendReminders(dueReminders)
       } yield assert(sentReminders)(hasSize(equalTo(1)))
     },
+    test("sendReminder handles the 'Bot was blocked by the user' error") {
+      val errorResponse = """
+        {
+          "ok": false,
+          "description": "Forbidden: bot was blocked by the user",
+          "error_code": 403
+        }
+      """
+      for
+        now  <- Clock.instant
+        task <- createTask("Homework assignment", Some(kaitrin.id))
+        taskWithDeadline <- TaskRepository
+          .setDeadline(task.id, Some(LocalDateTime.from(now.atZone(UTC)).plusMinutes(1L)), john.id)
+        reminder    <- ReminderRepository.create(task.id, john.id, offsetMinutes = 0)
+        _           <- createMock(sendMessageReminder("Homework assignment", task.id, now), errorResponse)
+        _           <- ReminderService.sendReminder(reminder, taskWithDeadline, john)
+        updatedUser <- UserRepository.findById(john.id)
+      yield assertTrue(updatedUser.flatMap(_.blockedBot).contains(true))
+    },
+    test("sendReminder doesn't send reminders if the bot is blocked") {
+      for
+        task     <- createTask("Please come back", Some(kaitrin.id))
+        reminder <- ReminderRepository.create(task.id, john.id, offsetMinutes = 0)
+        // No mocks means that the Telegram API wasn't called
+        _ <- ReminderService.sendReminder(reminder, task, john.copy(blockedBot = Some(true)))
+      yield assertTrue(true)
+    },
     test("deleteProcessedReminders deletes reminders that were processed") {
       for {
         task               <- createTaskAndReminder

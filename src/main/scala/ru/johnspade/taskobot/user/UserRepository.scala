@@ -41,6 +41,9 @@ object UserRepository:
   def findAll(ids: NonEmptyList[Long]): ZIO[UserRepository, Throwable, List[User]] =
     ZIO.serviceWithZIO(_.findAll(ids))
 
+  def setBlockedBotTrue(id: Long): ZIO[UserRepository, Throwable, Unit] =
+    ZIO.serviceWithZIO(_.setBlockedBotTrue(id))
+
 class UserRepositoryLive(xa: Transactor[zio.Task]) extends UserRepository:
   override def findById(id: Long): Task[Option[User]] =
     selectById(id).option
