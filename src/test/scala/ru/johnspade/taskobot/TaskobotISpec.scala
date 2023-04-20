@@ -24,6 +24,7 @@ import telegramium.bots.client.Method
 import telegramium.bots.high.Methods
 import telegramium.bots.high.keyboards.*
 import zio.*
+import zio.test.Assertion.*
 import zio.test.TestAspect.sequential
 import zio.test.*
 
@@ -358,6 +359,34 @@ object TaskobotISpec extends ZIOSpecDefault:
         ignoreReply <- sendCallbackQuery(Ignore)
         assertions = assertTrue(ignoreReply == Methods.answerCallbackQuery("0").some)
       yield assertions
+    },
+    test("Save the user's timezone") {
+      val message = Message(
+        messageId = 0,
+        date = 0,
+        chat = Chat(id = johnChatId, `type` = "private"),
+        from = Some(johnTg),
+        text = None,
+        webAppData = Some(WebAppData(data = """{ "timezone": "Europe/Madrid" }""", buttonText = "Timezone"))
+      )
+      for
+        _             <- withTaskobotService(_.onMessageReply(message))
+        settingsReply <- sendMessage("/settings", isCommand = true)
+      yield assert(settingsReply)(
+        Assertion.isSome(
+          Assertion.equalTo(
+            Methods.sendMessage(
+              ChatIntId(johnChatId),
+              """
+              |Current language: English
+              |Timezone: Europe/Madrid
+              |""".stripMargin,
+              replyMarkup =
+                InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Switch language", ChangeLanguage)).some
+            )
+          )
+        )
+      )
     }
   ) @@ sequential).provideCustomShared(env)
 
@@ -408,7 +437,7 @@ object TaskobotISpec extends ZIOSpecDefault:
       )
     }
 
-  private val env = ZLayer.make[MockServerClient with Taskobot](
+  private val env = ZLayer.make[MockServerClient & Taskobot](
     TestDatabase.layer,
     TestBotApi.testApiLayer,
     UserRepositoryLive.layer,

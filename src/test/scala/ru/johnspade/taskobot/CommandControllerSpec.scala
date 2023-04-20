@@ -80,7 +80,7 @@ object CommandControllerSpec extends ZIOSpecDefault:
               reply.contains(
                 Methods.sendMessage(
                   ChatIntId(johnChatId),
-                  s"""
+                  """
                     |Current language: English
                     |Timezone: UTC
                     |""".stripMargin,
