@@ -206,18 +206,39 @@ object TaskobotISpec extends ZIOSpecDefault:
       val start =
         for
           startMessage <- sendMessage("/start", isCommand = true)
-          assertions = assertTrue(
-            startMessage.contains(
-              Methods.sendMessage(
-                ChatIntId(johnChatId),
-                "Taskobot is a task collaboration bot. Type <code>@tasko_bot task</code> in any private chat and " +
-                  "select <b>Create task</b>. After receiver's confirmation, a collaborative task will be created. " +
-                  "Type /list in the bot chat to see your tasks.\n\nSwitch language: /settings\n" +
-                  "Support a creator: https://buymeacoff.ee/johnspade ☕\n\n" +
-                  "Forward messages here to create personal tasks.",
-                parseMode = Html.some,
-                replyMarkup = expectedMenu,
-                disableWebPagePreview = true.some
+          assertions = assert(startMessage)(
+            isSome(
+              equalTo(
+                Methods.sendMessage(
+                  ChatIntId(johnChatId),
+                  "Taskobot is a task collaboration bot. Type <code>@tasko_bot task</code> in any private chat and " +
+                    "select <b>Create task</b>. After receiver's confirmation, a collaborative task will be created. " +
+                    "Type /list in the bot chat to view your tasks. Forward messages here to create personal tasks.\n\n" +
+                    """Open the task details by tapping on the task number in the list.
+                    |
+                    |To add a due date and time to a task:
+                    |1. Tap the 📅 button to pick a due date. Click <b>Remove</b> to delete the due date.
+                    |2. Tap the 🕒 button to pick a due time.
+                    |
+                    |To view and add reminders to a task:
+                    |1. Tap the 🔔 button to view the set reminders.
+                    |2. Tap the ➕ button to add reminders. You can add a reminder only to tasks with a due date. You can add up to three reminders.
+                    |3. Tap a reminder to delete it.
+                    |4. Tap the 🔙 button to return.
+                    |
+                    |Your reminders are only visible to you. Due dates are shared between collaborators of a task.
+                    |
+                    |Tap the <b>🌍 Timezone</b> button in the main menu to select your time zone for tasks. The default is UTC.
+                    |
+                    |Tap the ✅ button to mark the task completed. Your collaborator will receive a notification.
+                    |
+                    |""".stripMargin +
+                    "Switch language: /settings\n" +
+                    "Support a creator: https://buymeacoff.ee/johnspade ☕",
+                  parseMode = Html.some,
+                  replyMarkup = expectedMenu,
+                  disableWebPagePreview = true.some
+                )
               )
             )
           )

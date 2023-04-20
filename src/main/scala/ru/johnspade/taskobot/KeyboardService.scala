@@ -151,7 +151,7 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
         inlineKeyboardButton(msgService.remindersDaysBefore(1, language), CreateReminder(taskId, 60 * 24)),
         inlineKeyboardButton(msgService.remindersDaysBefore(2, language), CreateReminder(taskId, 60 * 24 * 2)),
         inlineKeyboardButton(msgService.remindersDaysBefore(3, language), CreateReminder(taskId, 60 * 24 * 3)),
-        inlineKeyboardButton(msgService.getMessage(MsgId.`back`, language), Reminders(taskId, pageNumber))
+        inlineKeyboardButton("🔙", Reminders(taskId, pageNumber))
       )
     )
 end KeyboardServiceLive

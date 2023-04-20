@@ -400,7 +400,7 @@ object TestBotApi:
             inlineKeyboardButton("1d before", CreateReminder(taskId, 60 * 24)),
             inlineKeyboardButton("2d before", CreateReminder(taskId, 60 * 24 * 2)),
             inlineKeyboardButton("3d before", CreateReminder(taskId, 60 * 24 * 3)),
-            inlineKeyboardButton("Back", Reminders(taskId, 0))
+            inlineKeyboardButton("🔙", Reminders(taskId, 0))
           )
         )
       editMessageTextTaskDetailsMock(taskId, "Buy some milk", markup)
@@ -410,8 +410,8 @@ object TestBotApi:
         List(
           List(inlineKeyboardButton("🔔 1h  before", RemoveReminder(reminderId, taskId))),
           List(
-            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
-            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+            inlineKeyboardButton("➕", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("🔙", TaskDetails(taskId, 0))
           )
         )
       )
@@ -421,8 +421,8 @@ object TestBotApi:
       val markup = InlineKeyboardMarkup(
         List(
           List(
-            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
-            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+            inlineKeyboardButton("➕", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("🔙", TaskDetails(taskId, 0))
           )
         )
       )
@@ -432,8 +432,8 @@ object TestBotApi:
       val markup = InlineKeyboardMarkup(
         List(
           List(
-            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
-            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+            inlineKeyboardButton("➕", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("🔙", TaskDetails(taskId, 0))
           )
         )
       )
@@ -451,8 +451,8 @@ object TestBotApi:
           List(inlineKeyboardButton("🔔 1m  before", RemoveReminder(reminder2Id, taskId))),
           List(inlineKeyboardButton("🔔 10m  before", RemoveReminder(reminder3Id, taskId))),
           List(
-            inlineKeyboardButton("Add", StandardReminders(taskId, 0)),
-            inlineKeyboardButton("Back", TaskDetails(taskId, 0))
+            inlineKeyboardButton("➕", StandardReminders(taskId, 0)),
+            inlineKeyboardButton("🔙", TaskDetails(taskId, 0))
           )
         )
       )

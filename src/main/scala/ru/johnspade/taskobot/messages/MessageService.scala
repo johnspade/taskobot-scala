@@ -6,9 +6,9 @@ import MsgId.*
 import java.text.MessageFormat
 
 trait MessageService:
-  def getMessage(id: MsgId, language: Language, args: String*): String
+  def getMessage(id: MsgId, lang: Language, args: String*): String
 
-  def help(language: Language): String
+  def help(lang: Language): String
 
   def taskCreated(task: String, language: Language): String
 
@@ -31,16 +31,18 @@ trait MessageService:
   def remindersDaysBefore(n: Int, language: Language): String
 
 final class MessageServiceLive(msgConfig: MsgConfig) extends MessageService:
-  def getMessage(id: MsgId, language: Language, args: String*): String =
-    val message = msgConfig.messages(language)(id)
+  def getMessage(id: MsgId, lang: Language, args: String*): String =
+    val message = msgConfig.messages(lang)(id)
     if args.isEmpty then message
     else MessageFormat.format(message, args: _*)
 
-  def help(language: Language): String =
-    getMessage(`help-description`, language) + "\n\n" +
-      switchLanguage(language) + ": /settings" + "\n" +
-      getMessage(`support-creator`, language) + ": https://buymeacoff.ee/johnspade ☕" + "\n\n" +
-      getMessage(`help-forward`, language)
+  def help(lang: Language): String =
+    getMessage(`help-description`, lang) + " " +
+      getMessage(`help-forward`, lang) + "\n\n" +
+      getMessage(`help-due-date`, lang) + "\n\n" +
+      getMessage(`help-task-complete`, lang) + "\n\n" +
+      switchLanguage(lang) + ": /settings" + "\n" +
+      getMessage(`support-creator`, lang) + ": https://buymeacoff.ee/johnspade ☕"
 
   def taskCreated(task: String, language: Language): String =
     getMessage(`tasks-personal-created`, language, task)

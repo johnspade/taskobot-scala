@@ -302,8 +302,8 @@ final class TaskControllerLive(
       } ++
         List(
           List(
-            inlineKeyboardButton(msgService.getMessage(MsgId.`add`, language), StandardReminders(taskId, pageNumber)),
-            inlineKeyboardButton(msgService.getMessage(MsgId.`back`, language), TaskDetails(taskId, pageNumber))
+            inlineKeyboardButton("➕", StandardReminders(taskId, pageNumber)),
+            inlineKeyboardButton("🔙", TaskDetails(taskId, pageNumber))
           )
         )
     )

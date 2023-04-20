@@ -6,6 +6,6 @@ enum MsgId:
     `tasks-personal-created`, `chats-tasks`, `tasks-personal`, `pages-previous`, `pages-next`, `languages-current`,
     `languages-switch`, `tasks-create`, `languages-changed`, `tasks-must-be-confirmed`, `tasks-completed`,
     `tasks-completed-by`, `timezone`, `tasks-due-date`, `tasks-created-at`, `cancel`, `remove`, `ok`, `hours`,
-    `minutes`, `back`, `add`, `reminders-at-start`, `reminders-minutes-before`, `reminders-hours-before`,
+    `minutes`, `reminders-at-start`, `reminders-minutes-before`, `reminders-hours-before`,
     `reminders-days-before`, `reminders-minutes-short`, `reminders-hours-short`, `reminders-days-short`,
-    `reminders-reminder`
+    `reminders-reminder`, `help-due-date`, `help-task-complete`
