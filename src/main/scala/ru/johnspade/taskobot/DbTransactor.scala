@@ -6,24 +6,19 @@ import doobie.util.transactor.Transactor
 import zio.*
 import zio.interop.catz.*
 
-import scala.concurrent.ExecutionContext
-
 object DbTransactor:
   type DbTransactor = Transactor[Task]
 
   val live =
     ZLayer.scoped {
-      def transactor(config: DbConfig, connectEc: ExecutionContext)(using rts: Runtime[Any]) = {
+      def transactor(config: DbConfig)(using rts: Runtime[Any]) = {
         val hikariConfig = new HikariConfig()
         hikariConfig.setDriverClassName(config.driver)
         hikariConfig.setJdbcUrl(config.url)
         hikariConfig.setUsername(config.user)
         hikariConfig.setPassword(config.password)
 
-        HikariTransactor.fromHikariConfig[Task](
-          hikariConfig,
-          connectEc
-        )
+        HikariTransactor.fromHikariConfig[Task](hikariConfig)
       }
 
       (ZIO
@@ -31,8 +26,7 @@ object DbTransactor:
         .flatMap { implicit rts =>
           for
             dbConfig   <- ZIO.service[DbConfig]
-            connectEc  <- ZIO.blocking(ZIO.descriptor.map(_.executor.asExecutionContext))
-            transactor <- transactor(dbConfig, connectEc).toScopedZIO
+            transactor <- transactor(dbConfig).toScopedZIO
           yield transactor
         })
         .orDie

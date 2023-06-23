@@ -25,7 +25,6 @@ import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import zio.Task
 import zio.*
 import zio.interop.catz.*
-import zio.interop.catz.implicits.*
 import zio.json.*
 
 import java.time.ZoneId

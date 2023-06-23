@@ -1,2 +1,2 @@
-addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.7")
-addSbtPlugin("com.dwijnand" % "sbt-dynver" % "4.1.1")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.16")
+addSbtPlugin("com.github.sbt" % "sbt-dynver"          % "5.0.1")

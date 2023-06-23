@@ -8,7 +8,6 @@ import ru.johnspade.taskobot.DbTransactor.DbTransactor
 import ru.johnspade.taskobot.task.ReminderRepositoryLive.ReminderQueries.*
 import zio.*
 import zio.interop.catz.*
-import zio.interop.catz.implicits.*
 import ru.johnspade.taskobot.Errors.MaxRemindersExceeded
 import doobie.free.connection
 
