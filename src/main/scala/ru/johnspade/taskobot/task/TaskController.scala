@@ -20,7 +20,6 @@ import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextRoutes
 import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
 import ru.johnspade.tgbot.callbackqueries.CallbackQueryRoutes
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import telegramium.bots.CallbackQuery
 import telegramium.bots.ChatIntId
 import telegramium.bots.InlineKeyboardMarkup
@@ -29,6 +28,7 @@ import telegramium.bots.client.Method
 import telegramium.bots.high.Methods.*
 import telegramium.bots.high.*
 import telegramium.bots.high.implicits.*
+import telegramium.bots.high.messageentities.MessageEntities
 import zio.*
 import zio.interop.catz.*
 
@@ -248,17 +248,17 @@ final class TaskControllerLive(
 
   private def listTasks(
       message: Message,
-      messageEntities: List[TypedMessageEntity],
+      messageEntities: MessageEntities,
       page: Page[BotTask],
       collaborator: User,
       language: Language
   ) =
     execDiscardWithHandling(
       editMessageText(
-        messageEntities.map(_.text).mkString,
+        messageEntities.toPlainText(),
         ChatIntId(message.chat.id).some,
         message.messageId.some,
-        entities = TypedMessageEntity.toMessageEntities(messageEntities),
+        entities = messageEntities.toTelegramEntities(),
         replyMarkup = kbService.tasks(page, collaborator, language).some
       )
     )
@@ -310,15 +310,15 @@ final class TaskControllerLive(
 
   private def editWithTaskDetails(
       message: Message,
-      messageEntities: List[TypedMessageEntity],
+      messageEntities: MessageEntities,
       keyboard: InlineKeyboardMarkup
   ) =
     execDiscardWithHandling(
       editMessageText(
-        messageEntities.map(_.text).mkString,
+        messageEntities.toPlainText(),
         ChatIntId(message.chat.id).some,
         message.messageId.some,
-        entities = TypedMessageEntity.toMessageEntities(messageEntities),
+        entities = messageEntities.toTelegramEntities(),
         replyMarkup = Some(keyboard)
       )
     )

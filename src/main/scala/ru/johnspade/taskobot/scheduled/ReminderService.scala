@@ -10,7 +10,6 @@ import ru.johnspade.taskobot.task.ReminderRepository
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import telegramium.bots.*
 import telegramium.bots.high.Api
 import telegramium.bots.high.*
@@ -83,8 +82,8 @@ final class ReminderServiceLive(
           _ <- Methods
             .sendMessage(
               ChatIntId(chatId),
-              messageEntities.map(_.text).mkString,
-              entities = TypedMessageEntity.toMessageEntities(messageEntities),
+              messageEntities.toPlainText(),
+              entities = messageEntities.toTelegramEntities(),
               replyMarkup = Some(keyboard)
             )
             .exec

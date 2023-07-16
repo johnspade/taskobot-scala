@@ -11,7 +11,6 @@ import ru.johnspade.taskobot.task.NewTask
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
 import telegramium.bots.ChatIntId
 import telegramium.bots.ForceReply
 import telegramium.bots.Html
@@ -65,9 +64,9 @@ final class CommandControllerLive(
           .map { case (page, messageEntities) =>
             sendMessage(
               ChatIntId(message.chat.id),
-              messageEntities.map(_.text).mkString,
+              messageEntities.toPlainText(),
               replyMarkup = kbService.tasks(page, user, user.language).some,
-              entities = TypedMessageEntity.toMessageEntities(messageEntities)
+              entities = messageEntities.toTelegramEntities()
             )
           }
 

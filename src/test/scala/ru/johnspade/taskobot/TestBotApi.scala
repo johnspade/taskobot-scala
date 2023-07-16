@@ -13,13 +13,11 @@ import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.messages.Language
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.*
 import telegramium.bots.client.Method
 import telegramium.bots.high.*
 import telegramium.bots.high.keyboards.*
+import telegramium.bots.high.messageentities.MessageEntities
 import zio.*
 import zio.interop.catz.*
 
@@ -187,16 +185,12 @@ object TestBotApi:
         "Chat: John\n1. Buy some milk – John\n",
         ChatIntId(kaitrinChatId).some,
         messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            plain"Chat: ",
-            bold"John",
-            lineBreak,
-            plain"1. Buy some milk",
-            italic" – John",
-            lineBreak
-          )
-        ),
+        entities = MessageEntities()
+          // format: off
+          .plain("Chat: ").bold("John").br()
+          .plain("1. Buy some milk").italic(" – John").br()
+          // format: on
+          .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List(
@@ -212,13 +206,11 @@ object TestBotApi:
         "Chat: John\n",
         ChatIntId(chatId).some,
         messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            plain"Chat: ",
-            bold"John",
-            lineBreak
-          )
-        ),
+        entities = MessageEntities()
+          // format: off
+          .plain("Chat: ").bold("John").br()
+          // format: on
+          .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(0))).some
       )
 
@@ -230,13 +222,11 @@ object TestBotApi:
         "Chat: Personal tasks\n",
         ChatIntId(johnChatId).some,
         messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            plain"Chat: ",
-            bold"Personal tasks",
-            lineBreak
-          )
-        ),
+        entities = MessageEntities()
+          .plain("Chat: ")
+          .bold("Personal tasks")
+          .br()
+          .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(0))).some
       )
 
@@ -277,16 +267,14 @@ object TestBotApi:
         chatId = ChatIntId(0).some,
         messageId = 0.some,
         text = "Chat: Kaitrin\n1. Wash dishes please 🕒 1970-01-01 00:00 – John\n",
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            plain"Chat: ",
-            bold"Kaitrin",
-            lineBreak,
-            plain"1. Wash dishes please",
-            italic" 🕒 1970-01-01 00:00 – John",
-            lineBreak
-          )
-        ),
+        entities = MessageEntities()
+          .plain("Chat: ")
+          .bold("Kaitrin")
+          .br()
+          .plain("1. Wash dishes please")
+          .italic(" 🕒 1970-01-01 00:00 – John")
+          .br()
+          .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List(
@@ -302,28 +290,16 @@ object TestBotApi:
         chatId = ChatIntId(0).some,
         messageId = 0.some,
         text = "Chat: Kaitrin\n1. 5 – John\n2. 6 – John\n3. 7 – John\n4. 8 – John\n5. 9 – John\n",
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            plain"Chat: ",
-            bold"Kaitrin",
-            lineBreak,
-            plain"1. 5",
-            italic" – John",
-            lineBreak,
-            plain"2. 6",
-            italic" – John",
-            lineBreak,
-            plain"3. 7",
-            italic" – John",
-            lineBreak,
-            plain"4. 8",
-            italic" – John",
-            lineBreak,
-            plain"5. 9",
-            italic" – John",
-            lineBreak
-          )
-        ),
+        entities = MessageEntities()
+          // format: off
+          .plain("Chat: ").bold("Kaitrin").br()
+          .plain("1. 5").italic(" – John").br()
+          .plain("2. 6").italic(" – John").br()
+          .plain("3. 7").italic(" – John").br()
+          .plain("4. 8").italic(" – John").br()
+          .plain("5. 9").italic(" – John").br()
+          // format: on
+          .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkup(
           List(
             List(
@@ -345,13 +321,11 @@ object TestBotApi:
         "Chat: Kaitrin\n",
         ChatIntId(0).some,
         messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            plain"Chat: ",
-            bold"Kaitrin",
-            lineBreak
-          )
-        ),
+        entities = MessageEntities()
+          // format: off
+          .plain("Chat: ").bold("Kaitrin").br()
+          // format: on
+          .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkups.singleButton(inlineKeyboardButton("Chat list", Chats(0))).some
       )
 
@@ -534,17 +508,13 @@ object TestBotApi:
             |🕒 Due date: $dueDate
             |
             |Created at: 1970-01-01 00:00""".stripMargin,
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            plain"🔔 $text",
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: $dueDate",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
-        ),
+        entities = MessageEntities()
+          // format: off
+          .plain(s"🔔 $text").br().br()
+          .bold(s"🕒 Due date: $dueDate").br().br()
+          .italic("Created at: 1970-01-01 00:00")
+          // format: on
+          .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkup(
           List(
             List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
@@ -579,17 +549,13 @@ object TestBotApi:
             |Created at: 1970-01-01 00:00""".stripMargin,
         ChatIntId(0).some,
         messageId = 0.some,
-        entities = TypedMessageEntity.toMessageEntities(
-          List(
-            Plain(text),
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: ${dueDate.getOrElse("-")}",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
-        ),
+        entities = MessageEntities()
+          // format: off
+          .plain(text).br().br()
+          .bold(s"🕒 Due date: ${dueDate.getOrElse("-")}").br().br()
+          .italic("Created at: 1970-01-01 00:00")
+          // format: on
+          .toTelegramEntities(),
         replyMarkup = replyMarkup.some
       )
   end Mocks

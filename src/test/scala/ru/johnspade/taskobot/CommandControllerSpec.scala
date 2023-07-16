@@ -16,12 +16,10 @@ import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.ChatIntId
 import telegramium.bots.high.Methods
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.messageentities.MessageEntities
 import zio.*
 import zio.test.*
 
@@ -48,15 +46,13 @@ object CommandControllerSpec extends ZIOSpecDefault:
               Methods.sendMessage(
                 ChatIntId(johnChatId),
                 "Chat: Personal tasks\n1. Buy some milk\n",
-                entities = TypedMessageEntity.toMessageEntities(
-                  List(
-                    plain"Chat: ",
-                    bold"Personal tasks",
-                    lineBreak,
-                    plain"1. Buy some milk",
-                    italic""
-                  )
-                ),
+                entities = MessageEntities()
+                  .plain("Chat: ")
+                  .bold("Personal tasks")
+                  .br()
+                  .plain("1. Buy some milk")
+                  .italic("")
+                  .toTelegramEntities(),
                 replyMarkup = InlineKeyboardMarkups
                   .singleColumn(
                     List(

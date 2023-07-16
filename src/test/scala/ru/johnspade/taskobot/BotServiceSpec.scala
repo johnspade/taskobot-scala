@@ -11,8 +11,9 @@ import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
+import telegramium.bots.high.messageentities.MessageEntities
+import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
+import telegramium.bots.high.messageentities.MessageEntityFormat.*
 import zio.*
 import zio.test.TestAspect.sequential
 import zio.test.*
@@ -70,16 +71,12 @@ object BotServiceSpec extends ZIOSpecDefault:
       .provideCustomShared(testEnv),
     suite("getTasks")(
       test("should return tasks") {
-        val expectedMessageEntities = List(
-          plain"Chat: ",
-          bold"Alice",
-          lineBreak,
-          plain"1. task2",
-          italic" – Bob",
-          lineBreak,
-          plain"2. task1",
-          italic" – Bob",
-          lineBreak
+        val expectedMessageEntities = MessageEntities(
+          // format: off
+          plain"Chat: ", bold"Alice", lineBreak,
+          plain"1. task2", italic" – Bob", lineBreak,
+          plain"2. task1", italic" – Bob", lineBreak
+          // format: on
         )
         for
           now <- Clock.instant
@@ -95,7 +92,7 @@ object BotServiceSpec extends ZIOSpecDefault:
           _                      <- TaskRepository.create(task2)
           pageAndMessageEntities <- BotService.getTasks(bob, alice, 0)
         yield assertTrue(pageAndMessageEntities._1.items == expectedTasks) &&
-          assertTrue(pageAndMessageEntities._2 == expectedMessageEntities) &&
+          assertTrue(pageAndMessageEntities._2.underlying == expectedMessageEntities.underlying) &&
           assertTrue(pageAndMessageEntities._1.number == 0)
       }
         .provideCustomShared(testEnv),
@@ -120,28 +117,38 @@ object BotServiceSpec extends ZIOSpecDefault:
           }
           result <- BotService.getTasks(bob, alice, 0)
           entitiesAssertions = assertTrue(
-            result._2 == List(
-              plain"Chat: ",
-              bold"Alice",
-              lineBreak,
-              plain"1. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg...",
-              italic" 🕒 1970-01-01 00:00 – Bob",
-              lineBreak,
-              plain"2. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg...",
-              italic" 🕒 1970-01-01 00:00 – Bob",
-              lineBreak,
-              plain"3. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg...",
-              italic" 🕒 1970-01-01 00:00 – Bob",
-              lineBreak,
-              plain"4. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg...",
-              italic" 🕒 1970-01-01 00:00 – Bob",
-              lineBreak,
-              plain"5. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg...",
-              italic" 🕒 1970-01-01 00:00 – Bob",
-              lineBreak
-            )
+            result._2.underlying == MessageEntities()
+              // format: off
+              .plain("Chat: ").bold("Alice").br()
+              .plain(
+                "1. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg..."
+              )
+              .italic(" 🕒 1970-01-01 00:00 – Bob")
+              .br()
+              .plain(
+                "2. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg..."
+              )
+              .italic(" 🕒 1970-01-01 00:00 – Bob")
+              .br()
+              .plain(
+                "3. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg..."
+              )
+              .italic(" 🕒 1970-01-01 00:00 – Bob")
+              .br()
+              .plain(
+                "4. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg..."
+              )
+              .italic(" 🕒 1970-01-01 00:00 – Bob")
+              .br()
+              .plain(
+                "5. Integer est enim, tincidunt at molestie a, egestas nec sem. Curabitur ac varius turpis. Aenean dui arcu, ultricies nec finibus eu, lobortis eu augue. Morbi vel semper dui, eget hendrerit justo. Aliquam convallis condimentum malesuada. Donec justo leo, dictum sed consectetur vel, convallis sit amet mauris. Cras feugiat quis diam et scelerisque. Sed vel imperdiet sem. Pellentesque fermentum, neque ac sodales dignissim, enim tortor auctor sem, et tempor nulla tortor sed magna. Maecenas dapibus leo vel fringilla tempor. Donec a laoreet ligula. Cras convallis libero vel gravida faucibus. Curabitur ipsum sem, tincidunt sed nisi ut, blandit aliquet mauris. Nunc vulputate orci non maximus dictum. Morbi ultricies mi mi, vel accumsan eros ullamcorper ac. In turpis arcu, porttitor eg..."
+              )
+              .italic(" 🕒 1970-01-01 00:00 – Bob")
+              .br()
+              // format: on
+              .underlying
           )
-          lengthAssertions = assertTrue(result._2.map(_.text).iterator.mkString("").length <= MessageLimit)
+          lengthAssertions = assertTrue(result._2.toPlainText().length <= MessageLimit)
         yield entitiesAssertions && lengthAssertions
       }.provideCustomShared(testEnv),
       test("should not cut long tasks if message limits are not exceeded") {
@@ -156,26 +163,16 @@ object BotServiceSpec extends ZIOSpecDefault:
           _      <- ZIO.foreachDiscard(tasks)(TaskRepository.create)
           result <- BotService.getTasks(bob, alice, 0)
           assertions = assertTrue(
-            result._2 == List(
-              plain"Chat: ",
-              bold"Alice",
-              lineBreak,
-              plain"1. $longTaskText",
-              italic" – Bob",
-              lineBreak,
-              plain"2. Fix bugs",
-              italic" – Bob",
-              lineBreak,
-              plain"3. Fix bugs",
-              italic" – Bob",
-              lineBreak,
-              plain"4. Fix bugs",
-              italic" – Bob",
-              lineBreak,
-              plain"5. Fix bugs",
-              italic" – Bob",
-              lineBreak
-            )
+            result._2.underlying == MessageEntities()
+              // format: off
+              .plain("Chat: ").bold("Alice").br()
+              .plain(s"1. $longTaskText").italic(" – Bob").br()
+              .plain("2. Fix bugs").italic(" – Bob").br()
+              .plain("3. Fix bugs").italic(" – Bob").br()
+              .plain("4. Fix bugs").italic(" – Bob").br()
+              .plain("5. Fix bugs").italic(" – Bob").br()
+              // format: on
+              .underlying
           )
         yield assertions
       }
@@ -198,16 +195,13 @@ object BotServiceSpec extends ZIOSpecDefault:
           )
           details <- BotService.createTaskDetails(task, Language.English)
         yield assertTrue(
-          details == List(
-            plain"",
-            plain"Full text",
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: 1970-01-01 00:00",
-            lineBreak,
-            lineBreak,
+          details.underlying == MessageEntities(
+            // format: off
+            plain"", plain"Full text", lineBreak, lineBreak,
+            bold"🕒 Due date: 1970-01-01 00:00", lineBreak, lineBreak,
             italic"Created at: 1970-01-01 00:00"
-          )
+            // format: on
+          ).underlying
         )
       }
         .provideCustomShared(testEnv),
@@ -227,17 +221,14 @@ object BotServiceSpec extends ZIOSpecDefault:
           )
           details <- BotService.createTaskDetails(task, Language.English)
         yield assertTrue(
-          details == List(
-            plain"",
-            Plain(shortenedVeryLongTaskText),
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: 1970-01-01 00:00",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
-        ) && assertTrue(details.map(_.text).mkString("").length <= MessageLimit)
+          details.underlying == MessageEntities()
+            // format: off
+            .plain("").plain(shortenedVeryLongTaskText).br().br()
+            .bold("🕒 Due date: 1970-01-01 00:00").br().br()
+            .italic("Created at: 1970-01-01 00:00")
+            // format: on
+            .underlying
+        ) && assertTrue(details.toPlainText().length <= MessageLimit)
       }.provideCustomShared(testEnv),
       test("should not cut long tasks if message limits are not exceeded") {
         for
@@ -255,16 +246,13 @@ object BotServiceSpec extends ZIOSpecDefault:
           )
           details <- BotService.createTaskDetails(task, Language.English)
         yield assertTrue(
-          details == List(
-            plain"",
-            Plain(longTaskText),
-            lineBreak,
-            lineBreak,
-            bold"🕒 Due date: 1970-01-01 00:00",
-            lineBreak,
-            lineBreak,
-            italic"Created at: 1970-01-01 00:00"
-          )
+          details.underlying == MessageEntities()
+            // format: off
+            .plain("").plain(longTaskText).br().br()
+            .bold("🕒 Due date: 1970-01-01 00:00").br().br()
+            .italic("Created at: 1970-01-01 00:00")
+            // format: on
+            .underlying
         )
       }.provideCustomShared(testEnv)
     )

@@ -9,10 +9,11 @@ import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots
+import telegramium.bots.high.messageentities.MessageEntities
+import telegramium.bots.high.messageentities.MessageEntityFormat
+import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
+import telegramium.bots.high.messageentities.MessageEntityFormat.*
 import zio.*
 import zio.interop.catz.*
 
@@ -30,11 +31,11 @@ trait BotService:
       `for`: User,
       collaborator: User,
       pageNumber: Int
-  ): Task[(Page[BotTask], List[TypedMessageEntity])]
+  ): Task[(Page[BotTask], MessageEntities)]
 
-  def createTaskDetails(task: BotTask, language: Language): List[TypedMessageEntity]
+  def createTaskDetails(task: BotTask, language: Language): MessageEntities
 
-  def createTaskDetailsReminder(task: BotTask, language: Language): List[TypedMessageEntity]
+  def createTaskDetailsReminder(task: BotTask, language: Language): MessageEntities
 
 object BotService:
   def updateUser(
@@ -48,13 +49,13 @@ object BotService:
       `for`: User,
       collaborator: User,
       pageNumber: Int
-  ): RIO[BotService, (Page[BotTask], List[TypedMessageEntity])] =
+  ): RIO[BotService, (Page[BotTask], MessageEntities)] =
     ZIO.serviceWithZIO(_.getTasks(`for`, collaborator, pageNumber))
 
-  def createTaskDetails(task: BotTask, language: Language): ZIO[BotService, Nothing, List[TypedMessageEntity]] =
+  def createTaskDetails(task: BotTask, language: Language): ZIO[BotService, Nothing, MessageEntities] =
     ZIO.serviceWith(_.createTaskDetails(task, language))
 
-  def createTaskDetailsReminder(task: BotTask, language: Language): ZIO[BotService, Nothing, List[TypedMessageEntity]] =
+  def createTaskDetailsReminder(task: BotTask, language: Language): ZIO[BotService, Nothing, MessageEntities] =
     ZIO.serviceWith(_.createTaskDetailsReminder(task, language))
 
 class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgService: MessageService) extends BotService:
@@ -67,13 +68,14 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
       `for`: User,
       collaborator: User,
       pageNumber: Int
-  ): Task[(Page[BotTask], List[TypedMessageEntity])] =
+  ): Task[(Page[BotTask], MessageEntities)] =
     Page
       .request[BotTask, Task](pageNumber, DefaultPageSize, taskRepo.findShared(`for`.id, collaborator.id))
       .map { page =>
         val chatName =
           if (collaborator.id == `for`.id) msgService.personalTasks(`for`.language) else collaborator.fullName
-        val header = List(Plain(msgService.getMessage(MsgId.`chat`, `for`.language) + ": "), Bold(chatName), lineBreak)
+        val header =
+          MessageEntities(Plain(msgService.getMessage(MsgId.`chat`, `for`.language) + ": "), Bold(chatName), lineBreak)
 
         val taskLines = page.items.zipWithIndex
           .map { case (task, i) =>
@@ -90,26 +92,26 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
             TaskLine(taskText, senderName, deadline)
           }
 
-        val taskList = limitTaskLines(taskLines, headerFooterLength = header.map(_.text).mkString.length)
+        val taskList = limitTaskLines(taskLines, headerFooterLength = header.toPlainText().length)
           .flatMap { line =>
-            List(Plain(line.text), Italic(line.deadline + line.senderName), lineBreak)
+            Vector(Plain(line.text), Italic(line.deadline + line.senderName), lineBreak)
           }
 
-        val messageEntities = header ++ taskList
+        val messageEntities = MessageEntities(header.underlying ++ taskList)
 
         (page, messageEntities)
       }
   end getTasks
 
-  override def createTaskDetails(task: BotTask, language: Language): List[TypedMessageEntity] =
+  override def createTaskDetails(task: BotTask, language: Language): MessageEntities =
     taskDetails(task, language)
 
-  override def createTaskDetailsReminder(task: BotTask, language: Language): List[TypedMessageEntity] =
+  override def createTaskDetailsReminder(task: BotTask, language: Language): MessageEntities =
     taskDetails(task, language, reminderHeader = "🔔 ")
 
   private def taskDetails(task: BotTask, language: Language, reminderHeader: String = "") =
     val header = Plain(reminderHeader)
-    val deadline = List(
+    val deadline = MessageEntities(
       Bold(
         s"🕒 ${msgService.getMessage(MsgId.`tasks-due-date`, language)}: " +
           task.deadline
@@ -119,7 +121,7 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
       lineBreak,
       lineBreak
     )
-    val created = List(
+    val created = MessageEntities(
       Italic(
         s"${msgService.getMessage(MsgId.`tasks-created-at`, language)}: " +
           task.createdAt
@@ -127,11 +129,11 @@ class BotServiceLive(userRepo: UserRepository, taskRepo: TaskRepository, msgServ
             .format(dateTimeFormatter)
       )
     )
-    val breaks             = List(lineBreak, lineBreak)
+    val breaks             = MessageEntities(lineBreak, lineBreak)
     val footer             = breaks ++ deadline ++ created
-    val headerFooterLength = (header :: footer).map(_.text).mkString.length
-    val text               = List(Plain(limitTaskText(task.text, headerFooterLength)))
-    header :: text ++ footer
+    val headerFooterLength = (header +: footer).toPlainText().length
+    val text               = MessageEntities(Plain(limitTaskText(task.text, headerFooterLength)))
+    header +: (text ++ footer)
   end taskDetails
 
   private case class TaskLine(text: String, senderName: String, deadline: String)

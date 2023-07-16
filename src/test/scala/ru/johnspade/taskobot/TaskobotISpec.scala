@@ -16,13 +16,11 @@ import ru.johnspade.taskobot.task.ReminderRepositoryLive
 import ru.johnspade.taskobot.task.TaskControllerLive
 import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.Plain.lineBreak
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.*
 import telegramium.bots.client.Method
 import telegramium.bots.high.Methods
 import telegramium.bots.high.keyboards.*
+import telegramium.bots.high.messageentities.MessageEntities
 import zio.*
 import zio.test.Assertion.*
 import zio.test.TestAspect.sequential
@@ -50,7 +48,7 @@ object TaskobotISpec extends ZIOSpecDefault:
                     "Create task",
                     InputTextMessageContent(
                       "Buy some milk",
-                      entities = TypedMessageEntity.toMessageEntities(List(Bold("Buy some milk")))
+                      entities = MessageEntities().bold("Buy some milk").toTelegramEntities()
                     ),
                     InlineKeyboardMarkups
                       .singleButton(
@@ -268,16 +266,14 @@ object TaskobotISpec extends ZIOSpecDefault:
               Methods.sendMessage(
                 ChatIntId(johnChatId),
                 "Chat: Personal tasks\n1. Buy groceries\n",
-                entities = TypedMessageEntity.toMessageEntities(
-                  List(
-                    plain"Chat: ",
-                    bold"Personal tasks",
-                    lineBreak,
-                    plain"1. Buy groceries",
-                    italic"",
-                    lineBreak
-                  )
-                ),
+                entities = MessageEntities()
+                  .plain("Chat: ")
+                  .bold("Personal tasks")
+                  .br()
+                  .plain("1. Buy groceries")
+                  .italic("")
+                  .br()
+                  .toTelegramEntities(),
                 replyMarkup = InlineKeyboardMarkups
                   .singleColumn(
                     List(
@@ -333,16 +329,14 @@ object TaskobotISpec extends ZIOSpecDefault:
                 Methods.sendMessage(
                   ChatIntId(johnChatId),
                   "Chat: Personal tasks\n1. Watch Firefly – John\n",
-                  entities = TypedMessageEntity.toMessageEntities(
-                    List(
-                      plain"Chat: ",
-                      bold"Personal tasks",
-                      lineBreak,
-                      plain"1. Watch Firefly",
-                      italic" – John",
-                      lineBreak
-                    )
-                  ),
+                  entities = MessageEntities()
+                    .plain("Chat: ")
+                    .bold("Personal tasks")
+                    .br()
+                    .plain("1. Watch Firefly")
+                    .italic(" – John")
+                    .br()
+                    .toTelegramEntities(),
                   replyMarkup = InlineKeyboardMarkups
                     .singleColumn(
                       List(

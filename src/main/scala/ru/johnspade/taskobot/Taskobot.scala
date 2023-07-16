@@ -15,13 +15,13 @@ import ru.johnspade.taskobot.task.TaskController
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.tgbot.callbackqueries.*
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity
-import ru.johnspade.tgbot.messageentities.TypedMessageEntity.*
 import telegramium.bots.*
 import telegramium.bots.client.Method
 import telegramium.bots.high.*
 import telegramium.bots.high.implicits.*
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.messageentities.MessageEntities
+import telegramium.bots.high.messageentities.MessageEntityFormat.*
 import zio.Task
 import zio.*
 import zio.interop.catz.*
@@ -60,14 +60,15 @@ final class Taskobot(
   override def onInlineQueryReply(query: InlineQuery): Task[Option[Method[_]]] = {
     val language: Language =
       query.from.languageCode.flatMap(Language.withValue).getOrElse(Language.English)
-    val text           = query.query
-    val taskTextEntity = Bold(text)
+    val text            = query.query
+    val taskTextEntity  = Bold(text)
+    val messageEntities = MessageEntities(taskTextEntity)
     val article = InlineQueryResultArticle(
       id = "1",
       title = msgService.getMessage(MsgId.`tasks-create`, language),
       inputMessageContent = InputTextMessageContent(
-        taskTextEntity.text,
-        entities = TypedMessageEntity.toMessageEntities(List(taskTextEntity))
+        messageEntities.toPlainText(),
+        entities = messageEntities.toTelegramEntities()
       ),
       replyMarkup = InlineKeyboardMarkups
         .singleButton(
@@ -103,9 +104,9 @@ final class Taskobot(
         .map { case (page, messageEntities) =>
           sendMessage(
             ChatIntId(msg.chat.id),
-            messageEntities.map(_.text).mkString,
+            messageEntities.toPlainText(),
             replyMarkup = kbService.tasks(page, user, user.language).some,
-            entities = TypedMessageEntity.toMessageEntities(messageEntities)
+            entities = messageEntities.toTelegramEntities()
           )
         }
 
