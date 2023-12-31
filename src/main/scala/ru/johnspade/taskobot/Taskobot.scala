@@ -1,6 +1,22 @@
 package ru.johnspade.taskobot
 
+import java.time.ZoneId
+
+import zio.Task
+import zio.*
+import zio.interop.catz.*
+import zio.json.*
+
 import cats.implicits.*
+import ru.johnspade.tgbot.callbackqueries.*
+import telegramium.bots.*
+import telegramium.bots.client.Method
+import telegramium.bots.high.*
+import telegramium.bots.high.implicits.*
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.messageentities.MessageEntities
+import telegramium.bots.high.messageentities.MessageEntityFormat.*
+
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.CbData
 import ru.johnspade.taskobot.core.ConfirmTask
@@ -14,20 +30,6 @@ import ru.johnspade.taskobot.task.NewTask
 import ru.johnspade.taskobot.task.TaskController
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
-import ru.johnspade.tgbot.callbackqueries.*
-import telegramium.bots.*
-import telegramium.bots.client.Method
-import telegramium.bots.high.*
-import telegramium.bots.high.implicits.*
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import telegramium.bots.high.messageentities.MessageEntities
-import telegramium.bots.high.messageentities.MessageEntityFormat.*
-import zio.Task
-import zio.*
-import zio.interop.catz.*
-import zio.json.*
-
-import java.time.ZoneId
 
 val DefaultPageSize: Int = 5
 val MessageLimit         = 4096
@@ -132,12 +134,15 @@ final class Taskobot(
 
     def handleForward() =
       for
-        _ <- msg.forwardDate
-        senderName = msg.forwardSenderName
-          .orElse {
-            msg.forwardFrom
-              .map(u => u.firstName + u.lastName.map(" " + _).getOrElse(""))
-          }
+        forwardOrigin <- msg.forwardOrigin
+        (senderName, forwardFromId) = forwardOrigin match {
+          case MessageOriginUser(_, senderUser) =>
+            Some(senderUser.firstName + senderUser.lastName.map(" " + _).getOrElse("")) -> Some(senderUser.id)
+          case MessageOriginChannel(_, chat, _, authorSignature) => chat.title.orElse(chat.username) -> Some(chat.id)
+          case MessageOriginHiddenUser(_, senderUserName)        => Some(senderUserName)             -> None
+          case MessageOriginChat(_, senderChat, authorSignature) =>
+            senderChat.title.orElse(senderChat.username) -> Some(senderChat.id)
+        }
         text <- msg.text
         from <- msg.from
       yield {
@@ -150,7 +155,7 @@ final class Taskobot(
             now,
             user.timezoneOrDefault,
             user.id.some,
-            forwardFromId = msg.forwardFrom.map(user => user.id),
+            forwardFromId = forwardFromId,
             forwardFromSenderName = senderName
           )
           _ <- taskRepo.create(newTask)

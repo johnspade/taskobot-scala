@@ -1,8 +1,9 @@
 package ru.johnspade.taskobot.core
 
-import cats.Id
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
+
+import cats.Id
 
 object PageSpec extends ZIOSpecDefault:
   private val items = List(1, 2, 3, 4, 5)

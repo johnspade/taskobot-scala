@@ -1,19 +1,31 @@
 package ru.johnspade.taskobot.settings
 
+import zio.*
+import zio.test.Assertion.equalTo
+import zio.test.Assertion.hasField
+import zio.test.*
+
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
-import ru.johnspade.taskobot.{KeyboardServiceLive, TestBotApi, TestDatabase}
-import ru.johnspade.taskobot.TestHelpers.callbackQuery
-import ru.johnspade.taskobot.TestUsers.{john, johnTg}
-import ru.johnspade.tgbot.callbackqueries.{CallbackQueryData, ContextCallbackQuery}
-import ru.johnspade.taskobot.core.{ChangeLanguage, SetLanguage}
-import ru.johnspade.taskobot.messages.{Language, MessageServiceLive, MsgConfig}
-import ru.johnspade.taskobot.user.{UserRepository, UserRepositoryLive}
-import ru.johnspade.taskobot.TestBotApi.{Mocks, createMock}
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryData
+import ru.johnspade.tgbot.callbackqueries.ContextCallbackQuery
 import telegramium.bots.high.*
-import zio.test.Assertion.{equalTo, hasField}
-import zio.test.*
-import zio.*
+
+import ru.johnspade.taskobot.KeyboardServiceLive
+import ru.johnspade.taskobot.TestBotApi
+import ru.johnspade.taskobot.TestBotApi.Mocks
+import ru.johnspade.taskobot.TestBotApi.createMock
+import ru.johnspade.taskobot.TestDatabase
+import ru.johnspade.taskobot.TestHelpers.callbackQuery
+import ru.johnspade.taskobot.TestUsers.john
+import ru.johnspade.taskobot.TestUsers.johnTg
+import ru.johnspade.taskobot.core.ChangeLanguage
+import ru.johnspade.taskobot.core.SetLanguage
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.messages.MessageServiceLive
+import ru.johnspade.taskobot.messages.MsgConfig
+import ru.johnspade.taskobot.user.UserRepository
+import ru.johnspade.taskobot.user.UserRepositoryLive
 
 object SettingsControllerSpec extends ZIOSpecDefault:
   def spec: Spec[TestEnvironment with Scope, Any] = suite("SettingsControllerSpec")(

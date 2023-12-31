@@ -1,11 +1,11 @@
 package ru.johnspade.taskobot.task
 
-import ru.johnspade.taskobot.user.User
-
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+
 import ru.johnspade.taskobot.UTC
+import ru.johnspade.taskobot.user.User
 
 case class BotTask(
     id: Long,

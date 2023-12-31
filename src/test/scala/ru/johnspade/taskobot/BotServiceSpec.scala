@@ -1,6 +1,18 @@
 package ru.johnspade.taskobot
 
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+
+import zio.*
+import zio.test.TestAspect.sequential
+import zio.test.*
+
 import cats.syntax.option.*
+import telegramium.bots.high.messageentities.MessageEntities
+import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
+import telegramium.bots.high.messageentities.MessageEntityFormat.*
+
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
@@ -11,16 +23,6 @@ import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import telegramium.bots.high.messageentities.MessageEntities
-import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
-import telegramium.bots.high.messageentities.MessageEntityFormat.*
-import zio.*
-import zio.test.TestAspect.sequential
-import zio.test.*
-
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 object BotServiceSpec extends ZIOSpecDefault:
   private val testEnv = ZLayer.make[BotService with UserRepository with TaskRepository](

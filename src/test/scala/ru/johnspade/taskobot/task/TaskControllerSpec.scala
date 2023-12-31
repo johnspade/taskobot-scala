@@ -1,7 +1,20 @@
 package ru.johnspade.taskobot.task
 
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+
+import zio.*
+import zio.test.Assertion.*
+import zio.test.TestAspect.*
+import zio.test.*
+
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
+import ru.johnspade.tgbot.callbackqueries.*
+import telegramium.bots.high.Methods
+import telegramium.bots.{User as TgUser}
+
 import ru.johnspade.taskobot.BotServiceLive
 import ru.johnspade.taskobot.CleanupRepository
 import ru.johnspade.taskobot.CleanupRepositoryLive
@@ -21,17 +34,6 @@ import ru.johnspade.taskobot.messages.*
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import ru.johnspade.tgbot.callbackqueries.*
-import telegramium.bots.high.Methods
-import telegramium.bots.{User as TgUser}
-import zio.*
-import zio.test.Assertion.*
-import zio.test.TestAspect.*
-import zio.test.*
-
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 object TaskControllerSpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment, Throwable] = (suite("TaskControllerSpec")(

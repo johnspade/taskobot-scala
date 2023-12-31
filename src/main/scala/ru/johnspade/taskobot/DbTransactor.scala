@@ -1,10 +1,11 @@
 package ru.johnspade.taskobot
 
+import zio.*
+import zio.interop.catz.*
+
 import com.zaxxer.hikari.HikariConfig
 import doobie.hikari.HikariTransactor
 import doobie.util.transactor.Transactor
-import zio.*
-import zio.interop.catz.*
 
 object DbTransactor:
   type DbTransactor = Transactor[Task]

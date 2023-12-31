@@ -1,22 +1,24 @@
 package ru.johnspade.taskobot.task
 
+import java.sql.Timestamp
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+
+import zio.*
+import zio.interop.catz.*
+
 import cats.data.NonEmptyList
 import cats.implicits.*
 import doobie.*
 import doobie.implicits.*
 import doobie.implicits.javasql.TimestampMeta
 import doobie.postgres.implicits.JavaTimeLocalDateTimeMeta
+
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
 import ru.johnspade.taskobot.UTC
 import ru.johnspade.taskobot.task.TaskRepositoryLive.TaskQueries.*
 import ru.johnspade.taskobot.user.User
-import zio.*
-import zio.interop.catz.*
-
-import java.sql.Timestamp
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 trait TaskRepository:
   def findByIdUnsafe(id: Long): Task[Option[BotTask]]

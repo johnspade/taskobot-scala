@@ -2,8 +2,10 @@ package ru.johnspade.taskobot
 
 import java.net.URI
 
-import pureconfig.{ConfigReader, ConfigSource}
 import zio.*
+
+import pureconfig.ConfigReader
+import pureconfig.ConfigSource
 
 final case class DbConfig(driver: String, url: String, user: String, password: String)
 object DbConfig:

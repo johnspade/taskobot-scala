@@ -1,5 +1,8 @@
 package ru.johnspade.taskobot
 
+import zio.*
+import zio.interop.catz.*
+
 import ru.johnspade.taskobot.datetime.DatePickerServiceLive
 import ru.johnspade.taskobot.datetime.DateTimeControllerLive
 import ru.johnspade.taskobot.datetime.TimePickerServiceLive
@@ -13,8 +16,6 @@ import ru.johnspade.taskobot.task.ReminderRepositoryLive
 import ru.johnspade.taskobot.task.TaskControllerLive
 import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import zio.*
-import zio.interop.catz.*
 
 object Main extends ZIOAppDefault:
   private val program =

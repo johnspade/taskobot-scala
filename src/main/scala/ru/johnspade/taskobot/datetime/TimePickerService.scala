@@ -1,5 +1,10 @@
 package ru.johnspade.taskobot.datetime
 
+import zio.ZIO
+import zio.ZLayer
+
+import telegramium.bots.InlineKeyboardMarkup
+
 import ru.johnspade.taskobot.core.Ignore
 import ru.johnspade.taskobot.core.TaskDetails
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
@@ -7,9 +12,6 @@ import ru.johnspade.taskobot.core.TimePicker
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
-import telegramium.bots.InlineKeyboardMarkup
-import zio.ZIO
-import zio.ZLayer
 
 trait TimePickerService:
   def generateTimePicker(

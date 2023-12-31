@@ -1,6 +1,14 @@
 package ru.johnspade.taskobot.scheduled
 
+import java.time.LocalDateTime
+
+import zio.*
+import zio.test.Assertion.*
+import zio.test.TestAspect.*
+import zio.test.*
+
 import org.mockserver.client.MockServerClient
+
 import ru.johnspade.taskobot.BotServiceLive
 import ru.johnspade.taskobot.CleanupRepository
 import ru.johnspade.taskobot.CleanupRepositoryLive
@@ -20,12 +28,6 @@ import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepository
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import zio.*
-import zio.test.Assertion.*
-import zio.test.TestAspect.*
-import zio.test.*
-
-import java.time.LocalDateTime
 
 object ReminderServiceSpec extends ZIOSpecDefault:
   private val testEnv =

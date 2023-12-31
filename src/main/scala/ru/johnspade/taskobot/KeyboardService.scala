@@ -1,6 +1,16 @@
 package ru.johnspade.taskobot
 
+import zio.*
+
 import cats.syntax.option.*
+import telegramium.bots.InlineKeyboardMarkup
+import telegramium.bots.KeyboardButton
+import telegramium.bots.ReplyKeyboardMarkup
+import telegramium.bots.WebAppInfo
+import telegramium.bots.high.keyboards.InlineKeyboardButtons
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.keyboards.KeyboardButtons
+
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.messages.Language
@@ -9,14 +19,6 @@ import ru.johnspade.taskobot.messages.MsgId
 import ru.johnspade.taskobot.messages.MsgId.*
 import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.user.User
-import telegramium.bots.InlineKeyboardMarkup
-import telegramium.bots.KeyboardButton
-import telegramium.bots.ReplyKeyboardMarkup
-import telegramium.bots.WebAppInfo
-import telegramium.bots.high.keyboards.InlineKeyboardButtons
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import telegramium.bots.high.keyboards.KeyboardButtons
-import zio.*
 
 trait KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup

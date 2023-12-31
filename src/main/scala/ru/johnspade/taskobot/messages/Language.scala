@@ -1,8 +1,8 @@
 package ru.johnspade.taskobot.messages
 
-import doobie.Meta
-
 import java.util.Locale
+
+import doobie.Meta
 
 enum Language(val value: String, val languageName: String):
   case English            extends Language("en", "English")

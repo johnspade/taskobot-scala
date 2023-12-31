@@ -1,9 +1,10 @@
 package ru.johnspade.taskobot.scheduled
 
-import ru.johnspade.taskobot.task.BotTask
-import ru.johnspade.taskobot.task.Reminder
 import zio.*
 import zio.stream.*
+
+import ru.johnspade.taskobot.task.BotTask
+import ru.johnspade.taskobot.task.Reminder
 
 trait ReminderNotificationService:
   def scheduleNotifications(): ZStream[Any, Throwable, List[Reminder]]

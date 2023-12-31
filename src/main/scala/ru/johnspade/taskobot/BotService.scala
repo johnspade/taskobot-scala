@@ -1,5 +1,17 @@
 package ru.johnspade.taskobot
 
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+import zio.*
+import zio.interop.catz.*
+
+import telegramium.bots
+import telegramium.bots.high.messageentities.MessageEntities
+import telegramium.bots.high.messageentities.MessageEntityFormat
+import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
+import telegramium.bots.high.messageentities.MessageEntityFormat.*
+
 import ru.johnspade.taskobot.core.Page
 import ru.johnspade.taskobot.core.TelegramOps.toUser
 import ru.johnspade.taskobot.messages.Language
@@ -9,16 +21,6 @@ import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
-import telegramium.bots
-import telegramium.bots.high.messageentities.MessageEntities
-import telegramium.bots.high.messageentities.MessageEntityFormat
-import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
-import telegramium.bots.high.messageentities.MessageEntityFormat.*
-import zio.*
-import zio.interop.catz.*
-
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 trait BotService:
   def updateUser(

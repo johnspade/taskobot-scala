@@ -1,10 +1,12 @@
 package ru.johnspade.taskobot
 
-import doobie.*
-import doobie.implicits.*
-import ru.johnspade.taskobot.DbTransactor.DbTransactor
 import zio.*
 import zio.interop.catz.*
+
+import doobie.*
+import doobie.implicits.*
+
+import ru.johnspade.taskobot.DbTransactor.DbTransactor
 
 trait CleanupRepository:
   def clearTasks(): Task[Unit]

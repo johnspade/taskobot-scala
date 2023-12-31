@@ -1,7 +1,8 @@
 package ru.johnspade.taskobot
 
-import org.flywaydb.core.Flyway
 import zio.*
+
+import org.flywaydb.core.Flyway
 
 object FlywayMigration {
   val migrate: RIO[DbConfig, Unit] =

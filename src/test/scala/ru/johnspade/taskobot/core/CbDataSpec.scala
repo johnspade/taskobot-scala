@@ -1,10 +1,13 @@
 package ru.johnspade.taskobot.core
 
-import cats.syntax.option.*
-import ru.johnspade.taskobot.messages.Language
 import zio.Scope
-import zio.test.Assertion.{equalTo, isRight}
+import zio.test.Assertion.equalTo
+import zio.test.Assertion.isRight
 import zio.test.*
+
+import cats.syntax.option.*
+
+import ru.johnspade.taskobot.messages.Language
 
 object CbDataSpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment with Scope, Any] = decodeSuite + encodeSuite

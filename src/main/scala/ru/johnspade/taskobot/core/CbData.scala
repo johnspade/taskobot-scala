@@ -1,5 +1,10 @@
 package ru.johnspade.taskobot.core
 
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import scala.util.Try
+
 import ru.johnspade.csv3s.codecs.RowDecoder
 import ru.johnspade.csv3s.codecs.RowEncoder
 import ru.johnspade.csv3s.codecs.StringDecoder
@@ -7,8 +12,6 @@ import ru.johnspade.csv3s.codecs.StringEncoder
 import ru.johnspade.csv3s.codecs.instances.given
 import ru.johnspade.csv3s.parser.*
 import ru.johnspade.csv3s.printer.CsvPrinter
-import ru.johnspade.taskobot.core.CbData.*
-import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.tgbot.callbackdata.annotated.MagnoliaRowDecoder
 import ru.johnspade.tgbot.callbackdata.annotated.MagnoliaRowEncoder
 import ru.johnspade.tgbot.callbackdata.annotated.TypeId
@@ -16,10 +19,8 @@ import ru.johnspade.tgbot.callbackqueries.DecodeError
 import ru.johnspade.tgbot.callbackqueries.DecodeFailure
 import ru.johnspade.tgbot.callbackqueries.ParseError
 
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import scala.util.Try
+import ru.johnspade.taskobot.core.CbData.*
+import ru.johnspade.taskobot.messages.Language
 
 sealed abstract class CbData extends Product with Serializable:
   import CbData.{encoder, csvPrinter}

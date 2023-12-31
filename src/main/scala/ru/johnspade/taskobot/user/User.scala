@@ -1,9 +1,9 @@
 package ru.johnspade.taskobot.user
 
-import ru.johnspade.taskobot.messages.Language
-
 import java.time.ZoneId
+
 import ru.johnspade.taskobot.UTC
+import ru.johnspade.taskobot.messages.Language
 
 final case class User(
     id: Long,

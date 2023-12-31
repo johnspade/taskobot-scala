@@ -1,9 +1,10 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option._
+import telegramium.bots.{User => TgUser}
+
 import ru.johnspade.taskobot.core.TelegramOps.toUser
 import ru.johnspade.taskobot.user.User
-import telegramium.bots.{User => TgUser}
 
 object TestUsers:
   val johnTg: TgUser    = TgUser(1337, isBot = false, "John")

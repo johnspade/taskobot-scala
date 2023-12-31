@@ -1,9 +1,13 @@
 package ru.johnspade.taskobot.core
 
-import ru.johnspade.taskobot.messages.Language
-import ru.johnspade.taskobot.user.User
+import java.time.ZoneId
+
+import zio.*
+
 import telegramium.bots.CallbackQuery
+import telegramium.bots.InaccessibleMessage
 import telegramium.bots.InlineKeyboardButton
+import telegramium.bots.MaybeInaccessibleMessage
 import telegramium.bots.Message
 import telegramium.bots.client.Method
 import telegramium.bots.high.Api
@@ -11,9 +15,9 @@ import telegramium.bots.high.FailedRequest
 import telegramium.bots.high.Methods.answerCallbackQuery
 import telegramium.bots.high.implicits.*
 import telegramium.bots.high.keyboards.InlineKeyboardButtons
-import zio.*
 
-import java.time.ZoneId
+import ru.johnspade.taskobot.messages.Language
+import ru.johnspade.taskobot.user.User
 
 object TelegramOps {
   def inlineKeyboardButton(text: String, cbData: CbData): InlineKeyboardButton =
@@ -35,7 +39,7 @@ object TelegramOps {
   }
 
   def ackCb(cb: CallbackQuery)(f: Message => Task[Unit]): ZIO[Any, Throwable, Option[Method[Boolean]]] =
-    ZIO.foreachDiscard(cb.message)(f).as(Some(answerCallbackQuery(cb.id)))
+    ZIO.foreachDiscard(cb.message.collect { case msg: Message => msg })(f).as(Some(answerCallbackQuery(cb.id)))
 
   def execDiscardWithHandling[Res](method: Method[Res])(using api: Api[Task]) =
     method.exec.catchSome {
@@ -47,4 +51,9 @@ object TelegramOps {
           ) =>
         ZIO.logWarning("Bad Request: message is not modified") // ignore this error
     }.unit
+
+  extension (maybeInaccessibleMessage: MaybeInaccessibleMessage)
+    def toMessage: Option[Message] = maybeInaccessibleMessage match
+      case _: InaccessibleMessage => None
+      case m: Message             => Some(m)
 }

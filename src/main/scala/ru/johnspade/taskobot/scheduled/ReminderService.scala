@@ -1,6 +1,15 @@
 package ru.johnspade.taskobot.scheduled
 
+import java.time.Instant
+
+import zio.*
+
 import cats.data.NonEmptyList
+import telegramium.bots.*
+import telegramium.bots.high.Api
+import telegramium.bots.high.*
+import telegramium.bots.high.implicits.*
+
 import ru.johnspade.taskobot.BotService
 import ru.johnspade.taskobot.KeyboardService
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
@@ -10,13 +19,6 @@ import ru.johnspade.taskobot.task.ReminderRepository
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
-import telegramium.bots.*
-import telegramium.bots.high.Api
-import telegramium.bots.high.*
-import telegramium.bots.high.implicits.*
-import zio.*
-
-import java.time.Instant
 
 trait ReminderService:
   def getEnqueuedReminders(): Task[List[Reminder]]

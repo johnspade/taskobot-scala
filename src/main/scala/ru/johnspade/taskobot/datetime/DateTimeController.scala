@@ -1,12 +1,8 @@
 package ru.johnspade.taskobot.datetime
 
-import ru.johnspade.taskobot.CbDataUserRoutes
-import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.core.DatePicker
-import ru.johnspade.taskobot.core.Months
-import ru.johnspade.taskobot.core.TelegramOps.execDiscardWithHandling
-import ru.johnspade.taskobot.core.TimePicker
-import ru.johnspade.taskobot.core.Years
+import zio.*
+import zio.interop.catz.*
+
 import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextRoutes
 import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
 import telegramium.bots.CallbackQuery
@@ -14,8 +10,15 @@ import telegramium.bots.ChatIntId
 import telegramium.bots.InlineKeyboardMarkup
 import telegramium.bots.high.Api
 import telegramium.bots.high.Methods.*
-import zio.*
-import zio.interop.catz.*
+
+import ru.johnspade.taskobot.CbDataUserRoutes
+import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
+import ru.johnspade.taskobot.core.DatePicker
+import ru.johnspade.taskobot.core.Months
+import ru.johnspade.taskobot.core.TelegramOps.execDiscardWithHandling
+import ru.johnspade.taskobot.core.TelegramOps.toMessage
+import ru.johnspade.taskobot.core.TimePicker
+import ru.johnspade.taskobot.core.Years
 
 trait DateTimeController:
   def routes: CbDataUserRoutes[Task]
@@ -37,13 +40,16 @@ final class DateTimeControllerLive(datePicker: DatePickerService, timePicker: Ti
   }
 
   private def editMarkup(cb: CallbackQuery, markup: InlineKeyboardMarkup) =
-    execDiscardWithHandling(
-      editMessageReplyMarkup(
-        chatId = cb.message.map(msg => ChatIntId(msg.chat.id)),
-        messageId = cb.message.map(_.messageId),
-        replyMarkup = Some(markup)
-      )
-    )
+    ZIO
+      .foreachDiscard(cb.message.flatMap(_.toMessage)) { msg =>
+        execDiscardWithHandling(
+          editMessageReplyMarkup(
+            chatId = Some(ChatIntId(msg.chat.id)),
+            messageId = Some(msg.messageId),
+            replyMarkup = Some(markup)
+          )
+        )
+      }
       .as(Some(answerCallbackQuery(cb.id)))
 
 object DateTimeControllerLive:

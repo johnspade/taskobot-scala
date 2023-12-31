@@ -1,5 +1,11 @@
 package ru.johnspade.taskobot.datetime
 
+import zio.*
+import zio.test.Assertion.*
+import zio.test.*
+
+import telegramium.bots.InlineKeyboardMarkup
+
 import ru.johnspade.taskobot.core.Ignore
 import ru.johnspade.taskobot.core.TaskDetails
 import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
@@ -7,10 +13,6 @@ import ru.johnspade.taskobot.core.TimePicker
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
-import telegramium.bots.InlineKeyboardMarkup
-import zio.*
-import zio.test.Assertion.*
-import zio.test.*
 
 object TimePickerServiceSpec extends ZIOSpecDefault:
   private val testEnv = ZLayer.make[TimePickerService](

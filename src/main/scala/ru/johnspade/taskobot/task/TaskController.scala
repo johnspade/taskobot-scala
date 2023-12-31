@@ -1,6 +1,22 @@
 package ru.johnspade.taskobot.task
 
+import zio.*
+import zio.interop.catz.*
+
 import cats.syntax.option.*
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextRoutes
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
+import ru.johnspade.tgbot.callbackqueries.CallbackQueryRoutes
+import telegramium.bots.CallbackQuery
+import telegramium.bots.ChatIntId
+import telegramium.bots.InlineKeyboardMarkup
+import telegramium.bots.Message
+import telegramium.bots.client.Method
+import telegramium.bots.high.Methods.*
+import telegramium.bots.high.*
+import telegramium.bots.high.implicits.*
+import telegramium.bots.high.messageentities.MessageEntities
+
 import ru.johnspade.taskobot.BotService
 import ru.johnspade.taskobot.CbDataRoutes
 import ru.johnspade.taskobot.CbDataUserRoutes
@@ -17,20 +33,6 @@ import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
-import ru.johnspade.tgbot.callbackqueries.CallbackQueryContextRoutes
-import ru.johnspade.tgbot.callbackqueries.CallbackQueryDsl.*
-import ru.johnspade.tgbot.callbackqueries.CallbackQueryRoutes
-import telegramium.bots.CallbackQuery
-import telegramium.bots.ChatIntId
-import telegramium.bots.InlineKeyboardMarkup
-import telegramium.bots.Message
-import telegramium.bots.client.Method
-import telegramium.bots.high.Methods.*
-import telegramium.bots.high.*
-import telegramium.bots.high.implicits.*
-import telegramium.bots.high.messageentities.MessageEntities
-import zio.*
-import zio.interop.catz.*
 
 trait TaskController:
   def routes: CbDataRoutes[Task]
@@ -127,14 +129,15 @@ final class TaskControllerLive(
           val answerText =
             (for
               _ <- taskOpt.toRight(Errors.NotFound)
-              _ <- cb.message.toRight(Errors.Default)
+              _ <- cb.message.flatMap(_.toMessage).toRight(Errors.Default)
             yield msgService.getMessage(MsgId.`tasks-completed`, user.language)).merge
 
           ZIO
             .collectAllDiscard {
               for
-                task    <- taskOpt
-                message <- cb.message
+                task                     <- taskOpt
+                maybeInaccessibleMessage <- cb.message
+                message                  <- maybeInaccessibleMessage.toMessage
               yield checkTask(task) *>
                 listTasksAndNotify(task, message)
             }

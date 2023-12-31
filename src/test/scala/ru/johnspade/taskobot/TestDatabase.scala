@@ -1,9 +1,11 @@
 package ru.johnspade.taskobot
 
+import zio.*
+
 import com.dimafeng.testcontainers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
-import zio.*
 
 object TestDatabase:
   private val container: ULayer[PostgreSQLContainer] =

@@ -1,9 +1,12 @@
 package ru.johnspade.taskobot.messages
 
-import zio.{URLayer, ZIO, ZLayer}
-import MsgId.*
-
 import java.text.MessageFormat
+
+import zio.URLayer
+import zio.ZIO
+import zio.ZLayer
+
+import MsgId.*
 
 trait MessageService:
   def getMessage(id: MsgId, lang: Language, args: String*): String

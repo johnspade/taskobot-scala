@@ -1,16 +1,18 @@
 package ru.johnspade.taskobot.user
 
+import java.time.ZoneId
+
+import zio.*
+import zio.interop.catz.*
+
 import cats.data.NonEmptyList
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
+
 import ru.johnspade.taskobot.DbTransactor.DbTransactor
 import ru.johnspade.taskobot.user.UserRepositoryLive.UserQueries.*
-import zio.*
-import zio.interop.catz.*
-
-import java.time.ZoneId
 
 trait UserRepository:
   def findById(id: Long): Task[Option[User]]

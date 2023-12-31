@@ -1,9 +1,16 @@
 package ru.johnspade.taskobot
 
 import cats.syntax.option._
-import ru.johnspade.taskobot.TestUsers.{johnChatId, johnTg, taskobot}
+import telegramium.bots.BotCommandMessageEntity
+import telegramium.bots.CallbackQuery
+import telegramium.bots.Chat
+import telegramium.bots.Message
+import telegramium.bots.{User => TgUser}
+
+import ru.johnspade.taskobot.TestUsers.johnChatId
+import ru.johnspade.taskobot.TestUsers.johnTg
+import ru.johnspade.taskobot.TestUsers.taskobot
 import ru.johnspade.taskobot.core.CbData
-import telegramium.bots.{BotCommandMessageEntity, CallbackQuery, Chat, Message, User => TgUser}
 
 object TestHelpers:
   def mockMessage(chatId: Int = 0): Message =

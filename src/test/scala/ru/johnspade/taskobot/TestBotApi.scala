@@ -1,5 +1,11 @@
 package ru.johnspade.taskobot
 
+import java.time.Instant
+import java.time.LocalDate
+
+import zio.*
+import zio.interop.catz.*
+
 import cats.syntax.option.*
 import com.dimafeng.testcontainers.MockServerContainer
 import org.http4s.blaze.client.BlazeClientBuilder
@@ -8,21 +14,17 @@ import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
 import org.mockserver.model.JsonBody
-import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
-import ru.johnspade.taskobot.TestUsers.*
-import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
-import ru.johnspade.taskobot.core.*
-import ru.johnspade.taskobot.messages.Language
 import telegramium.bots.*
 import telegramium.bots.client.Method
 import telegramium.bots.high.*
 import telegramium.bots.high.keyboards.*
 import telegramium.bots.high.messageentities.MessageEntities
-import zio.*
-import zio.interop.catz.*
 
-import java.time.Instant
-import java.time.LocalDate
+import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
+import ru.johnspade.taskobot.TestUsers.*
+import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
+import ru.johnspade.taskobot.core.*
+import ru.johnspade.taskobot.messages.Language
 
 object TestBotApi:
   private val mockServerContainer: ULayer[MockServerContainer] =

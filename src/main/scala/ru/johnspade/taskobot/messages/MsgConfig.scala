@@ -1,8 +1,12 @@
 package ru.johnspade.taskobot.messages
 
-import pureconfig.{ConfigReader, ConfigSource}
+import zio.ULayer
+import zio.ZIO
+import zio.ZLayer
+
 import pureconfig.CollectionReaders.mapReader
-import zio.{ULayer, ZIO, ZLayer}
+import pureconfig.ConfigReader
+import pureconfig.ConfigSource
 
 case class MsgConfig(messages: Map[Language, Map[MsgId, String]])
 

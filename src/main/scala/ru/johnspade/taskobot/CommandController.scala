@@ -1,6 +1,21 @@
 package ru.johnspade.taskobot
 
+import zio.*
+import zio.interop.catz.*
+
 import cats.syntax.option.*
+import telegramium.bots.ChatIntId
+import telegramium.bots.ForceReply
+import telegramium.bots.Html
+import telegramium.bots.LinkPreviewOptions
+import telegramium.bots.Message
+import telegramium.bots.client.Method
+import telegramium.bots.high.Api
+import telegramium.bots.high.Methods.sendMessage
+import telegramium.bots.high.implicits.*
+import telegramium.bots.high.keyboards.InlineKeyboardButtons
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.core.ChangeLanguage
 import ru.johnspade.taskobot.core.Page
@@ -11,18 +26,6 @@ import ru.johnspade.taskobot.task.NewTask
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
-import telegramium.bots.ChatIntId
-import telegramium.bots.ForceReply
-import telegramium.bots.Html
-import telegramium.bots.Message
-import telegramium.bots.client.Method
-import telegramium.bots.high.Api
-import telegramium.bots.high.Methods.sendMessage
-import telegramium.bots.high.implicits.*
-import telegramium.bots.high.keyboards.InlineKeyboardButtons
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import zio.*
-import zio.interop.catz.*
 
 trait CommandController:
   def onStartCommand(message: Message): Task[Option[Method[Message]]]
@@ -137,7 +140,7 @@ final class CommandControllerLive(
           ChatIntId(message.chat.id),
           msgService.help(user.language),
           parseMode = Html.some,
-          disableWebPagePreview = true.some,
+          linkPreviewOptions = LinkPreviewOptions(isDisabled = true.some).some,
           replyMarkup = kbService.menu(user.language).some
         ).some
       }

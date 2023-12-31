@@ -1,7 +1,21 @@
 package ru.johnspade.taskobot
 
+import java.time.Instant
+import java.time.LocalDate
+
+import zio.*
+import zio.test.Assertion.*
+import zio.test.TestAspect.sequential
+import zio.test.*
+
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
+import telegramium.bots.*
+import telegramium.bots.client.Method
+import telegramium.bots.high.Methods
+import telegramium.bots.high.keyboards.*
+import telegramium.bots.high.messageentities.MessageEntities
+
 import ru.johnspade.taskobot.TestBotApi.Mocks
 import ru.johnspade.taskobot.TestBotApi.createMock
 import ru.johnspade.taskobot.TestHelpers.createMessage
@@ -16,18 +30,6 @@ import ru.johnspade.taskobot.task.ReminderRepositoryLive
 import ru.johnspade.taskobot.task.TaskControllerLive
 import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import telegramium.bots.*
-import telegramium.bots.client.Method
-import telegramium.bots.high.Methods
-import telegramium.bots.high.keyboards.*
-import telegramium.bots.high.messageentities.MessageEntities
-import zio.*
-import zio.test.Assertion.*
-import zio.test.TestAspect.sequential
-import zio.test.*
-
-import java.time.Instant
-import java.time.LocalDate
 
 object TaskobotISpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment with Scope, Any] = (suite("TaskobotISpec")(
@@ -235,7 +237,7 @@ object TaskobotISpec extends ZIOSpecDefault:
                     "Support a creator: https://buymeacoff.ee/johnspade ☕",
                   parseMode = Html.some,
                   replyMarkup = expectedMenu,
-                  disableWebPagePreview = true.some
+                  linkPreviewOptions = LinkPreviewOptions(isDisabled = true.some).some
                 )
               )
             )
@@ -318,9 +320,7 @@ object TaskobotISpec extends ZIOSpecDefault:
           from = johnTg.some,
           text = "Watch Firefly".some,
           entities = List.empty,
-          forwardDate = 0.some,
-          forwardFrom = johnTg.some,
-          forwardSenderName = "John".some
+          forwardOrigin = MessageOriginUser(0, johnTg).some
         )
         withTaskobotService(_.onMessageReply(forwardedMessage))
           .map { forwardReply =>

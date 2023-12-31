@@ -24,3 +24,6 @@ dockerExposedPorts ++= Seq(8080)
 dockerRepository := Some("ghcr.io")
 dockerUsername   := Some("johnspade")
 dockerLabels     := Map("org.opencontainers.image.source" -> "https://github.com/johnspade/tasko_bot")
+
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision

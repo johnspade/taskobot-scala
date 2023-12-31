@@ -1,7 +1,17 @@
 package ru.johnspade.taskobot
 
+import java.time.Instant
+
+import zio.*
+import zio.test.*
+
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
+import telegramium.bots.ChatIntId
+import telegramium.bots.high.Methods
+import telegramium.bots.high.keyboards.InlineKeyboardMarkups
+import telegramium.bots.high.messageentities.MessageEntities
+
 import ru.johnspade.taskobot.TestBotApi.Mocks
 import ru.johnspade.taskobot.TestBotApi.createMock
 import ru.johnspade.taskobot.TestHelpers.createMessage
@@ -16,14 +26,6 @@ import ru.johnspade.taskobot.task.BotTask
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.task.TaskRepositoryLive
 import ru.johnspade.taskobot.user.UserRepositoryLive
-import telegramium.bots.ChatIntId
-import telegramium.bots.high.Methods
-import telegramium.bots.high.keyboards.InlineKeyboardMarkups
-import telegramium.bots.high.messageentities.MessageEntities
-import zio.*
-import zio.test.*
-
-import java.time.Instant
 
 object CommandControllerSpec extends ZIOSpecDefault:
   def spec: Spec[TestEnvironment with Scope, Any] = suite("CommandControllerSpec")(
