@@ -138,9 +138,9 @@ final class Taskobot(
         (senderName, forwardFromId) = forwardOrigin match {
           case MessageOriginUser(_, senderUser) =>
             Some(senderUser.firstName + senderUser.lastName.map(" " + _).getOrElse("")) -> Some(senderUser.id)
-          case MessageOriginChannel(_, chat, _, authorSignature) => chat.title.orElse(chat.username) -> Some(chat.id)
-          case MessageOriginHiddenUser(_, senderUserName)        => Some(senderUserName)             -> None
-          case MessageOriginChat(_, senderChat, authorSignature) =>
+          case MessageOriginChannel(_, chat, _, _)        => chat.title.orElse(chat.username) -> Some(chat.id)
+          case MessageOriginHiddenUser(_, senderUserName) => Some(senderUserName)             -> None
+          case MessageOriginChat(_, senderChat, _) =>
             senderChat.title.orElse(senderChat.username) -> Some(senderChat.id)
         }
         text <- msg.text
