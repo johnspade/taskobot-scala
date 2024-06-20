@@ -1,6 +1,7 @@
 package ru.johnspade.taskobot
 
-import cats.syntax.option._
+import cats.syntax.option.*
+import iozhik.OpenEnum
 import telegramium.bots.BotCommandMessageEntity
 import telegramium.bots.CallbackQuery
 import telegramium.bots.Chat
@@ -28,7 +29,8 @@ object TestHelpers:
       chat = Chat(id = chatId, `type` = "private"),
       from = johnTg.some,
       text = text.some,
-      entities = if (isCommand) List(BotCommandMessageEntity(offset = 0, length = text.length)) else List.empty,
+      entities =
+        if (isCommand) List(OpenEnum(BotCommandMessageEntity(offset = 0, length = text.length))) else List.empty,
       replyToMessage = replyToMessage
     )
 

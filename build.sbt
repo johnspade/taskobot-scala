@@ -2,7 +2,7 @@ import Dependencies._
 
 name := "tasko_bot"
 
-scalaVersion := "3.3.0"
+scalaVersion := "3.3.3"
 
 scalacOptions ++= Seq(
   "-language:higherKinds",
@@ -27,3 +27,5 @@ dockerLabels     := Map("org.opencontainers.image.source" -> "https://github.com
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+
+Global / onChangedBuildSource := ReloadOnSourceChanges

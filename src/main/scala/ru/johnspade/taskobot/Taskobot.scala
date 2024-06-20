@@ -8,6 +8,7 @@ import zio.interop.catz.*
 import zio.json.*
 
 import cats.implicits.*
+import iozhik.OpenEnum
 import ru.johnspade.tgbot.callbackqueries.*
 import telegramium.bots.*
 import telegramium.bots.client.Method
@@ -70,7 +71,7 @@ final class Taskobot(
       title = msgService.getMessage(MsgId.`tasks-create`, language),
       inputMessageContent = InputTextMessageContent(
         messageEntities.toPlainText(),
-        entities = messageEntities.toTelegramEntities()
+        entities = messageEntities.toTelegramEntities().map(OpenEnum(_))
       ),
       replyMarkup = InlineKeyboardMarkups
         .singleButton(
@@ -133,40 +134,40 @@ final class Taskobot(
       }
 
     def handleForward() =
-      for
-        forwardOrigin <- msg.forwardOrigin
-        (senderName, forwardFromId) = forwardOrigin match {
-          case MessageOriginUser(_, senderUser) =>
-            Some(senderUser.firstName + senderUser.lastName.map(" " + _).getOrElse("")) -> Some(senderUser.id)
-          case MessageOriginChannel(_, chat, _, _)        => chat.title.orElse(chat.username) -> Some(chat.id)
-          case MessageOriginHiddenUser(_, senderUserName) => Some(senderUserName)             -> None
-          case MessageOriginChat(_, senderChat, _) =>
-            senderChat.title.orElse(senderChat.username) -> Some(senderChat.id)
-        }
-        text <- msg.text
-        from <- msg.from
-      yield {
-        for
-          user <- botService.updateUser(from, msg.chat.id.some)
-          now  <- Clock.instant
-          newTask = NewTask(
-            user.id,
-            text,
-            now,
-            user.timezoneOrDefault,
-            user.id.some,
-            forwardFromId = forwardFromId,
-            forwardFromSenderName = senderName
-          )
-          _ <- taskRepo.create(newTask)
-          _ <- sendMessage(
-            ChatIntId(msg.chat.id),
-            msgService.taskCreated(text, user.language),
-            replyMarkup = kbService.menu(user.language).some
-          ).exec
-          method <- listPersonalTasks(user)
-        yield method.some
-      }
+      msg.forwardOrigin.fold(None): originOpen =>
+        originOpen match
+          case OpenEnum.Unknown(_) => Some(ZIO.some(sendMessage(ChatIntId(msg.chat.id), Errors.NotSupported)))
+          case OpenEnum.Known(origin) =>
+            val (senderName, forwardFromId) = origin match
+              case MessageOriginUser(_, senderUser) =>
+                Some(senderUser.firstName + senderUser.lastName.map(" " + _).getOrElse("")) -> Some(senderUser.id)
+              case MessageOriginChannel(_, chat, _, _)        => chat.title.orElse(chat.username) -> Some(chat.id)
+              case MessageOriginHiddenUser(_, senderUserName) => Some(senderUserName)             -> None
+              case MessageOriginChat(_, senderChat, _) =>
+                senderChat.title.orElse(senderChat.username) -> Some(senderChat.id)
+            for
+              text <- msg.text
+              from <- msg.from
+            yield for
+              user <- botService.updateUser(from, msg.chat.id.some)
+              now  <- Clock.instant
+              newTask = NewTask(
+                user.id,
+                text,
+                now,
+                user.timezoneOrDefault,
+                user.id.some,
+                forwardFromId = forwardFromId,
+                forwardFromSenderName = senderName
+              )
+              _ <- taskRepo.create(newTask)
+              _ <- sendMessage(
+                ChatIntId(msg.chat.id),
+                msgService.taskCreated(text, user.language),
+                replyMarkup = kbService.menu(user.language).some
+              ).exec
+              method <- listPersonalTasks(user)
+            yield method.some
 
     def handleText() =
       msg.text

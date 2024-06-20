@@ -43,7 +43,7 @@ object TelegramOps {
 
   def execDiscardWithHandling[Res](method: Method[Res])(using api: Api[Task]) =
     method.exec.catchSome {
-      case err: FailedRequest[Res]
+      case err: FailedRequest[_]
           if err.errorCode.contains(400) && err.description.exists(
             _.contains(
               "Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message"

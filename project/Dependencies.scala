@@ -2,14 +2,14 @@ import sbt.librarymanagement.syntax._
 
 object Dependencies {
   object V {
-    val telegramium      = "8.71.0"
-    val tgbotUtils       = "0.7.1"
-    val zio              = "2.0.15"
-    val zioCats          = "23.0.0.7"
-    val zioLogging       = "2.1.13"
-    val zioJson          = "0.5.0"
+    val telegramium      = "9.74.0"
+    val tgbotUtils       = "0.8.1"
+    val zio              = "2.1.4"
+    val zioCats          = "23.1.0.2"
+    val zioLogging       = "2.3.0"
+    val zioJson          = "0.7.0"
     val logback          = "1.4.8"
-    val cats             = "2.9.0"
+    val cats             = "2.12.0"
     val pureconfig       = "0.17.4"
     val doobie           = "1.0.0-RC4"
     val flyway           = "9.20.0"

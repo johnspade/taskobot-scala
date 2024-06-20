@@ -9,6 +9,7 @@ import zio.test.TestAspect.sequential
 import zio.test.*
 
 import cats.syntax.option.*
+import iozhik.OpenEnum
 import org.mockserver.client.MockServerClient
 import telegramium.bots.*
 import telegramium.bots.client.Method
@@ -50,7 +51,7 @@ object TaskobotISpec extends ZIOSpecDefault:
                     "Create task",
                     InputTextMessageContent(
                       "Buy some milk",
-                      entities = MessageEntities().bold("Buy some milk").toTelegramEntities()
+                      entities = MessageEntities().bold("Buy some milk").toTelegramEntities().map(OpenEnum(_))
                     ),
                     InlineKeyboardMarkups
                       .singleButton(
@@ -320,7 +321,7 @@ object TaskobotISpec extends ZIOSpecDefault:
           from = johnTg.some,
           text = "Watch Firefly".some,
           entities = List.empty,
-          forwardOrigin = MessageOriginUser(0, johnTg).some
+          forwardOrigin = OpenEnum(MessageOriginUser(0, johnTg)).some
         )
         withTaskobotService(_.onMessageReply(forwardedMessage))
           .map { forwardReply =>
