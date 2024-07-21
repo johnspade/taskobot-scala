@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot
 
-import zio._
-import zio.interop.catz._
+import zio.*
+import zio.interop.catz.*
 
 import cats.data.Kleisli
 import cats.data.OptionT

@@ -3,6 +3,7 @@ package ru.johnspade.taskobot
 import zio.*
 
 import cats.syntax.option.*
+import telegramium.bots.InlineKeyboardButton
 import telegramium.bots.InlineKeyboardMarkup
 import telegramium.bots.KeyboardButton
 import telegramium.bots.ReplyKeyboardMarkup
@@ -11,8 +12,8 @@ import telegramium.bots.high.keyboards.InlineKeyboardButtons
 import telegramium.bots.high.keyboards.InlineKeyboardMarkups
 import telegramium.bots.high.keyboards.KeyboardButtons
 
-import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.*
+import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.messages.Language
 import ru.johnspade.taskobot.messages.MessageService
 import ru.johnspade.taskobot.messages.MsgId
@@ -38,7 +39,9 @@ trait KeyboardService:
 
   def standardReminders(taskId: Long, pageNumber: Int, language: Language): InlineKeyboardMarkup
 
-final class KeyboardServiceLive(msgService: MessageService) extends KeyboardService:
+  def taskobotUrlButton: InlineKeyboardButton
+
+final class KeyboardServiceLive(msgService: MessageService, botConfig: BotConfig) extends KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup = {
     lazy val prevButton = inlineKeyboardButton(msgService.previousPage(`for`.language), Chats(page.number - 1))
     lazy val nextButton = inlineKeyboardButton(msgService.nextPage(`for`.language), Chats(page.number + 1))
@@ -53,7 +56,7 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
       List(
         InlineKeyboardButtons.url(
           msgService.getMessage(`buy-coffee`, `for`.language) + " ☕",
-          "https://buymeacoff.ee/johnspade"
+          DonateUrl
         )
       )
     )
@@ -105,7 +108,7 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
           KeyboardButtons.text("⚙️ " + msgService.getMessage(`settings`, language)),
           KeyboardButton(
             text = "🌍 " + msgService.getMessage(`timezone`, language),
-            webApp = Some(WebAppInfo("https://timezones.johnspade.ru"))
+            webApp = Some(WebAppInfo(TimezonesAppUrl))
           )
         )
       ),
@@ -154,8 +157,11 @@ final class KeyboardServiceLive(msgService: MessageService) extends KeyboardServ
       inlineKeyboardButton(msgService.remindersDaysBefore(3, language), CreateReminder(taskId, 60 * 24 * 3)),
       inlineKeyboardButton("🔙", Reminders(taskId, pageNumber))
     )
+
+  override val taskobotUrlButton: InlineKeyboardButton =
+    InlineKeyboardButtons.url("\uD83D\uDE80 Taskobot", s"https://t.me/${botConfig.username}")
 end KeyboardServiceLive
 
 object KeyboardServiceLive:
-  val layer: URLayer[MessageService, KeyboardService] =
-    ZLayer(ZIO.service[MessageService].map(new KeyboardServiceLive(_)))
+  val layer: URLayer[MessageService & BotConfig, KeyboardService] =
+    ZLayer.fromFunction(new KeyboardServiceLive(_, _))

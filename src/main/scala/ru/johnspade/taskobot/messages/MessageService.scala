@@ -6,6 +6,8 @@ import zio.URLayer
 import zio.ZIO
 import zio.ZLayer
 
+import ru.johnspade.taskobot.DonateUrl
+
 import MsgId.*
 
 trait MessageService:
@@ -45,7 +47,7 @@ final class MessageServiceLive(msgConfig: MsgConfig) extends MessageService:
       getMessage(`help-due-date`, lang) + "\n\n" +
       getMessage(`help-task-complete`, lang) + "\n\n" +
       switchLanguage(lang) + ": /settings" + "\n" +
-      getMessage(`support-creator`, lang) + ": https://buymeacoff.ee/johnspade ☕"
+      getMessage(`support-creator`, lang) + s": $DonateUrl ☕"
 
   def taskCreated(task: String, language: Language): String =
     getMessage(`tasks-personal-created`, language, task)

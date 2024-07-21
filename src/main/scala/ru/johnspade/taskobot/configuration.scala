@@ -31,11 +31,12 @@ object DbConfig:
     }.orDie
   )
 
-final case class BotConfig(port: Int, url: String, token: String)
+final case class BotConfig(port: Int, url: String, token: String, username: String)
 object BotConfig:
   implicit val botConfigReader: ConfigReader[BotConfig] =
-    ConfigReader.forProduct3[BotConfig, Int, String, String]("port", "url", "token") { case (port, url, token) =>
-      BotConfig(port, url, token)
+    ConfigReader.forProduct4[BotConfig, Int, String, String, String]("port", "url", "token", "username") {
+      case (port, url, token, username) =>
+        BotConfig(port, url, token, username)
     }
   val live: ULayer[BotConfig] = ZLayer(
     ZIO.attempt {

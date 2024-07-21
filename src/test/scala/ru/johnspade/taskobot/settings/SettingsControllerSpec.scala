@@ -1,9 +1,9 @@
 package ru.johnspade.taskobot.settings
 
 import zio.*
+import zio.test.*
 import zio.test.Assertion.equalTo
 import zio.test.Assertion.hasField
-import zio.test.*
 
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
@@ -11,6 +11,7 @@ import ru.johnspade.tgbot.callbackqueries.CallbackQueryData
 import ru.johnspade.tgbot.callbackqueries.ContextCallbackQuery
 import telegramium.bots.high.*
 
+import ru.johnspade.taskobot.BotConfig
 import ru.johnspade.taskobot.KeyboardServiceLive
 import ru.johnspade.taskobot.TestBotApi
 import ru.johnspade.taskobot.TestBotApi.Mocks
@@ -85,5 +86,6 @@ object SettingsControllerSpec extends ZIOSpecDefault:
       MsgConfig.live,
       MessageServiceLive.layer,
       KeyboardServiceLive.layer,
-      SettingsControllerLive.layer
+      SettingsControllerLive.layer,
+      BotConfig.live
     )

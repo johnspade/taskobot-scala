@@ -61,8 +61,8 @@ final class SettingsControllerLive(
       execDiscardWithHandling(
         editMessageText(
           msgService.currentLanguage(language),
-          ChatIntId(msg.chat.id).some,
-          msg.messageId.some,
+          chatId = ChatIntId(msg.chat.id).some,
+          messageId = msg.messageId.some,
           replyMarkup = kbService.languages(language).some
         )
       )

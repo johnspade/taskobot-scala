@@ -6,7 +6,7 @@ import telegramium.bots.BotCommandMessageEntity
 import telegramium.bots.CallbackQuery
 import telegramium.bots.Chat
 import telegramium.bots.Message
-import telegramium.bots.{User => TgUser}
+import telegramium.bots.User as TgUser
 
 import ru.johnspade.taskobot.TestUsers.johnChatId
 import ru.johnspade.taskobot.TestUsers.johnTg

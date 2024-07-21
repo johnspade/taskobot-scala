@@ -1,9 +1,9 @@
 package ru.johnspade.taskobot.core
 
 import zio.Scope
+import zio.test.*
 import zio.test.Assertion.equalTo
 import zio.test.Assertion.isRight
-import zio.test.*
 
 import cats.syntax.option.*
 

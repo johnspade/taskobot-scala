@@ -4,9 +4,9 @@ import java.time.Instant
 import java.time.LocalDate
 
 import zio.*
+import zio.test.*
 import zio.test.Assertion.*
 import zio.test.TestAspect.sequential
-import zio.test.*
 
 import cats.syntax.option.*
 import iozhik.OpenEnum
@@ -21,8 +21,8 @@ import ru.johnspade.taskobot.TestBotApi.Mocks
 import ru.johnspade.taskobot.TestBotApi.createMock
 import ru.johnspade.taskobot.TestHelpers.createMessage
 import ru.johnspade.taskobot.TestUsers.*
-import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.*
+import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.datetime.*
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
@@ -35,62 +35,8 @@ import ru.johnspade.taskobot.user.UserRepositoryLive
 object TaskobotISpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment with Scope, Any] = (suite("TaskobotISpec")(
     test("collaborative tasks") {
-      val typeTask =
-        for
-          inlineQueryReply <- withTaskobotService(
-            _.onInlineQueryReply(InlineQuery("0", johnTg, query = "Buy some milk", offset = "0"))
-          )
-          assertions = assertTrue(
-            inlineQueryReply.contains(
-              Methods.answerInlineQuery(
-                "0",
-                cacheTime = 0.some,
-                results = List(
-                  InlineQueryResultArticle(
-                    "1",
-                    "Create task",
-                    InputTextMessageContent(
-                      "Buy some milk",
-                      entities = MessageEntities().bold("Buy some milk").toTelegramEntities().map(OpenEnum(_))
-                    ),
-                    InlineKeyboardMarkups
-                      .singleButton(
-                        inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = john.id.some))
-                      )
-                      .some,
-                    description = "Buy some milk".some
-                  )
-                )
-              )
-            )
-          )
-        yield assertions
-
-      val createTask =
-        for
-          chosenInlineResultReply <-
-            withTaskobotService(
-              _.onChosenInlineResultReply(
-                ChosenInlineResult("0", johnTg, query = "Buy some milk", inlineMessageId = "0".some)
-              )
-            )
-          expectedEditMessageReplyMarkupReq = Methods.editMessageReplyMarkup(
-            inlineMessageId = "0".some,
-            replyMarkup = InlineKeyboardMarkups
-              .singleButton(
-                inlineKeyboardButton("Confirm task", ConfirmTask(1L.some, john.id.some))
-              )
-              .some
-          )
-        yield assertTrue(chosenInlineResultReply.get.payload == expectedEditMessageReplyMarkupReq.payload)
-
-      val confirmTask = sendCallbackQuery(
-        ConfirmTask(1L.some, john.id.some),
-        kaitrinTg,
-        inlineMessageId = "0".some
-      )
-        .map(confirmTaskReply => assertTrue(confirmTaskReply.contains(Methods.answerCallbackQuery("0"))))
-
+      val createTask  = createTaskInteraction(1L)
+      val confirmTask = confirmTaskInteraction(1L)
       val listChats =
         for
           listReply <- sendMessage("/list", isCommand = true, chatId = kaitrinChatId)
@@ -103,7 +49,7 @@ object TaskobotISpec extends ZIOSpecDefault:
                   .singleColumn(
                     List(
                       inlineKeyboardButton("Kaitrin", Tasks(firstPage, kaitrin.id)),
-                      InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade")
+                      InlineKeyboardButtons.url("Buy me a coffee ☕", DonateUrl)
                     )
                   )
                   .some
@@ -134,7 +80,7 @@ object TaskobotISpec extends ZIOSpecDefault:
         }
 
       val addReminder =
-        sendCallbackQuery(CreateReminder(1L, 0)).map { detailsReply =>
+        sendCallbackQuery(CreateReminder(1L, 60)).map { detailsReply =>
           assertTrue(detailsReply.contains(Methods.answerCallbackQuery("0")))
         }
 
@@ -162,8 +108,8 @@ object TaskobotISpec extends ZIOSpecDefault:
       for
         _                    <- TestClock.setTime(Instant.EPOCH)
         now                  <- Clock.instant
-        _                    <- createMock(Mocks.addConfirmButton, Mocks.messageResponse)
-        _                    <- createMock(Mocks.removeReplyMarkup, Mocks.messageResponse)
+        _                    <- createMock(Mocks.addConfirmButtons(0L), Mocks.messageResponse)
+        _                    <- createMock(Mocks.addTaskobotUrlButton, Mocks.messageResponse)
         _                    <- createMock(Mocks.editMessageTextList, Mocks.messageResponse)
         _                    <- createMock(Mocks.editMessageTextCheckTask(kaitrinChatId), Mocks.messageResponse)
         _                    <- createMock(Mocks.taskCompletedMessage, Mocks.messageResponse)
@@ -235,7 +181,7 @@ object TaskobotISpec extends ZIOSpecDefault:
                     |
                     |""".stripMargin +
                     "Switch language: /settings\n" +
-                    "Support a creator: https://buymeacoff.ee/johnspade ☕",
+                    s"Support a creator: $DonateUrl ☕",
                   parseMode = Html.some,
                   replyMarkup = expectedMenu,
                   linkPreviewOptions = LinkPreviewOptions(isDisabled = true.some).some
@@ -414,7 +360,7 @@ object TaskobotISpec extends ZIOSpecDefault:
       List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
       List(
         KeyboardButtons.text("⚙️ Settings"),
-        KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo("https://timezones.johnspade.ru")))
+        KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo(TimezonesAppUrl)))
       )
     ),
     resizeKeyboard = true.some
@@ -452,6 +398,64 @@ object TaskobotISpec extends ZIOSpecDefault:
         )
       )
     }
+
+  private val typeTask =
+    for
+      inlineQueryReply <- withTaskobotService(
+        _.onInlineQueryReply(InlineQuery("0", johnTg, query = "Buy some milk", offset = "0"))
+      )
+      assertions = assertTrue(
+        inlineQueryReply.contains(
+          Methods.answerInlineQuery(
+            "0",
+            cacheTime = 0.some,
+            results = List(
+              InlineQueryResultArticle(
+                "1",
+                "Create task",
+                InputTextMessageContent(
+                  "Buy some milk",
+                  entities = MessageEntities().bold("Buy some milk").toTelegramEntities().map(OpenEnum(_))
+                ),
+                InlineKeyboardMarkups
+                  .singleColumn(
+                    inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = john.id.some)),
+                    InlineKeyboardButtons.url("\uD83D\uDE80 Taskobot", "https://t.me/tasko_bot")
+                  )
+                  .some,
+                description = "Buy some milk".some
+              )
+            )
+          )
+        )
+      )
+    yield assertions
+
+  private def createTaskInteraction(taskId: Long) =
+    for
+      chosenInlineResultReply <-
+        withTaskobotService(
+          _.onChosenInlineResultReply(
+            ChosenInlineResult("0", johnTg, query = "Buy some milk", inlineMessageId = "0".some)
+          )
+        )
+      expectedEditMessageReplyMarkupReq = Methods.editMessageReplyMarkup(
+        inlineMessageId = "0".some,
+        replyMarkup = InlineKeyboardMarkups
+          .singleColumn(
+            inlineKeyboardButton("Confirm task", ConfirmTask(taskId.some, john.id.some)),
+            InlineKeyboardButtons.url("\uD83D\uDE80 Taskobot", "https://t.me/tasko_bot")
+          )
+          .some
+      )
+    yield assertTrue(chosenInlineResultReply.get.payload == expectedEditMessageReplyMarkupReq.payload)
+
+  private def confirmTaskInteraction(taskId: Long) = sendCallbackQuery(
+    ConfirmTask(taskId.some, john.id.some),
+    kaitrinTg,
+    inlineMessageId = "0".some
+  )
+    .map(confirmTaskReply => assertTrue(confirmTaskReply.contains(Methods.answerCallbackQuery("0"))))
 
   private val env = ZLayer.make[MockServerClient & Taskobot](
     TestDatabase.layer,

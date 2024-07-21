@@ -10,6 +10,7 @@ import cats.syntax.option.*
 import com.dimafeng.testcontainers.MockServerContainer
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.mockserver.client.MockServerClient
+import org.mockserver.matchers.MatchType
 import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpRequest.request
 import org.mockserver.model.HttpResponse.response
@@ -22,8 +23,8 @@ import telegramium.bots.high.messageentities.MessageEntities
 
 import ru.johnspade.taskobot.TelegramBotApi.TelegramBotApi
 import ru.johnspade.taskobot.TestUsers.*
-import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.core.*
+import ru.johnspade.taskobot.core.TelegramOps.inlineKeyboardButton
 import ru.johnspade.taskobot.messages.Language
 
 object TestBotApi:
@@ -74,7 +75,7 @@ object TestBotApi:
             .when(
               request("/" + method.payload.name)
                 .withMethod("POST")
-                .withBody(new JsonBody(method.payload.json.toString))
+                .withBody(new JsonBody(method.payload.json.toString, MatchType.STRICT))
             )
             .respond(response().withBody(responseBody))
         )
@@ -100,7 +101,7 @@ object TestBotApi:
     val listLanguages: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
         "Current language: English",
-        ChatIntId(johnChatId).some,
+        chatId = ChatIntId(johnChatId).some,
         messageId = 0.some,
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
@@ -119,7 +120,7 @@ object TestBotApi:
     val listLanguagesRussian: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
         "Текущий язык: Русский",
-        ChatIntId(johnChatId).some,
+        chatId = ChatIntId(johnChatId).some,
         messageId = 0.some,
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
@@ -145,7 +146,7 @@ object TestBotApi:
             List(KeyboardButtons.text("\uD83D\uDE80 Новая совместная задача"), KeyboardButtons.text("❓ Справка")),
             List(
               KeyboardButtons.text("⚙️ Настройки"),
-              KeyboardButton("🌍 Часовой пояс", webApp = Some(WebAppInfo("https://timezones.johnspade.ru")))
+              KeyboardButton("🌍 Часовой пояс", webApp = Some(WebAppInfo(TimezonesAppUrl)))
             )
           ),
           resizeKeyboard = true.some
@@ -162,7 +163,7 @@ object TestBotApi:
             List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
             List(
               KeyboardButtons.text("⚙️ Settings"),
-              KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo("https://timezones.johnspade.ru")))
+              KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo(TimezonesAppUrl)))
             )
           ),
           resizeKeyboard = true.some
@@ -172,20 +173,29 @@ object TestBotApi:
     val removeReplyMarkup: Method[Either[Boolean, Message]] =
       Methods.editMessageReplyMarkup(inlineMessageId = "0".some)
 
-    val addConfirmButton: Method[Either[Boolean, Message]] =
+    def addConfirmButtons(taskId: Long): Method[Either[Boolean, Message]] =
       Methods.editMessageReplyMarkup(
         inlineMessageId = "0".some,
         replyMarkup = InlineKeyboardMarkups
-          .singleButton(
-            inlineKeyboardButton("Confirm task", ConfirmTask(1L.some, 1337L.some))
+          .singleColumn(
+            inlineKeyboardButton("Confirm task", ConfirmTask(taskId.some, 1337L.some)),
+            InlineKeyboardButtons.url("\uD83D\uDE80 Taskobot", "https://t.me/tasko_bot")
           )
+          .some
+      )
+
+    val addTaskobotUrlButton: Method[Either[Boolean, Message]] =
+      Methods.editMessageReplyMarkup(
+        inlineMessageId = "0".some,
+        replyMarkup = InlineKeyboardMarkups
+          .singleButton(InlineKeyboardButtons.url("\uD83D\uDE80 Taskobot", "https://t.me/tasko_bot"))
           .some
       )
 
     val editMessageTextList: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
         "Chat: John\n1. Buy some milk – John\n",
-        ChatIntId(kaitrinChatId).some,
+        chatId = ChatIntId(kaitrinChatId).some,
         messageId = 0.some,
         entities = MessageEntities()
           // format: off
@@ -206,7 +216,7 @@ object TestBotApi:
     def editMessageTextCheckTask(chatId: Int): Method[Either[Boolean, Message]] =
       Methods.editMessageText(
         "Chat: John\n",
-        ChatIntId(chatId).some,
+        chatId = ChatIntId(chatId).some,
         messageId = 0.some,
         entities = MessageEntities()
           // format: off
@@ -222,7 +232,7 @@ object TestBotApi:
     val editMessageTextPersonalTasks: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
         "Chat: Personal tasks\n",
-        ChatIntId(johnChatId).some,
+        chatId = ChatIntId(johnChatId).some,
         messageId = 0.some,
         entities = MessageEntities()
           .plain("Chat: ")
@@ -240,7 +250,7 @@ object TestBotApi:
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(0, n.toLong))) ++
-              List(InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade"))
+              List(InlineKeyboardButtons.url("Buy me a coffee ☕", DonateUrl))
           )
           .some
       )
@@ -259,7 +269,7 @@ object TestBotApi:
               inlineKeyboardButton("Previous page", Chats(0)),
               inlineKeyboardButton("Next page", Chats(2))
             ) ++
-              List(InlineKeyboardButtons.url("Buy me a coffee ☕", "https://buymeacoff.ee/johnspade"))
+              List(InlineKeyboardButtons.url("Buy me a coffee ☕", DonateUrl))
           )
           .some
       )
@@ -305,11 +315,11 @@ object TestBotApi:
         replyMarkup = InlineKeyboardMarkup(
           List(
             List(
-              inlineKeyboardButton("1", TaskDetails(23L, 1)),
-              inlineKeyboardButton("2", TaskDetails(24L, 1)),
-              inlineKeyboardButton("3", TaskDetails(25L, 1)),
-              inlineKeyboardButton("4", TaskDetails(26L, 1)),
-              inlineKeyboardButton("5", TaskDetails(27L, 1))
+              inlineKeyboardButton("1", TaskDetails(6L, 1)),
+              inlineKeyboardButton("2", TaskDetails(7L, 1)),
+              inlineKeyboardButton("3", TaskDetails(8L, 1)),
+              inlineKeyboardButton("4", TaskDetails(9L, 1)),
+              inlineKeyboardButton("5", TaskDetails(10L, 1))
             ),
             List(inlineKeyboardButton("Previous page", Tasks(0, kaitrin.id))),
             List(inlineKeyboardButton("Next page", Tasks(2, kaitrin.id))),
@@ -321,7 +331,7 @@ object TestBotApi:
     val editMessageTextTasksKaitrin: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
         "Chat: Kaitrin\n",
-        ChatIntId(0).some,
+        chatId = ChatIntId(0).some,
         messageId = 0.some,
         entities = MessageEntities()
           // format: off
@@ -333,20 +343,20 @@ object TestBotApi:
 
     val taskCompletedByJohnMessage: Method[Message] =
       Methods.sendMessage(
-        ChatIntId(kaitrinChatId),
+        chatId = ChatIntId(kaitrinChatId),
         """Task "Buy some milk" has been marked completed by John."""
       )
 
     val taskCompletedByKaitrinMessage: Method[Message] =
       Methods.sendMessage(
-        ChatIntId(johnChatId),
+        chatId = ChatIntId(johnChatId),
         """Task "Buy some milk" has been marked completed by Kaitrin."""
       )
 
     def editMessageTextTaskDetails(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
       val markup = InlineKeyboardMarkup(
         List(
-          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId)), inlineKeyboardButton("🔔", Reminders(taskId, 0))),
           List(
             inlineKeyboardButton(
               "📅",
@@ -437,7 +447,7 @@ object TestBotApi:
     def editMessageTextTaskDeadlineUpdated(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
       val markup = InlineKeyboardMarkup(
         List(
-          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId)), inlineKeyboardButton("🔔", Reminders(taskId, 0))),
           List(
             inlineKeyboardButton(
               "📅",
@@ -458,7 +468,7 @@ object TestBotApi:
     def editMessageTextTaskDeadlineRemoved(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
       val markup = InlineKeyboardMarkup(
         List(
-          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId)), inlineKeyboardButton("🔔", Reminders(taskId, 0))),
           List(
             inlineKeyboardButton(
               "📅",
@@ -479,7 +489,7 @@ object TestBotApi:
     def editMessageTextTimePicker(taskId: Long, now: Instant): Method[Either[Boolean, Message]] =
       val markup = InlineKeyboardMarkup(
         List(
-          List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+          List(inlineKeyboardButton("✅", CheckTask(0, taskId)), inlineKeyboardButton("🔔", Reminders(taskId, 0))),
           List(
             inlineKeyboardButton(
               "📅",
@@ -519,7 +529,7 @@ object TestBotApi:
           .toTelegramEntities(),
         replyMarkup = InlineKeyboardMarkup(
           List(
-            List(inlineKeyboardButton("✅", CheckTask(0, taskId))),
+            List(inlineKeyboardButton("✅", CheckTask(0, taskId)), inlineKeyboardButton("🔔", Reminders(taskId, 0))),
             List(
               inlineKeyboardButton(
                 "📅",
@@ -549,7 +559,7 @@ object TestBotApi:
             |🕒 Due date: ${dueDate.getOrElse("-")}
             |
             |Created at: 1970-01-01 00:00""".stripMargin,
-        ChatIntId(0).some,
+        chatId = ChatIntId(0).some,
         messageId = 0.some,
         entities = MessageEntities()
           // format: off

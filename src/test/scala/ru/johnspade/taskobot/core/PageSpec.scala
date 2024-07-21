@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot.core
 
-import zio.test.Assertion._
-import zio.test._
+import zio.test.*
+import zio.test.Assertion.*
 
 import cats.Id
 

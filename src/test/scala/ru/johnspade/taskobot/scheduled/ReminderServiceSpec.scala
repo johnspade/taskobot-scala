@@ -1,21 +1,23 @@
 package ru.johnspade.taskobot.scheduled
 
+import java.time.Instant
 import java.time.LocalDateTime
 
 import zio.*
+import zio.test.*
 import zio.test.Assertion.*
 import zio.test.TestAspect.*
-import zio.test.*
 
 import org.mockserver.client.MockServerClient
 
+import ru.johnspade.taskobot.BotConfig
 import ru.johnspade.taskobot.BotServiceLive
 import ru.johnspade.taskobot.CleanupRepository
 import ru.johnspade.taskobot.CleanupRepositoryLive
 import ru.johnspade.taskobot.KeyboardServiceLive
 import ru.johnspade.taskobot.TestBotApi
-import ru.johnspade.taskobot.TestBotApi.Mocks.*
 import ru.johnspade.taskobot.TestBotApi.*
+import ru.johnspade.taskobot.TestBotApi.Mocks.*
 import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.UTC
@@ -44,7 +46,8 @@ object ReminderServiceSpec extends ZIOSpecDefault:
       MessageServiceLive.layer,
       BotServiceLive.layer,
       KeyboardServiceLive.layer,
-      ReminderServiceLive.layer
+      ReminderServiceLive.layer,
+      BotConfig.live
     )
 
   private val createTaskAndReminder =
@@ -116,13 +119,14 @@ object ReminderServiceSpec extends ZIOSpecDefault:
           "error_code": 403
         }
       """
+      val text          = "Leave me alone"
       for
         now  <- Clock.instant
-        task <- createTask("Homework assignment", Some(kaitrin.id))
+        task <- createTask(text, Some(kaitrin.id))
         taskWithDeadline <- TaskRepository
           .setDeadline(task.id, Some(LocalDateTime.from(now.atZone(UTC)).plusMinutes(1L)), john.id)
         reminder    <- ReminderRepository.create(task.id, john.id, offsetMinutes = 0)
-        _           <- createMock(sendMessageReminder("Homework assignment", task.id, now), errorResponse)
+        _           <- createMock(sendMessageReminder(text, task.id, now), errorResponse)
         _           <- ReminderService.sendReminder(reminder, taskWithDeadline, john)
         updatedUser <- UserRepository.findById(john.id)
       yield assertTrue(updatedUser.flatMap(_.blockedBot).contains(true))
@@ -152,16 +156,12 @@ object ReminderServiceSpec extends ZIOSpecDefault:
   ) @@ sequential @@
     before {
       for
+        _ <- TestClock.setTime(Instant.EPOCH)
         _ <- UserRepository.createOrUpdate(john).orDie
         _ <- UserRepository.createOrUpdate(kaitrin).orDie
       yield ()
-    } @@ TestAspect.after {
-      for
-        _ <- CleanupRepository.clearReminders()
-        _ <- CleanupRepository.clearTasks()
-        _ <- CleanupRepository.clearUsers()
-      yield ()
-    }).provideShared(testEnv)
+    } @@ after(CleanupRepository.truncateTables()))
+    .provideShared(testEnv)
 
   private def createTask(text: String, receiver: Option[Long]) =
     for

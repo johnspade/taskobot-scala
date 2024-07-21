@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot
 
-import cats.syntax.option._
-import telegramium.bots.{User => TgUser}
+import cats.syntax.option.*
+import telegramium.bots.User as TgUser
 
 import ru.johnspade.taskobot.core.TelegramOps.toUser
 import ru.johnspade.taskobot.user.User

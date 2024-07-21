@@ -103,5 +103,6 @@ object CommandControllerSpec extends ZIOSpecDefault:
       MessageServiceLive.layer,
       KeyboardServiceLive.layer,
       BotServiceLive.layer,
-      CommandControllerLive.layer
+      CommandControllerLive.layer,
+      BotConfig.live
     )

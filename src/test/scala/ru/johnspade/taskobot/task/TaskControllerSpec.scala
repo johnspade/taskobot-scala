@@ -5,16 +5,17 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 import zio.*
+import zio.test.*
 import zio.test.Assertion.*
 import zio.test.TestAspect.*
-import zio.test.*
 
 import cats.syntax.option.*
 import org.mockserver.client.MockServerClient
 import ru.johnspade.tgbot.callbackqueries.*
+import telegramium.bots.User as TgUser
 import telegramium.bots.high.Methods
-import telegramium.bots.{User as TgUser}
 
+import ru.johnspade.taskobot.BotConfig
 import ru.johnspade.taskobot.BotServiceLive
 import ru.johnspade.taskobot.CleanupRepository
 import ru.johnspade.taskobot.CleanupRepositoryLive
@@ -26,10 +27,10 @@ import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestHelpers.callbackQuery
 import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.UTC
+import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.core.CreateReminder
 import ru.johnspade.taskobot.core.RemoveReminder
 import ru.johnspade.taskobot.core.TelegramOps.toUser
-import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.messages.*
 import ru.johnspade.taskobot.user.User
 import ru.johnspade.taskobot.user.UserRepository
@@ -115,8 +116,8 @@ object TaskControllerSpec extends ZIOSpecDefault:
     suite("ConfirmTask")(
       test("receiver should be able to confirm task") {
         for
-          _             <- createMock(Mocks.removeReplyMarkup, Mocks.messageResponse)
           task          <- createTask("Buy some milk")
+          _             <- createMock(Mocks.addTaskobotUrlButton, Mocks.messageResponse)
           reply         <- confirmTask(ConfirmTask(task.id.some, john.id.some), kaitrinTg)
           confirmedTask <- TaskRepository.findById(task.id)
           confirmedTaskAssertions    = assertTrue(confirmedTask.get.receiver.contains(kaitrin.id))
@@ -126,6 +127,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
       test("sender should not be able to confirm task") {
         for
           task            <- createTask("Buy groceries")
+          _               <- createMock(Mocks.addTaskobotUrlButton, Mocks.messageResponse)
           reply           <- confirmTask(ConfirmTask(task.id.some, john.id.some), johnTg)
           unconfirmedTask <- TaskRepository.findById(task.id)
           confirmTaskReplyAssertions = assertTrue(
@@ -137,6 +139,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
       test("cannot confirm task with wrong senderId") {
         for
           task <- createTask("Buy some bread")
+          _    <- createMock(Mocks.addTaskobotUrlButton, Mocks.messageResponse)
           bobId = 0L
           reply           <- confirmTask(ConfirmTask(task.id.some, bobId.some), TgUser(bobId, isBot = false, "Bob"))
           unconfirmedTask <- TaskRepository.findById(task.id)
@@ -269,13 +272,7 @@ object TaskControllerSpec extends ZIOSpecDefault:
         _ <- UserRepository.createOrUpdate(kaitrin).orDie
       yield ()
     }
-    @@ TestAspect.after {
-      for
-        _ <- CleanupRepository.clearReminders()
-        _ <- CleanupRepository.clearTasks()
-        _ <- CleanupRepository.clearUsers()
-      yield ()
-    })
+    @@ TestAspect.after(CleanupRepository.truncateTables()))
     .provideShared(env)
 
   private val firstPage = 0
@@ -344,5 +341,6 @@ object TaskControllerSpec extends ZIOSpecDefault:
       MessageServiceLive.layer,
       KeyboardServiceLive.layer,
       BotServiceLive.layer,
-      TaskControllerLive.layer
+      TaskControllerLive.layer,
+      BotConfig.live
     )

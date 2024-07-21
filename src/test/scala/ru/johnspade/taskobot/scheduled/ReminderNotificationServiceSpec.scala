@@ -4,19 +4,20 @@ import java.time.Instant
 import java.time.LocalDateTime
 
 import zio.*
-import zio.test.TestAspect.*
 import zio.test.*
+import zio.test.TestAspect.*
 
 import org.mockserver.client.MockServerClient
 
+import ru.johnspade.taskobot.BotConfig
 import ru.johnspade.taskobot.BotServiceLive
 import ru.johnspade.taskobot.CleanupRepository
 import ru.johnspade.taskobot.CleanupRepositoryLive
 import ru.johnspade.taskobot.KeyboardServiceLive
 import ru.johnspade.taskobot.TestBotApi
+import ru.johnspade.taskobot.TestBotApi.*
 import ru.johnspade.taskobot.TestBotApi.Mocks.*
 import ru.johnspade.taskobot.TestBotApi.Mocks.sendMessageReminder
-import ru.johnspade.taskobot.TestBotApi.*
 import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestUsers.*
 import ru.johnspade.taskobot.UTC
@@ -47,7 +48,8 @@ object ReminderNotificationServiceSpec extends ZIOSpecDefault:
       BotServiceLive.layer,
       KeyboardServiceLive.layer,
       ReminderNotificationServiceLive.layer,
-      ReminderServiceLive.layer
+      ReminderServiceLive.layer,
+      BotConfig.live
     )
 
   def spec = (suite("ReminderNotificationServiceSpec")(
@@ -93,13 +95,8 @@ object ReminderNotificationServiceSpec extends ZIOSpecDefault:
         _ <- UserRepository.createOrUpdate(john).orDie
         _ <- UserRepository.createOrUpdate(kaitrin).orDie
       yield ()
-    } @@ TestAspect.after {
-      for
-        _ <- CleanupRepository.clearReminders()
-        _ <- CleanupRepository.clearTasks()
-        _ <- CleanupRepository.clearUsers()
-      yield ()
-    }).provideShared(testEnv)
+    } @@ TestAspect.after(CleanupRepository.truncateTables()))
+    .provideShared(testEnv)
 
   private val remindersTableEmpty = ReminderRepository.getEnqueued().map(_.isEmpty)
 

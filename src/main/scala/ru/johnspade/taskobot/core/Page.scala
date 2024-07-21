@@ -1,7 +1,7 @@
 package ru.johnspade.taskobot.core
 
 import cats.Functor
-import cats.syntax.functor._
+import cats.syntax.functor.*
 
 final case class Page[T](
     items: List[T],

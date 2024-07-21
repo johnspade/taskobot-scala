@@ -9,8 +9,8 @@ import zio.interop.catz.*
 import telegramium.bots
 import telegramium.bots.high.messageentities.MessageEntities
 import telegramium.bots.high.messageentities.MessageEntityFormat
-import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
 import telegramium.bots.high.messageentities.MessageEntityFormat.*
+import telegramium.bots.high.messageentities.MessageEntityFormat.Plain.lineBreak
 
 import ru.johnspade.taskobot.core.Page
 import ru.johnspade.taskobot.core.TelegramOps.toUser

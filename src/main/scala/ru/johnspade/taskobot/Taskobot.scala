@@ -2,8 +2,8 @@ package ru.johnspade.taskobot
 
 import java.time.ZoneId
 
-import zio.Task
 import zio.*
+import zio.Task
 import zio.interop.catz.*
 import zio.json.*
 
@@ -31,11 +31,6 @@ import ru.johnspade.taskobot.task.NewTask
 import ru.johnspade.taskobot.task.TaskController
 import ru.johnspade.taskobot.task.TaskRepository
 import ru.johnspade.taskobot.user.User
-
-val DefaultPageSize: Int = 5
-val MessageLimit         = 4096
-
-val UTC = ZoneId.of("UTC")
 
 type CbDataRoutes[F[_]] = CallbackQueryRoutes[CbData, Option[Method[_]], F]
 
@@ -74,8 +69,9 @@ final class Taskobot(
         entities = messageEntities.toTelegramEntities().map(OpenEnum(_))
       ),
       replyMarkup = InlineKeyboardMarkups
-        .singleButton(
-          inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = query.from.id.some))
+        .singleColumn(
+          inlineKeyboardButton("Confirm task", ConfirmTask(id = None, senderId = query.from.id.some)),
+          kbService.taskobotUrlButton
         )
         .some,
       description = text.some
@@ -93,8 +89,9 @@ final class Taskobot(
       method = editMessageReplyMarkup(
         inlineMessageId = inlineResult.inlineMessageId,
         replyMarkup = InlineKeyboardMarkups
-          .singleButton(
-            inlineKeyboardButton("Confirm task", ConfirmTask(task.id.some, user.id.some))
+          .singleColumn(
+            inlineKeyboardButton("Confirm task", ConfirmTask(task.id.some, user.id.some)),
+            kbService.taskobotUrlButton
           )
           .some
       )
