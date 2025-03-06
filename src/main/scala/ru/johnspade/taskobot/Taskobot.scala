@@ -53,7 +53,7 @@ final class Taskobot(
 )(using api: Api[Task])
     extends WebhookBot[Task](api, url = s"${botConfig.url}/${botConfig.token}", path = botConfig.token) {
 
-  private val botId = botConfig.token.split(":").head.toInt
+  private val botId = botConfig.token.split(":").head.toLong
 
   override def onInlineQueryReply(query: InlineQuery): Task[Option[Method[_]]] = {
     val language: Language =
