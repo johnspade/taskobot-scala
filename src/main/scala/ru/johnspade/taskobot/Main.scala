@@ -36,6 +36,7 @@ object Main extends ZIOAppDefault:
       .provide(
         DbConfig.live,
         BotConfig.live,
+        TimezonesConfig.live,
         MsgConfig.live,
         DbTransactor.live,
         MessageServiceLive.layer,

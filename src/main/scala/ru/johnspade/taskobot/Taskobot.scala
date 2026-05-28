@@ -66,7 +66,7 @@ final class Taskobot(
       title = msgService.getMessage(MsgId.`tasks-create`, language),
       inputMessageContent = InputTextMessageContent(
         messageEntities.toPlainText(),
-        entities = messageEntities.toTelegramEntities().map(OpenEnum(_))
+        entities = messageEntities.toTelegramEntities()
       ),
       replyMarkup = InlineKeyboardMarkups
         .singleColumn(

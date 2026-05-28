@@ -20,6 +20,7 @@ import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestHelpers.callbackQuery
 import ru.johnspade.taskobot.TestUsers.john
 import ru.johnspade.taskobot.TestUsers.johnTg
+import ru.johnspade.taskobot.TimezonesConfig
 import ru.johnspade.taskobot.core.ChangeLanguage
 import ru.johnspade.taskobot.core.SetLanguage
 import ru.johnspade.taskobot.messages.Language
@@ -42,10 +43,11 @@ object SettingsControllerSpec extends ZIOSpecDefault:
     suite("SetLanguage")(
       test("should change language") {
         for
-          _     <- createMock(Mocks.listLanguagesRussian, Mocks.messageResponse)
-          _     <- createMock(Mocks.languageChangedMessage, Mocks.messageResponse)
-          reply <- sendSetLanguageQuery()
-          user  <- UserRepository.findById(john.id)
+          languageChangedMessageMock <- Mocks.languageChangedMessage
+          _                          <- createMock(Mocks.listLanguagesRussian, Mocks.messageResponse)
+          _                          <- createMock(languageChangedMessageMock, Mocks.messageResponse)
+          reply                      <- sendSetLanguageQuery()
+          user                       <- UserRepository.findById(john.id)
           userAssertions = assert(user.get)(
             hasField("language", _.language, equalTo[Language](Language.Russian))
           )
@@ -79,7 +81,7 @@ object SettingsControllerSpec extends ZIOSpecDefault:
     }
 
   private val env =
-    ZLayer.make[MockServerClient with SettingsController with UserRepository](
+    ZLayer.make[MockServerClient with SettingsController with UserRepository with TimezonesConfig](
       TestDatabase.layer,
       TestBotApi.testApiLayer,
       UserRepositoryLive.layer,
@@ -87,5 +89,6 @@ object SettingsControllerSpec extends ZIOSpecDefault:
       MessageServiceLive.layer,
       KeyboardServiceLive.layer,
       SettingsControllerLive.layer,
-      BotConfig.live
+      BotConfig.live,
+      TimezonesConfig.live
     )

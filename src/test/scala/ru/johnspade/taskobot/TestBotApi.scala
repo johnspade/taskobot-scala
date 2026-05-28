@@ -136,39 +136,43 @@ object TestBotApi:
           .some
       )
 
-    val languageChangedMessage: Method[Message] =
-      Methods.sendMessage(
-        ChatIntId(johnChatId),
-        text = "Язык изменен",
-        replyMarkup = ReplyKeyboardMarkup(
-          List(
-            List(KeyboardButtons.text("\uD83D\uDCCB Задачи"), KeyboardButtons.text("➕ Новая личная задача")),
-            List(KeyboardButtons.text("\uD83D\uDE80 Новая совместная задача"), KeyboardButtons.text("❓ Справка")),
+    val languageChangedMessage: RIO[TimezonesConfig, Method[Message]] =
+      ZIO.service[TimezonesConfig].map { timezonesConfig =>
+        Methods.sendMessage(
+          ChatIntId(johnChatId),
+          text = "Язык изменен",
+          replyMarkup = ReplyKeyboardMarkup(
             List(
-              KeyboardButtons.text("⚙️ Настройки"),
-              KeyboardButton("🌍 Часовой пояс", webApp = Some(WebAppInfo(TimezonesAppUrl)))
-            )
-          ),
-          resizeKeyboard = true.some
-        ).some
-      )
+              List(KeyboardButtons.text("\uD83D\uDCCB Задачи"), KeyboardButtons.text("➕ Новая личная задача")),
+              List(KeyboardButtons.text("\uD83D\uDE80 Новая совместная задача"), KeyboardButtons.text("❓ Справка")),
+              List(
+                KeyboardButtons.text("⚙️ Настройки"),
+                KeyboardButton("🌍 Часовой пояс", webApp = Some(WebAppInfo(timezonesConfig.url)))
+              )
+            ),
+            resizeKeyboard = true.some
+          ).some
+        )
+      }
 
-    def taskCreatedMessage(text: String): Method[Message] =
-      Methods.sendMessage(
-        ChatIntId(johnChatId),
-        text,
-        replyMarkup = ReplyKeyboardMarkup(
-          List(
-            List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
-            List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
+    def taskCreatedMessage(text: String): RIO[TimezonesConfig, Method[Message]] =
+      ZIO.service[TimezonesConfig].map { timezonesConfig =>
+        Methods.sendMessage(
+          ChatIntId(johnChatId),
+          text,
+          replyMarkup = ReplyKeyboardMarkup(
             List(
-              KeyboardButtons.text("⚙️ Settings"),
-              KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo(TimezonesAppUrl)))
-            )
-          ),
-          resizeKeyboard = true.some
-        ).some
-      )
+              List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
+              List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
+              List(
+                KeyboardButtons.text("⚙️ Settings"),
+                KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo(timezonesConfig.url)))
+              )
+            ),
+            resizeKeyboard = true.some
+          ).some
+        )
+      }
 
     val removeReplyMarkup: Method[Either[Boolean, Message]] =
       Methods.editMessageReplyMarkup(inlineMessageId = "0".some)

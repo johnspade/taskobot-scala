@@ -153,6 +153,7 @@ object TaskobotISpec extends ZIOSpecDefault:
       val start =
         for
           startMessage <- sendMessage("/start", isCommand = true)
+          expectedMenu <- expectedMenuZIO
           assertions = assert(startMessage)(
             isSome(
               equalTo(
@@ -244,15 +245,13 @@ object TaskobotISpec extends ZIOSpecDefault:
         }
 
       for
-        _ <- createMock(
-          Mocks.taskCreatedMessage("""Personal task "Buy groceries" has been created."""),
-          Mocks.messageResponse
-        )
-        _                   <- createMock(Mocks.editMessageTextPersonalTasks, Mocks.messageResponse)
-        startAssertions     <- start
-        createAssertions    <- create
-        sendTaskAssertions  <- sendTask
-        checkTaskAssertions <- checkTask
+        taskCreatedMessageMock <- Mocks.taskCreatedMessage("""Personal task "Buy groceries" has been created.""")
+        _                      <- createMock(taskCreatedMessageMock, Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextPersonalTasks, Mocks.messageResponse)
+        startAssertions        <- start
+        createAssertions       <- create
+        sendTaskAssertions     <- sendTask
+        checkTaskAssertions    <- checkTask
       yield startAssertions &&
         createAssertions &&
         sendTaskAssertions &&
@@ -306,13 +305,11 @@ object TaskobotISpec extends ZIOSpecDefault:
         }
 
       for
-        _ <- createMock(
-          Mocks.taskCreatedMessage("""Personal task "Watch Firefly" has been created."""),
-          Mocks.messageResponse
-        )
-        _                   <- createMock(Mocks.editMessageTextPersonalTasks, Mocks.messageResponse)
-        forwardAssertions   <- forward
-        checkTaskAssertions <- checkTask
+        taskCreatedMessageMock <- Mocks.taskCreatedMessage("""Personal task "Watch Firefly" has been created.""")
+        _                      <- createMock(taskCreatedMessageMock, Mocks.messageResponse)
+        _                      <- createMock(Mocks.editMessageTextPersonalTasks, Mocks.messageResponse)
+        forwardAssertions      <- forward
+        checkTaskAssertions    <- checkTask
       yield forwardAssertions &&
         checkTaskAssertions
     },
@@ -354,17 +351,20 @@ object TaskobotISpec extends ZIOSpecDefault:
 
   private val firstPage = 0
 
-  private val expectedMenu = ReplyKeyboardMarkup(
-    List(
-      List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
-      List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
-      List(
-        KeyboardButtons.text("⚙️ Settings"),
-        KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo(TimezonesAppUrl)))
-      )
-    ),
-    resizeKeyboard = true.some
-  ).some
+  private def expectedMenuZIO =
+    ZIO.service[TimezonesConfig].map { timezonesConfig =>
+      ReplyKeyboardMarkup(
+        List(
+          List(KeyboardButtons.text("\uD83D\uDCCB Tasks"), KeyboardButtons.text("➕ New personal task")),
+          List(KeyboardButtons.text("\uD83D\uDE80 New collaborative task"), KeyboardButtons.text("❓ Help")),
+          List(
+            KeyboardButtons.text("⚙️ Settings"),
+            KeyboardButton("🌍 Timezone", webApp = Some(WebAppInfo(timezonesConfig.url)))
+          )
+        ),
+        resizeKeyboard = true.some
+      ).some
+    }
 
   private def mockMessage(chatId: Int = 0) =
     Message(0, date = 0, chat = Chat(chatId, `type` = ""), from = User(id = 123, isBot = true, "Taskobot").some)
@@ -415,7 +415,7 @@ object TaskobotISpec extends ZIOSpecDefault:
                 "Create task",
                 InputTextMessageContent(
                   "Buy some milk",
-                  entities = MessageEntities().bold("Buy some milk").toTelegramEntities().map(OpenEnum(_))
+                  entities = MessageEntities().bold("Buy some milk").toTelegramEntities()
                 ),
                 InlineKeyboardMarkups
                   .singleColumn(
@@ -457,7 +457,7 @@ object TaskobotISpec extends ZIOSpecDefault:
   )
     .map(confirmTaskReply => assertTrue(confirmTaskReply.contains(Methods.answerCallbackQuery("0"))))
 
-  private val env = ZLayer.make[MockServerClient & Taskobot](
+  private val env = ZLayer.make[MockServerClient & Taskobot & TimezonesConfig](
     TestDatabase.layer,
     TestBotApi.testApiLayer,
     UserRepositoryLive.layer,
@@ -476,5 +476,6 @@ object TaskobotISpec extends ZIOSpecDefault:
     IgnoreControllerLive.layer,
     UserMiddleware.live,
     BotConfig.live,
+    TimezonesConfig.live,
     Taskobot.live
   )

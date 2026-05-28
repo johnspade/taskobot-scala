@@ -33,14 +33,12 @@ object CommandControllerSpec extends ZIOSpecDefault:
       test("should create a task passed as an argument") {
         val taskMessage = createMessage("/create Buy some milk")
         for
-          _ <- createMock(
-            Mocks.taskCreatedMessage("Personal task \"Buy some milk\" has been created."),
-            Mocks.messageResponse
-          )
-          _     <- TestClock.setTime(Instant.EPOCH)
-          now   <- Clock.instant
-          reply <- ZIO.serviceWithZIO[CommandController](_.onPersonalTaskCommand(taskMessage))
-          task  <- TaskRepository.findById(1L)
+          taskCreatedMock <- Mocks.taskCreatedMessage("Personal task \"Buy some milk\" has been created.")
+          _               <- createMock(taskCreatedMock, Mocks.messageResponse)
+          _               <- TestClock.setTime(Instant.EPOCH)
+          now             <- Clock.instant
+          reply           <- ZIO.serviceWithZIO[CommandController](_.onPersonalTaskCommand(taskMessage))
+          task            <- TaskRepository.findById(1L)
           expectedTask   = BotTask(1L, john.id, "Buy some milk", john.id.some, now, timezone = Some(UTC))
           taskAssertions = assertTrue(task.contains(expectedTask))
           replyAssertions = assertTrue(
@@ -94,7 +92,7 @@ object CommandControllerSpec extends ZIOSpecDefault:
     .provideCustomShared(env)
 
   private val env =
-    ZLayer.make[MockServerClient with CommandController with TaskRepository](
+    ZLayer.make[MockServerClient with CommandController with TaskRepository with TimezonesConfig](
       TestDatabase.layer,
       TestBotApi.testApiLayer,
       UserRepositoryLive.layer,
@@ -104,5 +102,6 @@ object CommandControllerSpec extends ZIOSpecDefault:
       KeyboardServiceLive.layer,
       BotServiceLive.layer,
       CommandControllerLive.layer,
-      BotConfig.live
+      BotConfig.live,
+      TimezonesConfig.live
     )

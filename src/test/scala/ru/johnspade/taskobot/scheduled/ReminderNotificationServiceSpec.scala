@@ -20,6 +20,7 @@ import ru.johnspade.taskobot.TestBotApi.Mocks.*
 import ru.johnspade.taskobot.TestBotApi.Mocks.sendMessageReminder
 import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestUsers.*
+import ru.johnspade.taskobot.TimezonesConfig
 import ru.johnspade.taskobot.UTC
 import ru.johnspade.taskobot.messages.MessageServiceLive
 import ru.johnspade.taskobot.messages.MsgConfig
@@ -49,7 +50,8 @@ object ReminderNotificationServiceSpec extends ZIOSpecDefault:
       KeyboardServiceLive.layer,
       ReminderNotificationServiceLive.layer,
       ReminderServiceLive.layer,
-      BotConfig.live
+      BotConfig.live,
+      TimezonesConfig.live
     )
 
   def spec = (suite("ReminderNotificationServiceSpec")(

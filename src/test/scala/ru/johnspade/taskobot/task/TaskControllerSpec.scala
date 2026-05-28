@@ -26,6 +26,7 @@ import ru.johnspade.taskobot.TestBotApi.createMock
 import ru.johnspade.taskobot.TestDatabase
 import ru.johnspade.taskobot.TestHelpers.callbackQuery
 import ru.johnspade.taskobot.TestUsers.*
+import ru.johnspade.taskobot.TimezonesConfig
 import ru.johnspade.taskobot.UTC
 import ru.johnspade.taskobot.core.*
 import ru.johnspade.taskobot.core.CreateReminder
@@ -342,5 +343,6 @@ object TaskControllerSpec extends ZIOSpecDefault:
       KeyboardServiceLive.layer,
       BotServiceLive.layer,
       TaskControllerLive.layer,
-      BotConfig.live
+      BotConfig.live,
+      TimezonesConfig.live
     )

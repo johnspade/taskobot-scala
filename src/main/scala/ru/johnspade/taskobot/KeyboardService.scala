@@ -41,7 +41,7 @@ trait KeyboardService:
 
   def taskobotUrlButton: InlineKeyboardButton
 
-final class KeyboardServiceLive(msgService: MessageService, botConfig: BotConfig) extends KeyboardService:
+final class KeyboardServiceLive(msgService: MessageService, botConfig: BotConfig, timezonesConfig: TimezonesConfig) extends KeyboardService:
   def chats(page: Page[User], `for`: User): InlineKeyboardMarkup = {
     lazy val prevButton = inlineKeyboardButton(msgService.previousPage(`for`.language), Chats(page.number - 1))
     lazy val nextButton = inlineKeyboardButton(msgService.nextPage(`for`.language), Chats(page.number + 1))
@@ -108,7 +108,7 @@ final class KeyboardServiceLive(msgService: MessageService, botConfig: BotConfig
           KeyboardButtons.text("⚙️ " + msgService.getMessage(`settings`, language)),
           KeyboardButton(
             text = "🌍 " + msgService.getMessage(`timezone`, language),
-            webApp = Some(WebAppInfo(TimezonesAppUrl))
+            webApp = Some(WebAppInfo(timezonesConfig.url))
           )
         )
       ),
@@ -163,5 +163,5 @@ final class KeyboardServiceLive(msgService: MessageService, botConfig: BotConfig
 end KeyboardServiceLive
 
 object KeyboardServiceLive:
-  val layer: URLayer[MessageService & BotConfig, KeyboardService] =
-    ZLayer.fromFunction(new KeyboardServiceLive(_, _))
+  val layer: URLayer[MessageService & BotConfig & TimezonesConfig, KeyboardService] =
+    ZLayer.fromFunction(new KeyboardServiceLive(_, _, _))

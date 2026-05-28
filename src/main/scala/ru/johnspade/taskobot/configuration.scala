@@ -43,3 +43,12 @@ object BotConfig:
       ConfigSource.default.at("bot").loadOrThrow[BotConfig]
     }.orDie
   )
+
+final case class TimezonesConfig(url: String)
+object TimezonesConfig:
+  given ConfigReader[TimezonesConfig] = ConfigReader.forProduct1[TimezonesConfig, String]("url")(TimezonesConfig.apply)
+  val live: ULayer[TimezonesConfig] = ZLayer(
+    ZIO.attempt {
+      ConfigSource.default.at("timezones").loadOrThrow[TimezonesConfig]
+    }.orDie
+  )
