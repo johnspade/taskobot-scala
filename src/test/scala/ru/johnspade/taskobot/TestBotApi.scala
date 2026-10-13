@@ -100,7 +100,7 @@ object TestBotApi:
 
     val listLanguages: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Current language: English",
+        text = "Current language: English".some,
         chatId = ChatIntId(johnChatId).some,
         messageId = 0.some,
         replyMarkup = InlineKeyboardMarkups
@@ -119,7 +119,7 @@ object TestBotApi:
 
     val listLanguagesRussian: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Текущий язык: Русский",
+        text = "Текущий язык: Русский".some,
         chatId = ChatIntId(johnChatId).some,
         messageId = 0.some,
         replyMarkup = InlineKeyboardMarkups
@@ -198,7 +198,7 @@ object TestBotApi:
 
     val editMessageTextList: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: John\n1. Buy some milk – John\n",
+        text = "Chat: John\n1. Buy some milk – John\n".some,
         chatId = ChatIntId(kaitrinChatId).some,
         messageId = 0.some,
         entities = MessageEntities()
@@ -219,7 +219,7 @@ object TestBotApi:
 
     def editMessageTextCheckTask(chatId: Int): Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: John\n",
+        text = "Chat: John\n".some,
         chatId = ChatIntId(chatId).some,
         messageId = 0.some,
         entities = MessageEntities()
@@ -235,7 +235,7 @@ object TestBotApi:
 
     val editMessageTextPersonalTasks: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: Personal tasks\n",
+        text = "Chat: Personal tasks\n".some,
         chatId = ChatIntId(johnChatId).some,
         messageId = 0.some,
         entities = MessageEntities()
@@ -250,7 +250,7 @@ object TestBotApi:
       Methods.editMessageText(
         chatId = ChatIntId(0).some,
         messageId = 0.some,
-        text = "Chats with tasks",
+        text = "Chats with tasks".some,
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List.tabulate(5)(n => inlineKeyboardButton(n.toString, Tasks(0, n.toLong))) ++
@@ -263,7 +263,7 @@ object TestBotApi:
       Methods.editMessageText(
         chatId = ChatIntId(0).some,
         messageId = 0.some,
-        text = "Chats with tasks",
+        text = "Chats with tasks".some,
         replyMarkup = InlineKeyboardMarkups
           .singleColumn(
             List.tabulate(5) { n =>
@@ -282,7 +282,7 @@ object TestBotApi:
       Methods.editMessageText(
         chatId = ChatIntId(0).some,
         messageId = 0.some,
-        text = "Chat: Kaitrin\n1. Wash dishes please 🕒 1970-01-01 00:00 – John\n",
+        text = "Chat: Kaitrin\n1. Wash dishes please 🕒 1970-01-01 00:00 – John\n".some,
         entities = MessageEntities()
           .plain("Chat: ")
           .bold("Kaitrin")
@@ -305,7 +305,7 @@ object TestBotApi:
       Methods.editMessageText(
         chatId = ChatIntId(0).some,
         messageId = 0.some,
-        text = "Chat: Kaitrin\n1. 5 – John\n2. 6 – John\n3. 7 – John\n4. 8 – John\n5. 9 – John\n",
+        text = "Chat: Kaitrin\n1. 5 – John\n2. 6 – John\n3. 7 – John\n4. 8 – John\n5. 9 – John\n".some,
         entities = MessageEntities()
           // format: off
           .plain("Chat: ").bold("Kaitrin").br()
@@ -334,7 +334,7 @@ object TestBotApi:
 
     val editMessageTextTasksKaitrin: Method[Either[Boolean, Message]] =
       Methods.editMessageText(
-        "Chat: Kaitrin\n",
+        text = "Chat: Kaitrin\n".some,
         chatId = ChatIntId(0).some,
         messageId = 0.some,
         entities = MessageEntities()
@@ -558,11 +558,11 @@ object TestBotApi:
         dueDate: Option[String] = None
     ) =
       Methods.editMessageText(
-        s"""|$text
+        text = s"""|$text
             |
             |🕒 Due date: ${dueDate.getOrElse("-")}
             |
-            |Created at: 1970-01-01 00:00""".stripMargin,
+            |Created at: 1970-01-01 00:00""".stripMargin.some,
         chatId = ChatIntId(0).some,
         messageId = 0.some,
         entities = MessageEntities()

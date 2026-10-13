@@ -60,7 +60,7 @@ final class SettingsControllerLive(
     ZIO.foreachDiscard(cb.message.flatMap(_.toMessage)) { msg =>
       execDiscardWithHandling(
         editMessageText(
-          msgService.currentLanguage(language),
+          text = msgService.currentLanguage(language).some,
           chatId = ChatIntId(msg.chat.id).some,
           messageId = msg.messageId.some,
           replyMarkup = kbService.languages(language).some
