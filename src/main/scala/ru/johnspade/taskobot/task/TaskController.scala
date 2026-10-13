@@ -86,7 +86,7 @@ final class TaskControllerLive(
             page <- Page.request[User, Task](pageNumber, DefaultPageSize, userRepo.findUsersWithSharedTasks(user.id))
             _ <- execDiscardWithHandling(
               editMessageText(
-                msgService.chatsWithTasks(user.language),
+                text = msgService.chatsWithTasks(user.language).some,
                 chatId = ChatIntId(msg.chat.id).some,
                 messageId = msg.messageId.some,
                 replyMarkup = kbService.chats(page, user).some
@@ -260,7 +260,7 @@ final class TaskControllerLive(
   ) =
     execDiscardWithHandling(
       editMessageText(
-        messageEntities.toPlainText(),
+        text = messageEntities.toPlainText().some,
         chatId = ChatIntId(message.chat.id).some,
         messageId = message.messageId.some,
         entities = messageEntities.toTelegramEntities(),
@@ -320,7 +320,7 @@ final class TaskControllerLive(
   ) =
     execDiscardWithHandling(
       editMessageText(
-        messageEntities.toPlainText(),
+        text = messageEntities.toPlainText().some,
         chatId = ChatIntId(message.chat.id).some,
         messageId = message.messageId.some,
         entities = messageEntities.toTelegramEntities(),
