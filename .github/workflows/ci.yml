@@ -37,6 +37,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # sbt-dynver needs history to count commits for the image tag
       - uses: actions/setup-java@v6
         with:
           java-version: 17
