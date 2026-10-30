@@ -19,7 +19,7 @@ libraryDependencies ++= distributionDependencies ++ testDependencies.map(_ % Tes
 enablePlugins(JavaAppPackaging, DockerPlugin, AshScriptPlugin)
 
 ThisBuild / dynverSeparator := "-"
-dockerBaseImage             := "eclipse-temurin:17.0.6_10-jre-jammy"
+dockerBaseImage             := "eclipse-temurin:21.0.13_9-jre-noble"
 dockerExposedPorts ++= Seq(8080)
 dockerRepository := Some("ghcr.io")
 dockerUsername   := Some("johnspade")
