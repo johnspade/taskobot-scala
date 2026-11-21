@@ -15,7 +15,7 @@ object Dependencies {
     val flyway           = "9.20.0"
     val http4s           = "0.23.15"
     val postgresql       = "42.6.0"
-    val testcontainers   = "0.40.17"
+    val testcontainers   = "0.44.1"
     val mockitoScala     = "1.16.46"
     val mockServerClient = "5.15.0"
   }
